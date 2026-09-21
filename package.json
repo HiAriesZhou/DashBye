@@ -1,7 +1,7 @@
 {
   "name": "dashbye",
-  "version": "0.1.0",
-  "description": "Draft-only Chrome Web Store listing synchronization with explicit safety guards.",
+  "version": "0.2.0",
+  "description": "Version and synchronize Chrome Web Store package, listing, and privacy drafts.",
   "type": "module",
   "private": true,
   "bin": {
@@ -15,7 +15,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "prepack": "npm run build",
     "test": "npm run build && node --test dist/tests/*.test.js && node scripts/check-release-boundary.mjs",
@@ -25,6 +25,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "playwright-core": "^1.62.1",
     "sharp": "^0.35.4",
     "yaml": "^2.8.1"

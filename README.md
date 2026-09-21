@@ -4,84 +4,94 @@
 
 少填表，多发布。
 
-Dashbye safely compares a repository-owned Chrome Web Store listing
-with an already authenticated Developer Dashboard tab. It can append missing
-listing images, update the detailed description, save a draft, and reload the
-page to verify the result.
+Dashbye versions and reconciles a Chrome Web Store package, listing copy,
+screenshots, promotional assets, and privacy declarations from files owned by the
+extension project. It connects to an already authenticated, dedicated Chrome
+profile, saves only a draft, and reads the result back.
 
-The tool never signs in to Google, submits an item for review, publishes,
-archives, changes privacy declarations, or removes existing images.
+Dashbye is product-neutral. Each extension supplies its own project, artifact,
+resource paths, target item, and language through `dashbye.config.yml`.
 
 ## Status
 
-This is an early technical release. The supported path is a user-launched,
-dedicated Chrome profile with loopback-only remote debugging. Reusing that
-profile in a new headless browser process is not supported.
+This is an early technical release. The real Dashboard path has been verified for
+read-only inspection, complete comparison, screenshot upload, draft save, and
+read-back. Package upload and complete privacy reconciliation remain guarded by an
+exact plan hash and should be verified on a reviewed draft before broader use.
 
-The package is marked private to prevent accidental npm publication while the
-public repository and release process are still under review.
+Dashbye does not automate Google login, submit an item for review, or publish it.
+It does not assume headless authentication works. The supported browser path is
+official Chrome with a separate user data directory and loopback CDP endpoint.
 
-## Install
+## Install and help
 
 ```bash
 npm install
 npm run build
+node dist/src/cli.js -h
 ```
 
-Node.js 22 or later is required. Chrome must be started separately with a
-dedicated user data directory and a loopback remote debugging port. Never use
-your daily Chrome profile.
+Node.js 22 or later is required. `dashbye -h` is the complete manual for commands,
+initialization, options, defaults, and agent use; subcommands do not have separate
+help pages.
 
-On macOS, one example is:
+Run `dashbye init` once in an interactive terminal, or initialize without prompts:
+
+```bash
+dashbye init \
+  --project /path/to/extension \
+  --artifact dist/release.zip \
+  --resources store \
+  --item-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --language "English – en (default)" \
+  --endpoint http://127.0.0.1:9333 \
+  --non-interactive
+```
+
+The generated configuration is discovered from the current directory upward.
+Command-line overrides take precedence over it.
+
+## Browser setup
+
+Start Chrome yourself with a profile outside the repository and outside synced
+folders. On macOS:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --user-data-dir=/absolute/path/outside/the/repository/cws-profile \
+  --user-data-dir="$HOME/Library/Application Support/Dashbye/chrome-profile" \
   --remote-debugging-address=127.0.0.1 \
   --remote-debugging-port=9333 \
-  https://chrome.google.com/webstore/devconsole
+  https://chromewebstore.google.com/devconsole
 ```
 
-Log in manually and open the exact item you intend to inspect. The profile path
-must be dedicated to this tool and must stay outside both the repository and any
-cloud-synchronized folder.
+Log in manually and open exactly one edit tab for the intended item. Dashbye never
+opens a login window, bypasses verification, reads Chrome profile databases, or
+copies cookies into configuration, logs, or Git.
 
-## Commands
+## Release flow
 
 ```bash
-# Validate local configuration and image requirements without a browser.
-npm start -- validate --config examples/store/store.yml
-
-# Read the selected item and language without changing the Dashboard.
-npm start -- inspect \
-  --endpoint http://127.0.0.1:9333 \
-  --item-id your-extension-id \
-  --language "English – en (default)"
-
-# Show the planned draft changes.
-npm start -- plan \
-  --config /path/to/store.yml \
-  --endpoint http://127.0.0.1:9333 \
-  --item-id your-extension-id
-
-# Apply only the displayed append/update operations and save the draft.
-npm start -- sync-draft \
-  --config /path/to/store.yml \
-  --endpoint http://127.0.0.1:9333 \
-  --item-id your-extension-id \
-  --confirm-item-id your-extension-id \
-  --confirm-existing-prefix
+dashbye validate
+dashbye doctor --json
+dashbye inspect --output current-draft.json
+dashbye plan --output dashbye-plan.json
+dashbye sync-draft \
+  --plan dashbye-plan.json \
+  --approve-plan <exact-approval-hash> \
+  --non-interactive
 ```
 
-`--confirm-existing-prefix` is required when a screenshot section is partly
-populated. It means you manually verified that the existing images match the
-first files in the configured order. The tool will stop if the Dashboard has
-more images than the configuration.
+`validate` compares manifest permissions with privacy declarations. `plan` produces
+complete desired-state operations, including replacements and removals. The plan is
+bound to the item, artifact, release resources, and current Dashboard state. Any
+change invalidates it. `sync-draft` requires the exact approval hash, saves the
+draft, reads all supported fields again, and writes a version lock only after they
+match.
 
-See [store schema](docs/store-schema.md), [architecture](docs/architecture.md),
+See [resource schema](docs/store-schema.md), [architecture](docs/architecture.md),
 and [security model](docs/security.md).
 
 ## Release boundary
 
-Dashbye stops after saving and re-reading a draft. Review submission
-and publishing remain deliberate human actions in the Developer Dashboard.
+The final automated boundary is **Save draft**. Review submission and publication
+remain deliberate actions in the Chrome Web Store Developer Dashboard.

@@ -1,0 +1,32 @@
+schema: dashbye/release/v1
+listing:
+  defaultLanguage: English – en (default)
+  category: Tools
+  locales:
+    English – en (default):
+      description: listing/en/description.txt
+      screenshots: []
+      promoVideoUrl: null
+  assets:
+    icon: assets/icon-128.png
+    smallPromo: null
+    marqueePromo: null
+  globalScreenshots: []
+  globalPromoVideoUrl: null
+  officialUrl: null
+  homepageUrl: null
+  supportUrl: null
+  matureContent: false
+privacy:
+  singlePurpose: REPLACE WITH THE IMPLEMENTED SINGLE PURPOSE
+  permissionJustifications: {}
+  hostPermissionJustification: null
+  remoteCode:
+    uses: false
+    justification: null
+  collectedData: []
+  certifications:
+    noSaleOrTransfer: false
+    relatedToSinglePurpose: false
+    noCreditworthinessUse: false
+  policyUrl: https://example.com/privacy

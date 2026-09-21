@@ -32,14 +32,14 @@ The default resource directory is `store/`, but every path is configurable.
 store/
   release.yml
   listing/
-    global.yml
-    locales/<locale>/description.txt
+    <locale>/description.txt
   assets/
-  privacy/
-    practices.yml
-    permission-justifications.yml
   releases/<version>.lock.json
 ```
+
+`release.yml` is one reviewable desired-state document for listing fields and
+privacy declarations. Longer localized descriptions and binary assets remain in
+their own files.
 
 The built extension ZIP, build directory, or manifest is the source of truth for
 version, localized summary, permissions, optional permissions, host permissions,
@@ -79,7 +79,8 @@ listing and privacy fields, including image removal and replacement, only from a
 approved plan. Privacy writes and destructive asset operations require explicit
 approval in both interactive and agent modes.
 
-The final operation remains **Save draft**. Review submission and publication are
+The final listing and privacy operation remains **Save draft**. Package upload is
+kept within the item draft. Review submission and publication are
 outside the tool. After saving, Dashbye reloads and reads every supported field and
 asset order. A partial failure reports completed and incomplete operations.
 

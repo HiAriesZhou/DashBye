@@ -1,7 +1,9 @@
 node_modules/
 dist/
 .local/
-.cws-release-kit/
+.dashbye/
+dashbye-plan*.json
+current-draft*.json
 .env*
 !.env.example
 *.log

@@ -1,3 +1,0 @@
-A concise, factual description of what the extension does and why it is useful.
-
-Replace this synthetic example before using the configuration with a real draft.

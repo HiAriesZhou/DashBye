@@ -2,30 +2,35 @@
 
 ## Trust boundaries
 
-- Repository files are untrusted input until schema, path, hash, format, and image
-  dimensions pass validation.
-- The attached Chrome process is trusted only after its endpoint is confirmed as
-  loopback and exactly one page matches the requested item ID.
-- Existing Dashboard content is never deleted or replaced by v0.1. Images are only
-  appended to a configured target count.
+- Repository files are untrusted until schema, path, hash, image, and manifest
+  validation succeeds.
+- Chrome is accepted only through an explicit loopback HTTP endpoint with a port.
+- Exactly one open edit tab must match the configured 32-character item ID.
+- The plan hash binds the target, artifact, resources, remote state, and operations.
+  Dashbye rereads remote state immediately before applying it.
 
 ## Authentication
 
 Google authentication is manual. Keep the dedicated Chrome user data directory
-outside the repository. Never copy a daily browser profile or export its cookies.
-The CLI does not read Chrome profile databases.
+outside the repository and cloud-synchronized folders. Do not copy a daily profile.
+Dashbye does not read profile databases, export cookies, automate login, or bypass
+security challenges.
 
-## Logging
+## Data minimization
 
-Reports contain counts, booleans, locale labels, relative file names, and SHA-256
-hashes. They omit account identifiers, publisher identifiers, field contents,
-cookies, tokens, and complete authenticated URLs.
+Structured output includes versions, counts, booleans, locale labels, operation
+names, and content hashes. It omits account identifiers, publisher identifiers,
+field contents, credentials, cookies, tokens, and authenticated URLs. Release locks
+contain only normalized manifest facts and local fingerprints.
 
 ## Write guards
 
-`sync-draft` requires the item ID twice. A partially populated screenshot section
-also requires `--confirm-existing-prefix`. The run stops if counts exceed the
-configuration, the language changes, another item is selected, or read-back fails.
+`sync-draft` requires a saved plan and its exact approval hash. Plans that include
+privacy changes, package upload, or destructive asset replacement explicitly mark
+owner approval as required. If the local inputs or remote draft change, execution
+stops as stale. A successful run must save and reread with zero remaining
+operations before writing a release lock.
 
-The codebase contains no submit, publish, archive, delete, privacy certification,
-or automated login actions.
+The codebase has no review submission, publication, archive, login, or account
+management action. Asset removal exists only as an operation in a bound,
+owner-approved full desired-state plan.

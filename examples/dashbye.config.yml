@@ -1,0 +1,8 @@
+schema: dashbye/config/v1
+project: .
+artifact: release.zip
+resources: store
+target:
+  itemId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  language: English – en (default)
+  endpoint: http://127.0.0.1:9333
