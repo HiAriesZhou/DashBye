@@ -27,7 +27,9 @@ function value(args: Args, key: string): string {
 }
 
 function help() {
-  console.log(`CWS Release Kit
+  console.log(`Dashbye
+Less dashboard. More shipping.
+少填表，多发布。
 
 Commands:
   validate    --config <store.yml>

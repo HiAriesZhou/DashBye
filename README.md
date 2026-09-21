@@ -1,6 +1,10 @@
-# CWS Release Kit
+# Dashbye
 
-CWS Release Kit safely compares a repository-owned Chrome Web Store listing
+*Less dashboard. More shipping.*
+
+少填表，多发布。
+
+Dashbye safely compares a repository-owned Chrome Web Store listing
 with an already authenticated Developer Dashboard tab. It can append missing
 listing images, update the detailed description, save a draft, and reload the
 page to verify the result.
@@ -79,5 +83,5 @@ and [security model](docs/security.md).
 
 ## Release boundary
 
-CWS Release Kit stops after saving and re-reading a draft. Review submission
+Dashbye stops after saving and re-reading a draft. Review submission
 and publishing remain deliberate human actions in the Developer Dashboard.

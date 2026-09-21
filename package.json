@@ -1,11 +1,11 @@
 {
-  "name": "cws-release-kit",
+  "name": "dashbye",
   "version": "0.1.0",
   "description": "Draft-only Chrome Web Store listing synchronization with explicit safety guards.",
   "type": "module",
   "private": true,
   "bin": {
-    "cws-release-kit": "dist/src/cli.js"
+    "dashbye": "dist/src/cli.js"
   },
   "files": [
     "dist/src",

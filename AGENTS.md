@@ -1,8 +1,10 @@
 # Repository rules
 
 - Treat every Dashboard write as production-adjacent, even when the UI says Draft.
-- Never add review submission, publishing, archive, deletion, login automation,
-  CAPTCHA handling, fingerprint spoofing, or privacy certification automation.
+- Never add review submission, publishing, archive, login automation, CAPTCHA
+  handling, or fingerprint spoofing.
+- Asset deletion/replacement and privacy draft writes require a bound plan and
+  explicit approval. Never infer or invent data-use certifications.
 - Accept CDP endpoints only on loopback and require an exact item ID and language.
 - Never log account names, publisher IDs, cookies, tokens, field contents, or full
   authenticated URLs.
