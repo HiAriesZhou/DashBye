@@ -2,6 +2,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
+import { renderAgentPrompt } from './agent-prompt.js';
 import { applyReconciliationPlan, connectDashboard, readDashboardState } from './dashboard-v2.js';
 import { sha256 } from './hash.js';
 import { initialize } from './init.js';
@@ -51,6 +52,7 @@ Usage
 
 Commands
   init          Create or reconfigure a project configuration and resource templates
+  agent-prompt  Print a copy-paste prompt for an extension repository agent
   validate      Validate artifact, listing assets, permissions, and privacy declarations
   doctor        Check configuration paths and the dedicated Chrome connection
   inspect       Read the current Dashboard draft without changing it
@@ -91,7 +93,7 @@ Options
   --item-id <id>           Set or override the target item
   --language <label>       Set or override the Dashboard language
   --endpoint <url>         Set or override the loopback CDP endpoint
-  --output <file>          Save an inspect result or plan
+  --output <file>          Save a generated prompt, inspect result, or plan
   --plan <file>            Approved plan to execute with sync-draft
   --approve-plan <hash>    Exact plan approval hash for non-interactive execution
   --non-interactive        Disable prompts; missing input is an error
@@ -100,6 +102,7 @@ Options
 
 Examples
   dashbye init
+  dashbye agent-prompt --project /path/to/extension --artifact dist/release.zip
   dashbye validate
   dashbye doctor --json
   dashbye inspect --output current-draft.json
@@ -111,6 +114,24 @@ Browser and release boundary
   sign in manually. Dashbye never automates login or stores cookies. It may update a
   reviewed draft plan, but it never submits for review or publishes an item.
 `);
+}
+
+async function agentPrompt(args: Args) {
+  const values = {
+    project: optional(args, 'project'), artifact: optional(args, 'artifact'), resources: optional(args, 'resources'),
+    itemId: optional(args, 'item-id'), language: optional(args, 'language'), endpoint: optional(args, 'endpoint'),
+  };
+  const prompt = renderAgentPrompt({
+    ...(values.project ? { project: values.project } : {}),
+    ...(values.artifact ? { artifact: values.artifact } : {}),
+    ...(values.resources ? { resources: values.resources } : {}),
+    ...(values.itemId ? { itemId: values.itemId } : {}),
+    ...(values.language ? { language: values.language } : {}),
+    ...(values.endpoint ? { endpoint: values.endpoint } : {}),
+  });
+  const output = optional(args, 'output');
+  if (output) await writeFile(resolve(output), `${prompt}\n`, { mode: 0o600 });
+  console.log(prompt);
 }
 
 async function selectedConfig(args: Args): Promise<string> {
@@ -238,6 +259,7 @@ async function main() {
     await outputJson(result);
     return;
   }
+  if (command === 'agent-prompt') { await agentPrompt(args); return; }
   if (command === 'validate') { await validate(args); return; }
   if (command === 'doctor') { await doctor(args); return; }
   if (command === 'inspect' || command === 'plan') { await inspectOrPlan(args, command); return; }

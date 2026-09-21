@@ -51,6 +51,24 @@ dashbye init \
 The generated configuration is discovered from the current directory upward.
 Command-line overrides take precedence over it.
 
+To hand setup to an agent working in the extension repository, generate a
+product-neutral, copy-paste prompt with known paths filled in:
+
+```bash
+dashbye agent-prompt \
+  --project /path/to/extension \
+  --artifact dist/release.zip \
+  --resources store \
+  --item-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --language "English – en (default)" \
+  --output dashbye-agent-prompt.txt
+```
+
+The prompt tells the target agent to keep product resources in the extension
+repository, audit its manifest and existing references, implement the complete
+release schema, validate and plan, and stop for confirmation before any Dashboard
+write.
+
 ## Browser setup
 
 Start Chrome yourself with a profile outside the repository and outside synced
