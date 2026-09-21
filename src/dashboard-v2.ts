@@ -196,14 +196,29 @@ export async function readDashboardState(page: Page, workspace: LoadedWorkspace)
 }
 
 async function saveDraft(page: Page): Promise<void> {
-  const button = page.getByRole('button', { name: 'Save draft', exact: true });
+  const candidates = page.getByRole('button', { name: 'Save draft', exact: true });
+  let button: Locator | null = null;
+  for (let index = 0; index < await candidates.count(); index += 1) {
+    const candidate = candidates.nth(index);
+    if (await candidate.isVisible()) {
+      button = candidate;
+      break;
+    }
+  }
+  if (!button) throw new Error('visible Save draft button was not found');
   for (let attempt = 0; attempt < 120 && !await button.isEnabled(); attempt += 1) {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   if (!await button.isEnabled()) throw new Error('Save draft did not become enabled');
   await button.evaluate(element => (element as HTMLElement).click());
+  let disabledSince = 0;
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (!await button.isEnabled()) return;
+    if (!await button.isEnabled()) {
+      if (!disabledSince) disabledSince = Date.now();
+      if (Date.now() - disabledSince >= 3_000) return;
+    } else {
+      disabledSince = 0;
+    }
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   throw new Error('Save draft did not settle');
@@ -211,18 +226,44 @@ async function saveDraft(page: Page): Promise<void> {
 
 async function removeImages(page: Page, pattern: RegExp): Promise<void> {
   while (true) {
-    const button = page.getByRole('button', { name: pattern }).first();
-    if (await button.count() === 0) return;
+    const buttons = page.getByRole('button', { name: pattern });
+    const before = await buttons.count();
+    if (before === 0) return;
+    const button = buttons.first();
     await button.evaluate(element => (element as HTMLElement).click());
-    await new Promise(resolve => setTimeout(resolve, 250));
+    const dialog = page.getByRole('dialog').filter({ hasText: 'Remove Image' }).last();
+    const confirmationVisible = await dialog.waitFor({ state: 'visible', timeout: 2_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (confirmationVisible) {
+      const confirm = dialog.getByRole('button', { name: 'Remove', exact: true });
+      if (await confirm.count() !== 1) throw new Error('Remove Image confirmation button was not found');
+      await confirm.click();
+      await dialog.waitFor({ state: 'hidden', timeout: 30_000 });
+    }
+    for (let attempt = 0; attempt < 60 && await buttons.count() >= before; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    if (await buttons.count() >= before) throw new Error('Dashboard did not remove the selected image');
   }
 }
 
 async function uploadToSection(page: Page, heading: string, files: string[]): Promise<void> {
   const target = await section(page, heading);
   for (const file of files) {
+    const previews = target.locator('img');
+    const before = await previews.count();
     await target.locator('input[type="file"]').setInputFiles(file);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const count = await previews.count();
+      const loaded = count > before && await previews.evaluateAll(images => images.every(image => {
+        const element = image as HTMLImageElement;
+        return element.complete && element.naturalWidth > 0 && element.naturalHeight > 0;
+      }));
+      if (loaded) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (attempt === 119) throw new Error(`Dashboard did not finish the image upload: ${heading}`);
+    }
   }
 }
 
@@ -269,24 +310,38 @@ async function setCheckbox(page: Page, label: string, checked: boolean): Promise
 }
 
 async function applyPrivacy(page: Page, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
-  if (!plan.operations.some(operation => operation.area === 'privacy')) return;
+  const operations = plan.operations.filter(operation => operation.area === 'privacy');
+  if (!operations.length) return;
   await openPage(page, 'Privacy');
   const values = desired.privacyValues;
-  await (await section(page, 'Single purpose description')).locator('textarea').fill(values.singlePurpose);
-  for (const [permission, justification] of Object.entries(values.permissionJustifications)) {
-    await (await section(page, `${permission} justification`)).locator('textarea').fill(justification);
+  const has = (field: string) => operations.some(operation => operation.field === field);
+  if (has('singlePurpose')) {
+    await (await section(page, 'Single purpose description')).locator('textarea').fill(values.singlePurpose);
   }
-  if (values.hostPermissionJustification) {
+  if (has('permissionJustifications')) {
+    for (const [permission, justification] of Object.entries(values.permissionJustifications)) {
+      await (await section(page, `${permission} justification`)).locator('textarea').fill(justification);
+    }
+  }
+  if (has('hostPermissionJustification') && values.hostPermissionJustification) {
     await (await section(page, 'Host permission justification')).locator('textarea').fill(values.hostPermissionJustification);
   }
-  const remote = await section(page, 'Remote code');
-  await remote.locator('input[type="radio"]').nth(values.remoteCode.uses ? 1 : 0).setChecked(true);
-  await remote.locator('textarea').fill(values.remoteCode.justification ?? '');
-  for (const [key, label] of Object.entries(dataLabels)) await setCheckbox(page, label, values.collectedData.includes(key));
-  for (const [key, label] of Object.entries(certificationLabels) as Array<[keyof typeof certificationLabels, string]>) {
-    await setCheckbox(page, label, values.certifications[key]);
+  if (has('remoteCode')) {
+    const remote = await section(page, 'Remote code');
+    await remote.locator('input[type="radio"]').nth(values.remoteCode.uses ? 1 : 0).setChecked(true);
+    await remote.locator('textarea').fill(values.remoteCode.justification ?? '');
   }
-  await (await section(page, 'Privacy policy URL')).locator('input[type="text"]').fill(values.policyUrl);
+  if (has('collectedData')) {
+    for (const [key, label] of Object.entries(dataLabels)) await setCheckbox(page, label, values.collectedData.includes(key));
+  }
+  if (has('certifications')) {
+    for (const [key, label] of Object.entries(certificationLabels) as Array<[keyof typeof certificationLabels, string]>) {
+      await setCheckbox(page, label, values.certifications[key]);
+    }
+  }
+  if (has('policyUrl')) {
+    await (await section(page, 'Privacy policy URL')).locator('input[type="text"]').fill(values.policyUrl);
+  }
   await saveDraft(page);
 }
 
