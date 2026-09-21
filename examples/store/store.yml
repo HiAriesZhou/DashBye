@@ -1,0 +1,6 @@
+schema: cws-release-kit/v1
+language: English – en (default)
+description: listing.txt
+assets:
+  localizedScreenshots: []
+  globalScreenshots: []

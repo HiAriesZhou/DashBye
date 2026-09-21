@@ -1,0 +1,37 @@
+{
+  "name": "cws-release-kit",
+  "version": "0.1.0",
+  "description": "Draft-only Chrome Web Store listing synchronization with explicit safety guards.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "cws-release-kit": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test dist/tests/*.test.js && node scripts/check-release-boundary.mjs",
+    "start": "node dist/src/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "playwright-core": "^1.62.1",
+    "sharp": "^0.35.4",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "typescript": "^5.9.2"
+  },
+  "license": "MIT"
+}

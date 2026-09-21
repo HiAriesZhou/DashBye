@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.local/
+.cws-release-kit/
+.env*
+!.env.example
+*.log
+*.zip
+*.crx
+.DS_Store
+coverage/
+reports/
+test-results/
+playwright-report/
