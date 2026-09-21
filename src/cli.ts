@@ -41,7 +41,7 @@ function required(args: Args, key: string): string {
 }
 
 function help() {
-  console.log(`Dashbye
+  console.log(`DashBye
 Less dashboard. More shipping.
 少填表，多发布。
 
@@ -62,7 +62,7 @@ Commands
   --version     Show the installed version
 
 First run
-  Run "dashbye init". In an interactive terminal Dashbye asks, in order, for:
+  Run "dashbye init". In an interactive terminal DashBye asks, in order, for:
     1. project path
     2. extension ZIP, build directory, or manifest path
     3. release resources path (default: ./store)
@@ -111,7 +111,7 @@ Examples
 
 Browser and release boundary
   Start official Chrome with a dedicated profile and loopback remote debugging, then
-  sign in manually. Dashbye never automates login or stores cookies. It may update a
+  sign in manually. DashBye never automates login or stores cookies. It may update a
   reviewed draft plan, but it never submits for review or publishes an item.
 `);
 }

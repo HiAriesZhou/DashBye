@@ -1,10 +1,10 @@
-# Dashbye versioned release workspace design
+# DashBye versioned release workspace design
 
 ## Goal
 
-Dashbye manages the complete desired Chrome Web Store draft state outside its own
+DashBye manages the complete desired Chrome Web Store draft state outside its own
 repository. A user points the CLI at a project, a built extension artifact, and a
-release resource directory. Dashbye compares the built manifest, versioned local
+release resource directory. DashBye compares the built manifest, versioned local
 metadata, the previous normalized release record, and the current Dashboard draft.
 
 The tool remains product-neutral. It does not recognize repository names or fixed
@@ -56,7 +56,7 @@ images, homepage, support and official URLs, and mature-content status.
 Privacy state covers single purpose, permission and host-scope justifications,
 remote-code declaration, collected data categories, data-use certifications, and
 privacy-policy URL. Manifest facts can identify missing or stale justifications and
-scope changes, but Dashbye never invents data collection claims or legal
+scope changes, but DashBye never invents data collection claims or legal
 certifications.
 
 ## Comparison and plans
@@ -73,7 +73,7 @@ change before execution invalidates it.
 
 ## Browser writes
 
-Dashbye connects only to an already running, manually authenticated Chrome through
+DashBye connects only to an already running, manually authenticated Chrome through
 a loopback CDP endpoint. It never automates Google login. Sync may reconcile draft
 listing and privacy fields, including image removal and replacement, only from an
 approved plan. Privacy writes and destructive asset operations require explicit
@@ -81,7 +81,7 @@ approval in both interactive and agent modes.
 
 The final listing and privacy operation remains **Save draft**. Package upload is
 kept within the item draft. Review submission and publication are
-outside the tool. After saving, Dashbye reloads and reads every supported field and
+outside the tool. After saving, DashBye reloads and reads every supported field and
 asset order. A partial failure reports completed and incomplete operations.
 
 ## Testing

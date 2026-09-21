@@ -1,6 +1,6 @@
 # Project and release resources
 
-Dashbye keeps reusable tool code separate from product data. A project has a small
+DashBye keeps reusable tool code separate from product data. A project has a small
 entry configuration and a versioned resource directory.
 
 ```text
@@ -75,7 +75,7 @@ privacy:
 
 The built manifest is authoritative for permissions and host access. Every active
 or optional permission needs a matching justification; removed permissions must not
-leave stale entries. Host access requires a host justification. Dashbye reports
+leave stale entries. Host access requires a host justification. DashBye reports
 inconsistencies but never invents collection claims or legal certifications.
 
 Image requirements:

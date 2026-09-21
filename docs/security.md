@@ -7,13 +7,13 @@
 - Chrome is accepted only through an explicit loopback HTTP endpoint with a port.
 - Exactly one open edit tab must match the configured 32-character item ID.
 - The plan hash binds the target, artifact, resources, remote state, and operations.
-  Dashbye rereads remote state immediately before applying it.
+  DashBye rereads remote state immediately before applying it.
 
 ## Authentication
 
 Google authentication is manual. Keep the dedicated Chrome user data directory
 outside the repository and cloud-synchronized folders. Do not copy a daily profile.
-Dashbye does not read profile databases, export cookies, automate login, or bypass
+DashBye does not read profile databases, export cookies, automate login, or bypass
 security challenges.
 
 ## Data minimization

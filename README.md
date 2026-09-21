@@ -1,25 +1,26 @@
-# Dashbye
+# DashBye
 
 *Less dashboard. More shipping.*
 
 少填表，多发布。
 
-Dashbye versions and reconciles a Chrome Web Store package, listing copy,
+DashBye versions and reconciles a Chrome Web Store package, listing copy,
 screenshots, promotional assets, and privacy declarations from files owned by the
 extension project. It connects to an already authenticated, dedicated Chrome
 profile, saves only a draft, and reads the result back.
 
-Dashbye is product-neutral. Each extension supplies its own project, artifact,
+DashBye is product-neutral. Each extension supplies its own project, artifact,
 resource paths, target item, and language through `dashbye.config.yml`.
 
 ## Status
 
 This is an early technical release. The real Dashboard path has been verified for
-read-only inspection, complete comparison, package and screenshot upload, draft
-save, and read-back. Privacy reconciliation remains guarded by an exact plan hash
-and should be verified on a reviewed draft before broader use.
+read-only inspection, complete comparison, package upload, icon and promotional
+artwork replacement, screenshot replacement, privacy-copy reconciliation, draft
+save, and read-back. Every write remains guarded by an exact plan hash and owner
+approval.
 
-Dashbye does not automate Google login, submit an item for review, or publish it.
+DashBye does not automate Google login, submit an item for review, or publish it.
 It does not assume headless authentication works. The supported browser path is
 official Chrome with a separate user data directory and loopback CDP endpoint.
 
@@ -76,13 +77,13 @@ folders. On macOS:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --user-data-dir="$HOME/Library/Application Support/Dashbye/chrome-profile" \
+  --user-data-dir="$HOME/Library/Application Support/DashBye/chrome-profile" \
   --remote-debugging-address=127.0.0.1 \
   --remote-debugging-port=9333 \
   https://chromewebstore.google.com/devconsole
 ```
 
-Log in manually and open exactly one edit tab for the intended item. Dashbye never
+Log in manually and open exactly one edit tab for the intended item. DashBye never
 opens a login window, bypasses verification, reads Chrome profile databases, or
 copies cookies into configuration, logs, or Git.
 

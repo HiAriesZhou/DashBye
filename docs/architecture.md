@@ -1,6 +1,6 @@
 # Architecture
 
-Dashbye separates local intent, remote observation, and approved writes.
+DashBye separates local intent, remote observation, and approved writes.
 
 1. `workspace.ts` discovers `dashbye.config.yml`, resolves project-controlled paths,
    loads `store/release.yml`, validates image constraints, and checks privacy

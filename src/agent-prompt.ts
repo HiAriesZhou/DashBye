@@ -17,7 +17,7 @@ export function renderAgentPrompt(options: AgentPromptOptions = {}): string {
   const language = value(options.language, '<read the Dashboard default language>');
   const endpoint = value(options.endpoint, 'http://127.0.0.1:9333');
 
-  return `Prepare this extension repository to use Dashbye. Work inside the extension repository; do not put product files in the Dashbye repository.
+  return `Prepare this extension repository to use DashBye. Work inside the extension repository; do not put product files in the DashBye repository.
 
 Known inputs
 - Project: ${project}
@@ -29,7 +29,7 @@ Known inputs
 
 Execution requirements
 1. Read the repository's AGENTS.md and applicable maintenance documentation. Inspect git status first and preserve unrelated or uncommitted work.
-2. Run "dashbye -h" and follow the current dashbye/config/v1 and dashbye/release/v1 contracts. Treat Dashbye as the schema and synchronization tool; the extension repository owns all release resources.
+2. Run "dashbye -h" and follow the current dashbye/config/v1 and dashbye/release/v1 contracts. Treat DashBye as the schema and synchronization tool; the extension repository owns all release resources.
 3. Audit the actual build scripts, generated artifact, manifest, existing store copy, screenshots, promotional images, privacy text, and every reference to files you may move. Do not infer shipped behavior from plans or mockups.
 4. If needed, create dashbye.config.yml in the extension repository. Point it to the project, artifact, a repository-owned release resource root, exact item ID, Dashboard language, and loopback endpoint. Do not add browser profiles, cookies, credentials, or tokens.
 5. Organize the repository-owned release root with release.yml, listing/<locale>/description.txt, assets/icon, assets/screenshots, assets/promo, and releases/<version>.lock.json. Existing source artwork, generators, fixtures, and unrelated marketing assets may remain elsewhere; only files referenced by release.yml belong to the desired store state.
