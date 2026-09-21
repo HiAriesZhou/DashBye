@@ -15,9 +15,9 @@ resource paths, target item, and language through `dashbye.config.yml`.
 ## Status
 
 This is an early technical release. The real Dashboard path has been verified for
-read-only inspection, complete comparison, screenshot upload, draft save, and
-read-back. Package upload and complete privacy reconciliation remain guarded by an
-exact plan hash and should be verified on a reviewed draft before broader use.
+read-only inspection, complete comparison, package and screenshot upload, draft
+save, and read-back. Privacy reconciliation remains guarded by an exact plan hash
+and should be verified on a reviewed draft before broader use.
 
 Dashbye does not automate Google login, submit an item for review, or publish it.
 It does not assume headless authentication works. The supported browser path is
@@ -89,7 +89,7 @@ draft, reads all supported fields again, and writes a version lock only after th
 match.
 
 See [resource schema](docs/store-schema.md), [architecture](docs/architecture.md),
-and [security model](docs/security.md).
+[security model](docs/security.md), and [technical validation](docs/validation.md).
 
 ## Release boundary
 

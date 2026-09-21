@@ -294,16 +294,27 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   if (!plan.operations.some(operation => operation.area === 'package')) return;
   if (workspace.artifact.kind !== 'zip') throw new Error('package upload requires a ZIP artifact');
   await openPage(page, 'Package');
-  const chooserPromise = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Upload new package', exact: true }).click();
-  const chooser = await chooserPromise;
-  await chooser.setFiles(workspace.artifact.path);
-  for (let attempt = 0; attempt < 240; attempt += 1) {
-    const body = await page.locator('body').innerText();
-    if (body.includes(workspace.artifact.manifest.version)) return;
+  let input = page.locator('input[type="file"][accept*=".zip"]').first();
+  if (!await input.isVisible()) {
+    await page.getByRole('button', { name: 'Upload new package', exact: true }).click();
+    input = page.locator('input[type="file"][accept*=".zip"]').first();
+    await input.waitFor({ state: 'visible', timeout: 30_000 });
+  }
+  await input.setInputFiles(workspace.artifact.path);
+  for (let attempt = 0; attempt < 240 && await input.isVisible(); attempt += 1) {
+    const dialogs = await page.locator('[role="dialog"]:visible').allInnerTexts();
+    const message = dialogs.join(' ').replace(/\s+/g, ' ').trim();
+    if (/problem uploading your file/i.test(message)) throw new Error('Dashboard rejected the package upload');
+    if (/permission/i.test(message) && await page.getByRole('button', { name: 'Proceed', exact: true }).isVisible()) {
+      throw new Error('Dashboard requires a separate permission-change confirmation');
+    }
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  throw new Error('package upload did not reach the expected version');
+  if (await input.isVisible()) throw new Error('package upload did not finish');
+  const uploadedVersion = await readPackageVersion(page);
+  if (uploadedVersion !== workspace.artifact.manifest.version) {
+    throw new Error('package upload did not reach the expected version');
+  }
 }
 
 export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
