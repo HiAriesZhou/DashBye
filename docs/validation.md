@@ -19,6 +19,10 @@ official Chrome profile and loopback CDP connection.
 - Waiting for a native `filechooser` event timed out because **Upload new package**
   opens an in-page upload dialog. The adapter now targets that dialog's ZIP/CRX file
   input and verifies the resulting draft version.
+- The original 8×8 grayscale average hash treated visually similar old and new store
+  artwork as equal. Asset comparison now uses a 16×16 RGB signature with a measured
+  thumbnail-encoding tolerance. Regression tests distinguish resizing from material
+  artwork changes, and public inspect output exposes only hashes of these signatures.
 
 ## Not yet validated
 

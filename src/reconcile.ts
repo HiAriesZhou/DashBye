@@ -199,5 +199,17 @@ export function createReconciliationPlan(workspace: LoadedWorkspace, desired: De
 }
 
 export function publicDashboardState(state: DashboardState) {
-  return { ...state, itemId: undefined, itemIdMatched: true };
+  const publicFingerprint = (value: string | null) => value === null ? null : sha256(value);
+  return {
+    ...state,
+    itemId: undefined,
+    listing: {
+      ...state.listing,
+      iconVisualHash: publicFingerprint(state.listing.iconVisualHash),
+      screenshotVisualHashes: state.listing.screenshotVisualHashes.map(value => publicFingerprint(value)!),
+      smallPromoVisualHash: publicFingerprint(state.listing.smallPromoVisualHash),
+      marqueePromoVisualHash: publicFingerprint(state.listing.marqueePromoVisualHash),
+    },
+    itemIdMatched: true,
+  };
 }
