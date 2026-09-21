@@ -1,42 +1,121 @@
 # DashBye
 
 *Less dashboard. More shipping.*
-
 少填表，多发布。
 
-DashBye versions and reconciles a Chrome Web Store package, listing copy,
-screenshots, promotional assets, and privacy declarations from files owned by the
-extension project. It connects to an already authenticated, dedicated Chrome
-profile, saves only a draft, and reads the result back.
+DashBye keeps a Chrome extension's Web Store package, descriptions, screenshots,
+promotional artwork, and privacy declarations in versioned project files. It
+compares those files with the current Chrome Web Store Dashboard draft, shows the
+exact differences, applies an approved plan, saves the draft, and reads it back.
 
-DashBye is product-neutral. Each extension supplies its own project, artifact,
-resource paths, target item, and language through `dashbye.config.yml`.
+## The problem it solves
 
-## Status
+Chrome Web Store releases mix code with state that normally lives only in a web
+form. That creates several recurring problems:
 
-This is an early technical release. The real Dashboard path has been verified for
-read-only inspection, complete comparison, package upload, icon and promotional
-artwork replacement, screenshot replacement, privacy-copy reconciliation, draft
-save, and read-back. Every write remains guarded by an exact plan hash and owner
-approval.
+- new screenshots exist in the repository while the Dashboard still shows old ones;
+- manifest permissions change but permission and privacy explanations become stale;
+- descriptions, URLs, data-use declarations, and image order have no reviewable
+  history;
+- repeated manual editing makes omissions and accidental changes hard to detect;
+- an agent can prepare a release, but it lacks a safe contract for what it may write.
 
-DashBye does not automate Google login, submit an item for review, or publish it.
-It does not assume headless authentication works. The supported browser path is
-official Chrome with a separate user data directory and loopback CDP endpoint.
+DashBye turns the complete draft into a desired state owned by the extension
+repository. `validate` checks the package and declarations, `plan` lists every
+change, and `sync-draft` accepts only that exact approved plan. Automation stops at
+**Save draft**. DashBye never submits for review or publishes an extension.
 
-## Install and help
+## Install with an agent — recommended
 
-```bash
-npm install
-npm run build
-node dist/src/cli.js -h
+Use this path with Codex, Claude Code, or another coding agent that can access your
+extension repository and run terminal commands. Copy the following prompt into the
+agent session for that extension:
+
+```text
+Install and configure DashBye for the Chrome extension repository in this session.
+
+DashBye source: https://github.com/HiAriesZhou/DashBye
+
+Work inside the extension repository for product files. Keep the DashBye source,
+browser profile, downloaded packages, logs, screenshots, traces, credentials, and
+cookies outside the extension repository.
+
+1. Read the extension repository's AGENTS.md and relevant documentation. Inspect
+   git status and preserve unrelated work.
+2. Verify Node.js 22 or later. Install DashBye from the GitHub source without using
+   sudo. Prefer:
+     npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+   If global installation is unavailable, clone DashBye outside the extension
+   repository, run npm ci and npm run build there, and use its dist/src/cli.js.
+3. Run dashbye -h. Then start the non-writing setup guide with:
+     dashbye init --agent --json --project <absolute extension repository path>
+4. When the guide returns status "needs_input", ask me that one question. Use the
+   host's native choice/menu UI when available; otherwise ask one concise chat
+   question. Preserve each answer as the matching init flag and call the guide
+   again. Inspect the repository and offer evidence-based artifact choices instead
+   of asking me to locate files the agent can find itself.
+5. When it returns "existing_config", offer its use-existing and reconfigure
+   actions, recommending the existing configuration. Reconfigure only if I choose
+   it explicitly. When it returns "ready", show me its configuration preview. Then
+   run the returned writeCommand to create dashbye.config.yml and missing store
+   templates. Do not overwrite existing configuration unless I explicitly choose
+   to reconfigure it.
+6. Audit the actual built manifest and existing store resources. Organize the
+   complete desired state under the configured project-owned resource directory;
+   do not move product assets into the DashBye repository. Never invent product
+   claims, data collection, legal certifications, or permission purposes.
+7. Run dashbye validate. Explain remaining issues and fix repository-owned inputs
+   where evidence is sufficient.
+8. Do not open or automate Google login. When Dashboard access is needed, stop and
+   ask me to start a dedicated Chrome profile and sign in manually.
+9. Run inspect and plan before any Dashboard write. Report the exact item and every
+   add, update, replacement, removal, or reorder. Wait for my explicit confirmation
+   of that concrete plan before sync-draft.
+10. Never submit for review or publish. After an approved draft sync, require a
+    successful read-back with zero remaining operations and report what succeeded,
+    failed, or remains unverified.
+
+Carry out the work; do not return only a plan or generic instructions.
 ```
 
-Node.js 22 or later is required. `dashbye -h` is the complete manual for commands,
-initialization, options, defaults, and agent use; subcommands do not have separate
-help pages.
+An agent can display native menus only when its host exposes a structured question
+tool. `dashbye init --agent --json` supplies the question schema, defaults, choices,
+and validation, but cannot force a generic chat interface to render buttons. When
+native menus are unavailable, the same flow works as one question per message.
 
-Run `dashbye init` once in an interactive terminal, or initialize without prompts:
+Plain ChatGPT without repository and terminal access cannot install DashBye or edit
+local files. It can explain the schema or draft configuration, but a coding agent or
+terminal session must perform installation and validation.
+
+## Install in a terminal
+
+Node.js 22 or later is required.
+
+```bash
+git clone https://github.com/HiAriesZhou/DashBye.git
+cd DashBye
+npm ci
+npm run build
+npm link
+dashbye -h
+```
+
+Do not use `sudo`. If `npm link` is unavailable, run the CLI as
+`node /path/to/DashBye/dist/src/cli.js`.
+
+Move to the extension repository and start the interactive setup:
+
+```bash
+cd /path/to/extension
+dashbye init
+```
+
+The terminal wizard asks for the project, package or manifest, release-resource
+directory, Chrome Web Store item ID, Dashboard language, and dedicated Chrome
+endpoint. It shows the resulting configuration before writing it. Existing copy
+and assets are preserved unless `--overwrite` is explicitly supplied.
+
+For automation, pass all values directly:
 
 ```bash
 dashbye init \
@@ -49,31 +128,37 @@ dashbye init \
   --non-interactive
 ```
 
-The generated configuration is discovered from the current directory upward.
-Command-line overrides take precedence over it.
+## What lives in the extension repository
 
-To hand setup to an agent working in the extension repository, generate a
-product-neutral, copy-paste prompt with known paths filled in:
+DashBye is product-neutral. Each extension owns its configuration and complete
+desired Chrome Web Store state:
 
-```bash
-dashbye agent-prompt \
-  --project /path/to/extension \
-  --artifact dist/release.zip \
-  --resources store \
-  --item-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-  --language "English – en (default)" \
-  --output dashbye-agent-prompt.txt
+```text
+extension-project/
+  dashbye.config.yml
+  store/
+    release.yml
+    listing/
+      en/description.txt
+    assets/
+      icon/
+      screenshots/
+      promo/
+    releases/
+      <version>.lock.json
 ```
 
-The prompt tells the target agent to keep product resources in the extension
-repository, audit its manifest and existing references, implement the complete
-release schema, validate and plan, and stop for confirmation before any Dashboard
-write.
+`dashbye.config.yml` points to the project, built artifact, resource directory,
+exact item ID, Dashboard language, and loopback Chrome endpoint. `release.yml`
+defines listing fields and privacy declarations. A release lock is written only
+after a successful save and zero-difference read-back.
+
+See the complete [resource schema](docs/store-schema.md).
 
 ## Browser setup
 
-Start Chrome yourself with a profile outside the repository and outside synced
-folders. On macOS:
+Start official Chrome yourself with a dedicated profile outside repositories and
+cloud-synchronized folders. On macOS:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -83,11 +168,11 @@ folders. On macOS:
   https://chromewebstore.google.com/devconsole
 ```
 
-Log in manually and open exactly one edit tab for the intended item. DashBye never
+Sign in manually and open exactly one edit tab for the intended item. DashBye never
 opens a login window, bypasses verification, reads Chrome profile databases, or
 copies cookies into configuration, logs, or Git.
 
-## Release flow
+## Draft release flow
 
 ```bash
 dashbye validate
@@ -100,17 +185,23 @@ dashbye sync-draft \
   --non-interactive
 ```
 
-`validate` compares manifest permissions with privacy declarations. `plan` produces
-complete desired-state operations, including replacements and removals. The plan is
-bound to the item, artifact, release resources, and current Dashboard state. Any
-change invalidates it. `sync-draft` requires the exact approval hash, saves the
-draft, reads all supported fields again, and writes a version lock only after they
-match.
+`validate` compares the actual manifest with listing and privacy declarations.
+`plan` reports additions, updates, replacements, removals, and reordering. The plan
+hash binds the target item, artifact, resources, exact operations, and current
+Dashboard state; any intervening change makes it stale. `sync-draft` saves only the
+approved draft and then verifies the complete state again.
 
-See [resource schema](docs/store-schema.md), [architecture](docs/architecture.md),
-[security model](docs/security.md), and [technical validation](docs/validation.md).
+## Current status and boundaries
 
-## Release boundary
+DashBye is an early technical release. Real Dashboard validation covers read-only
+inspection, package upload, icon and promotional artwork replacement, screenshot
+replacement, selected privacy-copy updates, draft save, and read-back.
 
-The final automated boundary is **Save draft**. Review submission and publication
-remain deliberate actions in the Chrome Web Store Developer Dashboard.
+Google login remains manual. Headless session reuse, multiple Dashboard languages,
+collected-data changes, certification changes, and permission-change confirmations
+have not yet been fully validated. Review submission and publication are
+intentionally outside the codebase.
+
+Read the [architecture](docs/architecture.md), [security model](docs/security.md),
+and [technical validation record](docs/validation.md) for implementation details
+and tested limits.

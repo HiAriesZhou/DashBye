@@ -16,6 +16,13 @@ outside the repository and cloud-synchronized folders. Do not copy a daily profi
 DashBye does not read profile databases, export cookies, automate login, or bypass
 security challenges.
 
+## Agent initialization
+
+`init --agent --json` is discovery-only. It returns the next missing input or a
+configuration preview and write command; it does not create files, start Chrome, or
+access the Dashboard. The host agent decides whether it can render native choices
+and must fall back to one plain-language question at a time when it cannot.
+
 ## Data minimization
 
 Structured output includes versions, counts, booleans, locale labels, operation

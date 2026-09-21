@@ -2,20 +2,22 @@
 
 DashBye separates local intent, remote observation, and approved writes.
 
-1. `workspace.ts` discovers `dashbye.config.yml`, resolves project-controlled paths,
+1. `init.ts` supports a confirmed terminal wizard and a non-writing Agent JSON
+   protocol that returns one missing input or a complete configuration preview.
+2. `workspace.ts` discovers `dashbye.config.yml`, resolves project-controlled paths,
    loads `store/release.yml`, validates image constraints, and checks privacy
    declarations against the actual extension manifest.
-2. `artifact.ts` reads a ZIP, build directory, or manifest and normalizes version,
+3. `artifact.ts` reads a ZIP, build directory, or manifest and normalizes version,
    permissions, optional permissions, host scopes, and content-script matches.
-3. `release-lock.ts` records verified artifact and resource fingerprints after a
+4. `release-lock.ts` records verified artifact and resource fingerprints after a
    successful save and read-back. The previous lock makes permission drift visible.
-4. `dashboard-v2.ts` connects only to a loopback CDP endpoint and one exact item edit
+5. `dashboard-v2.ts` connects only to a loopback CDP endpoint and one exact item edit
    tab. It reads package, listing, and privacy state into hashes and booleans that do
    not expose field contents.
-5. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
+6. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
    remove, and reorder. The approval hash binds the item, artifact, resources, remote
    snapshot, and exact operations.
-6. `cli.ts` revalidates the approved plan against a fresh remote read immediately
+7. `cli.ts` revalidates the approved plan against a fresh remote read immediately
    before writing. After **Save draft**, it rereads all supported state and writes a
    lock only when no operation remains.
 

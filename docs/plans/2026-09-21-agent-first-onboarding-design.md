@@ -21,8 +21,9 @@ browser boundary, current validation status, and deeper documentation.
 `dashbye init --agent --json` is a non-writing discovery interface. It returns one
 JSON object describing either the next missing input or a ready configuration
 preview. Each question includes a stable field name, prompt, default when known,
-and validation or choice hints. The agent supplies collected values as ordinary
-init flags and calls the command again.
+and validation or choice hints. An existing configuration produces a separate
+use-existing or explicit-reconfigure decision. The agent supplies collected values
+as ordinary init flags and calls the command again.
 
 The host agent should render each question with its native structured-input UI
 when one is available. Otherwise it asks one plain-language question at a time.

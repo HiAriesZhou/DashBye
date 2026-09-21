@@ -5,7 +5,7 @@ import { chromium } from 'playwright-core';
 import { renderAgentPrompt } from './agent-prompt.js';
 import { applyReconciliationPlan, connectDashboard, readDashboardState } from './dashboard-v2.js';
 import { sha256 } from './hash.js';
-import { initialize } from './init.js';
+import { guideInitialization, initialize } from './init.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
 import { compareManifest, loadLatestLock, writeReleaseLock } from './release-lock.js';
 import { discoverConfig, loadWorkspace, publicWorkspaceSummary, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
@@ -97,11 +97,13 @@ Options
   --plan <file>            Approved plan to execute with sync-draft
   --approve-plan <hash>    Exact plan approval hash for non-interactive execution
   --non-interactive        Disable prompts; missing input is an error
+  --agent                  Return the next init question or a ready preview as JSON
   --overwrite              Allow init to replace the project configuration
   --json                   Emit structured output
 
 Examples
   dashbye init
+  dashbye init --agent --json
   dashbye agent-prompt --project /path/to/extension --artifact dist/release.zip
   dashbye validate
   dashbye doctor --json
@@ -245,7 +247,7 @@ async function main() {
       itemId: optional(args, 'item-id'), language: optional(args, 'language'), endpoint: optional(args, 'endpoint'),
       config: optional(args, 'config'),
     };
-    const result = await initialize({
+    const initOptions = {
       ...(values.project ? { project: values.project } : {}),
       ...(values.artifact ? { artifact: values.artifact } : {}),
       ...(values.resources ? { resources: values.resources } : {}),
@@ -253,9 +255,14 @@ async function main() {
       ...(values.language ? { language: values.language } : {}),
       ...(values.endpoint ? { endpoint: values.endpoint } : {}),
       ...(values.config ? { config: values.config } : {}),
-      nonInteractive: args['non-interactive'] === true,
       overwrite: args.overwrite === true,
-    });
+    };
+    if (args.agent === true) {
+      if (args.json !== true) throw new Error('init --agent requires --json');
+      await outputJson(await guideInitialization(initOptions));
+      return;
+    }
+    const result = await initialize({ ...initOptions, nonInteractive: args['non-interactive'] === true });
     await outputJson(result);
     return;
   }

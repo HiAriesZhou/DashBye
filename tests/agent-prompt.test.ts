@@ -13,6 +13,8 @@ test('renders a product-neutral repository handoff prompt', () => {
   assert.match(prompt, /extension repository owns all release resources/);
   assert.match(prompt, /dashbye\/release\/v1/);
   assert.match(prompt, /actual artifact manifest/);
+  assert.match(prompt, /dashbye init --agent --json/);
+  assert.match(prompt, /native menu UI/);
   assert.match(prompt, /Stop for explicit owner confirmation/);
   assert.match(prompt, /Never submit for review or publish/);
 });
