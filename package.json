@@ -2,7 +2,7 @@
   "name": "dashbye",
   "version": "0.2.0",
   "description": "Version and synchronize Chrome Web Store package, listing, and privacy drafts.",
-  "author": "AriesZhou <aries0331.dev@gmail.com>",
+  "author": "AriesZhou <urchinzhou@gmail.com>",
   "type": "module",
   "private": true,
   "bin": {
@@ -10,9 +10,17 @@
   },
   "files": [
     "dist/src",
+    "brand",
+    "src",
+    "scripts",
+    "tests",
+    "tsconfig.json",
     "docs",
     "examples",
     "README.md",
+    "README.zh-CN.md",
+    "LICENSING.md",
+    "TRADEMARK.md",
     "LICENSE"
   ],
   "scripts": {
@@ -35,5 +43,5 @@
     "@types/node": "^22.18.6",
     "typescript": "^5.9.2"
   },
-  "license": "MIT"
+  "license": "GPL-3.0-only"
 }

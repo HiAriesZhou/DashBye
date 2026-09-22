@@ -18,7 +18,7 @@ the Chrome Web Store Dashboard. Review submission and publication remain outside
 the automation boundary.
 
 Set package authorship and the repository-local Git identity to
-`AriesZhou <aries0331.dev@gmail.com>`.
+`AriesZhou <urchinzhou@gmail.com>`.
 
 ## History migration
 

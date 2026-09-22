@@ -1,5 +1,24 @@
 # Security model
 
+## Local execution and resource flow
+
+DashBye runs on the user's computer. Local artifact inspection, validation and
+fingerprinting do not require a Dashboard connection. Dashboard operations connect
+to the user's local Chrome through loopback CDP; Chrome communicates directly with
+Google's Chrome Web Store Dashboard. Approved package and resource changes are
+uploaded to the item draft through that browser.
+
+DashBye has no servers, backend, account system, telemetry, analytics or
+resource-hosting service. Configuration, plans and release locks are local
+files. The CLI does not push them to Git or submit drafts for review or publication.
+Google controls storage and processing on the Dashboard side.
+
+These statements describe DashBye's own behavior. Installation downloads software
+from GitHub and package registries. If a user supplies files or command output to
+an external AI agent, that agent's data handling is separate and is governed by
+its own permissions and policies. User-chosen backup or sharing of local files is
+also outside DashBye's control.
+
 ## Trust boundaries
 
 - Repository files are untrusted until schema, path, hash, image, and manifest
@@ -11,8 +30,11 @@
 
 ## Authentication
 
-Google authentication is manual. Keep the dedicated Chrome user data directory
-outside the repository and cloud-synchronized folders. Do not copy a daily profile.
+Google authentication is manual. A Chrome profile is a local directory containing
+browser settings and session state. Use a separate directory outside the project
+repository to prevent accidental Git commits of login files and keep the everyday
+Chrome session separate. This is local session isolation, not cloud setup.
+Do not copy a daily profile.
 DashBye does not read profile databases, export cookies, automate login, or bypass
 security challenges.
 
