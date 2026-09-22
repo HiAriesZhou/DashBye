@@ -7,11 +7,15 @@ First release artwork derived from the owner-provided waving gecko/dashboard con
 
 ## Assets
 
+- `dashbye-readme.png` (1254 × 1254): transparent README mascot, shown at 112px;
+  no lettering, with a pale edge for dark backgrounds. Original masters below are retained.
+
 - `dashbye-logo.png` (1536 × 1024): primary logo on a light background.
 - `dashbye-icon.png` (1254 × 1254): square app/avatar artwork; not a pixel-tuned small favicon.
 - `dashbye-launch.png` (1672 × 941): landscape release banner for README, launch posts, and presentations.
 
-These are generated raster PNG masters, not editable vectors or transparent cutouts.
+All assets are generated raster PNGs, not editable vectors. The README mascot has
+an alpha channel; the original logo, icon, and launch artwork have opaque backgrounds.
 Inspect each platform's crop and size requirements before upload. No platform upload
 or account avatar change is performed by adding these files.
 
