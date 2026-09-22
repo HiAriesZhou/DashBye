@@ -22,14 +22,12 @@ official Chrome profile and loopback CDP connection.
   artifact, resource root, item ID, language, and endpoint; a `ready` preview with
   an argument-array write command; and `existing_config` detection after writing.
 
-## Agent client behavior
+## Agent CLI behavior
 
 Tested in Codex Desktop on 2026-09-22. The CLI returned structured questions and
-choices correctly. The current Default task mode did not expose the client's native
-`request_user_input` control, so the agent had to use ordinary conversation or
-known context. This confirms that native menus are a host capability, not something
-the DashBye CLI can require. A client that exposes a compatible question control can
-render the same `choices`; other clients must preserve the fallback.
+choices correctly, and the agent completed initialization through ordinary chat
+and local command execution. DashBye treats this as a text-based CLI protocol and
+does not require a GUI-specific menu or input control.
 
 The environment did not have a global `dashbye` executable. Replacing the executable
 in the returned `writeCommand` with the local `node dist/src/cli.js` entry point
@@ -39,11 +37,8 @@ on the next run.
 ```mermaid
 flowchart TD
   A[Agent runs init --agent --json] --> B{Status}
-  B -->|needs_input| C{Client has a native question UI?}
-  C -->|Yes| D[Render prompt, defaults, and choices]
-  C -->|No| E[Ask one concise chat question]
-  D --> F[Repeat with accumulated flags]
-  E --> F
+  B -->|needs_input| C[Ask one concise chat question]
+  C --> F[Repeat with accumulated flags]
   F --> A
   B -->|ready| G[Show configuration preview]
   G --> H[Run the argument-array write command after approval]

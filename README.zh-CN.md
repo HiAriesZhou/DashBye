@@ -32,6 +32,38 @@ DashBye 是一个完全在你电脑上运行的 Chrome Web Store 草稿管理 CL
 
 需要 **Node.js 22+**、Git；访问 Dashboard 时需要官方 Chrome。
 
+### 在终端安装
+
+```bash
+npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+dashbye -h
+```
+
+然后进入扩展仓库，运行命令行初始化向导：
+
+```bash
+cd /path/to/extension
+dashbye init
+```
+
+命令行向导是默认的配置方式。它会依次收集必要信息、展示最终配置，并在写入
+项目文件前请求确认。
+
+<details>
+<summary>备选：从源码构建，不做全局安装</summary>
+
+```bash
+git clone https://github.com/HiAriesZhou/DashBye.git
+cd DashBye
+npm ci
+node dist/src/cli.js -h
+```
+
+`npm ci` 会通过 prepare 脚本构建 CLI。后续将命令中的 `dashbye` 替换为
+`node /绝对路径/DashBye/dist/src/cli.js`。
+
+</details>
+
 ### 交给 Agent
 
 在能访问文件和终端的编码 Agent 中打开扩展仓库，展开并复制这段提示词：
@@ -50,9 +82,9 @@ DashBye 是一个完全在你电脑上运行的 Chrome Web Store 草稿管理 CL
    node /绝对路径/DashBye/dist/src/cli.js 代替 dashbye。
 2. 阅读 dashbye -h 及源码中的 docs/store-schema.md，运行：
    dashbye init --agent --json --project <扩展仓库绝对路径>
-   已知信息直接传参。返回 needs_input 时，一次询问一个问题；宿主支持时使用
-   原生菜单，否则用普通对话。itemId 对应 --item-id，其余字段对应 --project、
-   --artifact、--resources、--language、--endpoint。带上累积参数继续调用。
+   已知信息直接传参。返回 needs_input 时，通过普通对话一次询问一个问题。
+   itemId 对应 --item-id，其余字段对应 --project、--artifact、--resources、
+   --language、--endpoint。带上累积参数继续调用。
 3. 返回 existing_config 时推荐复用，只有我选择后才重新配置。
    返回 ready 时展示预览，经我确认后，将 writeCommand 作为参数数组执行。
    使用本地 CLI 时替换其中的可执行入口。
@@ -68,30 +100,9 @@ DashBye 是一个完全在你电脑上运行的 Chrome Web Store 草稿管理 CL
 
 </details>
 
-原生菜单取决于 Agent 宿主；CLI 提供 JSON 问题，不直接创建聊天界面。
+Agent 使用的仍是同一个本地 CLI 和项目配置。`init --agent --json` 是为无法回答
+交互式终端提示的 Agent 提供的文本自动化接口，不依赖也不提供图形控件。
 没有本地文件和终端权限的聊天会话只能指导操作，无法代为安装。
-
-### 在终端安装
-
-```bash
-npm install --global git+https://github.com/HiAriesZhou/DashBye.git
-dashbye -h
-```
-
-<details>
-<summary>备选：从源码构建，不做全局安装</summary>
-
-```bash
-git clone https://github.com/HiAriesZhou/DashBye.git
-cd DashBye
-npm ci
-node dist/src/cli.js -h
-```
-
-`npm ci` 会通过 prepare 脚本构建 CLI。后续将命令中的 `dashbye` 替换为
-`node /绝对路径/DashBye/dist/src/cli.js`。
-
-</details>
 
 ## 2. 配置扩展项目
 

@@ -36,6 +36,38 @@ content is governed separately by that agent's permissions and data policies.
 
 Requires **Node.js 22+**, Git, and official Chrome for Dashboard access.
 
+### In a terminal
+
+```bash
+npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+dashbye -h
+```
+
+Then open the extension repository and run the command-line setup wizard:
+
+```bash
+cd /path/to/extension
+dashbye init
+```
+
+The terminal wizard is the default setup experience. It collects each required
+value, shows the resulting configuration, and asks before writing project files.
+
+<details>
+<summary>Alternative: build from source without a global installation</summary>
+
+```bash
+git clone https://github.com/HiAriesZhou/DashBye.git
+cd DashBye
+npm ci
+node dist/src/cli.js -h
+```
+
+`npm ci` builds the CLI through its prepare script. For subsequent commands,
+replace `dashbye` with `node /absolute/path/to/DashBye/dist/src/cli.js`.
+
+</details>
+
 ### With an agent
 
 Open your extension repository in a coding agent with file and terminal access.
@@ -55,10 +87,9 @@ Source: https://github.com/HiAriesZhou/DashBye
    node /absolute/path/to/DashBye/dist/src/cli.js in place of dashbye.
 2. Read dashbye -h and docs/store-schema.md from the source repository. Run:
    dashbye init --agent --json --project <absolute extension repository path>
-   Supply known values as flags. For needs_input, ask one question using the
-   host's native menu if available, otherwise ordinary chat. Map itemId to
-   --item-id; the other input fields use --project, --artifact, --resources,
-   --language and --endpoint. Repeat with accumulated flags.
+   Supply known values as flags. For needs_input, ask one concise chat question.
+   Map itemId to --item-id; the other input fields use --project, --artifact,
+   --resources, --language and --endpoint. Repeat with accumulated flags.
 3. For existing_config, recommend reuse; reconfigure only if I choose it.
    For ready, show the preview and execute writeCommand as an argument array
    after my confirmation. With the local CLI fallback, replace its executable.
@@ -76,31 +107,10 @@ Source: https://github.com/HiAriesZhou/DashBye
 
 </details>
 
-Native menus depend on the host agent; the CLI supplies JSON questions, not a chat
-UI. Without local file and terminal access, a chat session can guide setup but
-cannot perform it.
-
-### In a terminal
-
-```bash
-npm install --global git+https://github.com/HiAriesZhou/DashBye.git
-dashbye -h
-```
-
-<details>
-<summary>Alternative: build from source without a global installation</summary>
-
-```bash
-git clone https://github.com/HiAriesZhou/DashBye.git
-cd DashBye
-npm ci
-node dist/src/cli.js -h
-```
-
-`npm ci` builds the CLI through its prepare script. For subsequent commands,
-replace `dashbye` with `node /absolute/path/to/DashBye/dist/src/cli.js`.
-
-</details>
+Agents use the same local CLI and project files. `init --agent --json` is a
+text-based automation interface for agents that cannot answer an interactive
+terminal prompt; it does not require or provide graphical controls. Without local
+file and terminal access, a chat session can guide setup but cannot perform it.
 
 ## 2. Configure your extension
 

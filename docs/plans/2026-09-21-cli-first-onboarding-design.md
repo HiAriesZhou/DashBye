@@ -1,17 +1,18 @@
-# Agent-first onboarding design
+# CLI-first onboarding design
 
 ## Goal
 
-Explain DashBye from the user's problem outward, then offer two setup paths that
-share one configuration contract: an Agent path for repository-capable coding
-agents and an interactive terminal path for direct CLI users.
+Explain DashBye from the user's problem outward, then lead with the interactive
+terminal setup. Repository-capable coding agents use the same CLI and configuration
+contract through an optional text-based automation interface.
 
 ## README journey
 
 The README leads with what DashBye is, the repetitive and error-prone Dashboard
 work it replaces, and the draft-only result. Installation follows immediately.
-The recommended path is a copy-paste prompt that points an agent at the canonical
-GitHub repository. The terminal path installs from source and runs `dashbye init`.
+The default path installs the CLI and runs `dashbye init`. A copy-paste prompt is
+available when the user wants an agent to install the CLI, audit repository-owned
+resources, or run the release workflow.
 
 The remaining sections explain the versioned project files, release workflow,
 browser boundary, current validation status, and deeper documentation.
@@ -25,14 +26,10 @@ and validation or choice hints. An existing configuration produces a separate
 use-existing or explicit-reconfigure decision. The agent supplies collected values
 as ordinary init flags and calls the command again.
 
-The host agent should render each question with its native structured-input UI
-when one is available. Otherwise it asks one plain-language question at a time.
-Once the response is ready, the agent runs the existing non-interactive init with
-the complete arguments to write project-owned configuration and templates.
-
-This protocol cannot force a generic ChatGPT interface to display buttons. Native
-menus depend on tools exposed by the host. A future MCP or plugin may wrap the same
-protocol without changing the project configuration format.
+The agent asks one plain-language question at a time through ordinary conversation.
+Once the response is ready, it runs the existing non-interactive init with the
+complete arguments to write project-owned configuration and templates. The
+protocol is intentionally text based and does not depend on graphical controls.
 
 ## Terminal setup
 
