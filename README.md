@@ -39,7 +39,7 @@ Requires **Node.js 22+**, Git, and official Chrome for Dashboard access.
 ### In a terminal
 
 ```bash
-npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+npm install --global dashbye
 dashbye -h
 ```
 
@@ -82,7 +82,7 @@ Source: https://github.com/HiAriesZhou/DashBye
 
 1. Read AGENTS.md, inspect git status, and preserve unrelated changes. Check
    Node.js 22+ and Git. Install without sudo:
-   npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+   npm install --global dashbye
    If unavailable, clone outside this extension repository, run npm ci, and use
    node /absolute/path/to/DashBye/dist/src/cli.js in place of dashbye.
 2. Read dashbye -h and docs/store-schema.md from the source repository. Run:

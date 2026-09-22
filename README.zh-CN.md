@@ -35,7 +35,7 @@ DashBye 是一个完全在你电脑上运行的 Chrome Web Store 草稿管理 CL
 ### 在终端安装
 
 ```bash
-npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+npm install --global dashbye
 dashbye -h
 ```
 
@@ -77,7 +77,7 @@ node dist/src/cli.js -h
 
 1. 阅读 AGENTS.md，检查 git status，保留无关改动。检查 Node.js 22+ 和 Git，
    不使用 sudo，安装：
-   npm install --global git+https://github.com/HiAriesZhou/DashBye.git
+   npm install --global dashbye
    若无法全局安装，在扩展仓库之外 clone，运行 npm ci；之后用
    node /绝对路径/DashBye/dist/src/cli.js 代替 dashbye。
 2. 阅读 dashbye -h 及源码中的 docs/store-schema.md，运行：
