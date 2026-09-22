@@ -16,6 +16,40 @@ official Chrome profile and loopback CDP connection.
 - Single-purpose, permission-justification, and host-permission privacy-copy writes
   from an approved plan, followed by a zero-operation read-back.
 - Existing authenticated session use without controlling the user's daily Chrome.
+- Automatic navigation from an authenticated Dashboard tab to the exact configured
+  item, without requiring the user to find or open the item editor first.
+- Agent initialization as a multi-turn JSON protocol: `needs_input` questions for
+  artifact, resource root, item ID, language, and endpoint; a `ready` preview with
+  an argument-array write command; and `existing_config` detection after writing.
+
+## Agent client behavior
+
+Tested in Codex Desktop on 2026-09-22. The CLI returned structured questions and
+choices correctly. The current Default task mode did not expose the client's native
+`request_user_input` control, so the agent had to use ordinary conversation or
+known context. This confirms that native menus are a host capability, not something
+the DashBye CLI can require. A client that exposes a compatible question control can
+render the same `choices`; other clients must preserve the fallback.
+
+The environment did not have a global `dashbye` executable. Replacing the executable
+in the returned `writeCommand` with the local `node dist/src/cli.js` entry point
+succeeded, created the ignored test configuration, and produced `existing_config`
+on the next run.
+
+```mermaid
+flowchart TD
+  A[Agent runs init --agent --json] --> B{Status}
+  B -->|needs_input| C{Client has a native question UI?}
+  C -->|Yes| D[Render prompt, defaults, and choices]
+  C -->|No| E[Ask one concise chat question]
+  D --> F[Repeat with accumulated flags]
+  E --> F
+  F --> A
+  B -->|ready| G[Show configuration preview]
+  G --> H[Run the argument-array write command after approval]
+  B -->|existing_config| I[Recommend existing configuration]
+  I --> J[Validate or explicitly reconfigure]
+```
 
 ## Failed and fixed
 
@@ -29,6 +63,12 @@ official Chrome profile and loopback CDP connection.
 - Dashboard image removal opens a confirmation dialog. The adapter now confirms
   each planned removal, waits for the replacement preview to finish loading, and
   requires the Save draft state to remain settled before read-back.
+- The Dashboard's current English selector uses the full
+  `English – en (default)` label, while the adapter expected `English`. Selection now
+  prefers the configured full label and keeps the short label only as a fallback.
+- The Dashboard may retain duplicate hidden component trees. Reads and writes now
+  target visible controls, and screenshot previews are de-duplicated by their
+  rendered position rather than by image content.
 
 ## Not yet validated
 
