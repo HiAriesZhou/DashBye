@@ -15,10 +15,16 @@ and usage guides. The terminal workflow remains available as a secondary path.
 
 The agent installs or locates DashBye, initializes the extension repository,
 audits real build and store resources, asks for missing product facts, validates,
-and prepares a concrete Dashboard plan. The owner supplies facts that cannot be
-derived, starts and signs into the dedicated Chrome profile, and explicitly
-approves the plan before a Dashboard write. DashBye continues to stop before
-review submission or publication.
+launches a dedicated Chrome profile outside repositories, and prepares a concrete
+Dashboard plan. The owner supplies facts that cannot be derived, signs in to
+Google in the opened window, and explicitly approves the plan before a Dashboard
+write. DashBye continues to stop before review submission or publication.
+
+The agent requests any operating-system or GUI permission needed to launch Chrome
+instead of asking the owner to copy a terminal command. If the execution
+environment cannot launch GUI applications, it explains that limitation and
+provides the exact launch command as a fallback. It never launches or controls the
+owner's everyday Chrome profile and never automates authentication.
 
 ## Content changes
 
