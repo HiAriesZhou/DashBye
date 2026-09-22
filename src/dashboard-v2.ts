@@ -6,6 +6,8 @@ import type { DashboardState, DesiredState, ReconciliationPlan } from './reconci
 import type { LoadedWorkspace } from './workspace.js';
 
 const sectionSelector = '.TVM7Wc';
+const dashboardEntry = 'https://chromewebstore.google.com/devconsole';
+const dashboardHosts = new Set(['chrome.google.com', 'chromewebstore.google.com']);
 
 const dataLabels = {
   personallyIdentifiableInformation: 'Personally identifiable information',
@@ -25,27 +27,122 @@ const certificationLabels = {
   noCreditworthinessUse: 'I do not use or transfer user data to determine creditworthiness or for lending purposes',
 } as const;
 
-function exactItemPage(page: Page, itemId: string): boolean {
+export function isDashboardUrl(value: string): boolean {
   try {
-    const url = new URL(page.url());
+    const url = new URL(value);
+    return dashboardHosts.has(url.hostname) && url.pathname.split('/').includes('devconsole');
+  } catch {
+    return false;
+  }
+}
+
+export function isExactItemEditUrl(value: string, itemId: string): boolean {
+  try {
+    const url = new URL(value);
     const segments = url.pathname.split('/').filter(Boolean);
     const itemIndex = segments.indexOf(itemId);
-    return ['chrome.google.com', 'chromewebstore.google.com'].includes(url.hostname)
+    return dashboardHosts.has(url.hostname)
       && itemIndex >= 0 && segments[itemIndex + 1] === 'edit';
   } catch {
     return false;
   }
 }
 
+export function itemEditUrlFromDashboardUrl(value: string, itemId: string): string | null {
+  try {
+    const url = new URL(value);
+    if (!dashboardHosts.has(url.hostname)) return null;
+    const segments = url.pathname.split('/').filter(Boolean);
+    const dashboardIndex = segments.indexOf('devconsole');
+    const publisherId = segments[dashboardIndex + 1];
+    if (dashboardIndex < 0 || !publisherId || publisherId === itemId) return null;
+    url.pathname = `/${[...segments.slice(0, dashboardIndex + 2), itemId, 'edit'].join('/')}`;
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function loginRequired(value: string): boolean {
+  try {
+    return new URL(value).hostname === 'accounts.google.com';
+  } catch {
+    return false;
+  }
+}
+
+async function waitForPublisherScopedUrl(page: Page, itemId: string): Promise<string> {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (loginRequired(page.url())) throw new Error('manual Google login is required in the dedicated Chrome window');
+    const derived = itemEditUrlFromDashboardUrl(page.url(), itemId);
+    if (derived) return derived;
+    const itemLink = page.locator(`a[href*="/${itemId}/edit"]`).first();
+    if (await itemLink.count()) {
+      const href = await itemLink.getAttribute('href');
+      if (href) {
+        const target = new URL(href, page.url()).toString();
+        if (isExactItemEditUrl(target, itemId)) return target;
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  throw new Error('Dashboard publisher context is unavailable; select the publisher in the dedicated Chrome window');
+}
+
+async function waitForItemEditor(page: Page, itemId: string): Promise<void> {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (loginRequired(page.url())) throw new Error('manual Google login is required in the dedicated Chrome window');
+    if (isExactItemEditUrl(page.url(), itemId)) {
+      const navigation = page.getByRole('link', { name: 'Package', exact: true });
+      if (await navigation.count()) return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  if (!isExactItemEditUrl(page.url(), itemId)) throw new Error('Dashboard navigation reached a different item');
+  throw new Error('configured Dashboard item is unavailable');
+}
+
 export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.connectOverCDP(endpoint, { timeout: 30_000 });
-  const pages = browser.contexts().flatMap(context => context.pages()).filter(page => exactItemPage(page, itemId));
-  if (pages.length !== 1) throw new Error('expected exactly one open edit tab for the requested item');
-  return { browser, page: pages[0]! };
+  const contexts = browser.contexts();
+  const pages = contexts.flatMap(context => context.pages());
+  const exactPages = pages.filter(page => isExactItemEditUrl(page.url(), itemId));
+  if (exactPages.length > 1) throw new Error('multiple edit tabs are open for the requested item');
+  if (exactPages.length === 1) {
+    await waitForItemEditor(exactPages[0]!, itemId);
+    return { browser, page: exactPages[0]! };
+  }
+
+  const dashboardPages = pages.filter(page => isDashboardUrl(page.url()));
+  const scoped = dashboardPages
+    .map(page => ({ page, target: itemEditUrlFromDashboardUrl(page.url(), itemId) }))
+    .filter((candidate): candidate is { page: Page; target: string } => Boolean(candidate.target));
+  const targets = [...new Set(scoped.map(candidate => candidate.target))];
+  if (targets.length > 1) throw new Error('multiple publisher Dashboard contexts are open');
+
+  let page: Page;
+  let target: string;
+  if (scoped.length) {
+    page = scoped[0]!.page;
+    target = scoped[0]!.target;
+  } else {
+    if (contexts.length !== 1) throw new Error('expected one dedicated Chrome browser context');
+    page = dashboardPages[0] ?? await contexts[0]!.newPage();
+    if (!isDashboardUrl(page.url())) {
+      await page.goto(dashboardEntry, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    }
+    target = await waitForPublisherScopedUrl(page, itemId);
+  }
+
+  await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await waitForItemEditor(page, itemId);
+  return { browser, page };
 }
 
 async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy'): Promise<void> {
-  const link = page.getByRole('link', { name, exact: true }).first();
+  const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
   if (await link.count() !== 1) throw new Error(`${name} navigation was not found`);
   await link.evaluate(element => (element as HTMLElement).click());
   await page.waitForLoadState('domcontentloaded').catch(() => {});
@@ -57,43 +154,59 @@ async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy
 }
 
 async function section(page: Page, text: string): Promise<Locator> {
-  const candidates = page.locator(sectionSelector).filter({ hasText: text });
+  const candidates = page.locator(sectionSelector).filter({ hasText: text, visible: true });
   const count = await candidates.count();
   if (count < 1) throw new Error(`Dashboard section not found: ${text}`);
   return candidates.first();
 }
 
 async function selectedCombo(page: Page, prefix: string): Promise<string> {
-  const combo = page.getByRole('combobox').filter({ hasText: prefix }).first();
+  const combo = page.getByRole('combobox').filter({ hasText: prefix, visible: true }).first();
   const content = (await combo.innerText()).replace(/\s+/g, ' ').trim();
   return content.startsWith(prefix) ? content.slice(prefix.length).trim() : content;
 }
 
 async function selectCombo(page: Page, prefix: string, value: string): Promise<void> {
-  const combo = page.getByRole('combobox').filter({ hasText: prefix }).first();
+  const combo = page.getByRole('combobox').filter({ hasText: prefix, visible: true }).first();
   if ((await selectedCombo(page, prefix)) === value) return;
   await combo.evaluate(element => (element as HTMLElement).click());
-  const option = page.getByRole('option', { name: value, exact: true });
+  const option = page.getByRole('option', { name: value, exact: true }).filter({ visible: true });
   if (await option.count() !== 1) throw new Error(`${prefix} option not found: ${value}`);
   await option.evaluate(element => (element as HTMLElement).click());
 }
 
+export function languageOptionCandidates(language: string): string[] {
+  return [...new Set([
+    language.trim(),
+    language.replace(/^English – en \(default\)$/, 'English').trim(),
+  ])];
+}
+
 async function imageHash(locator: Locator): Promise<string | null> {
-  if (await locator.count() === 0) return null;
-  return visualHash(await locator.first().screenshot({ animations: 'disabled' }));
+  const visible = locator.filter({ visible: true });
+  if (await visible.count() === 0) return null;
+  return visualHash(await visible.first().screenshot({ animations: 'disabled' }));
 }
 
 async function imageHashes(locator: Locator): Promise<string[]> {
   const hashes: string[] = [];
-  for (let index = 0; index < await locator.count(); index += 1) {
-    hashes.push(await visualHash(await locator.nth(index).screenshot({ animations: 'disabled' })));
+  const positions = new Set<string>();
+  const visible = locator.filter({ visible: true });
+  for (let index = 0; index < await visible.count(); index += 1) {
+    const image = visible.nth(index);
+    const box = await image.boundingBox();
+    if (!box) continue;
+    const position = [box.x, box.y, box.width, box.height].map(value => Math.round(value * 10) / 10).join(':');
+    if (positions.has(position)) continue;
+    positions.add(position);
+    hashes.push(await visualHash(await image.screenshot({ animations: 'disabled' })));
   }
   return hashes;
 }
 
 async function readPackageVersion(page: Page): Promise<string | null> {
   await openPage(page, 'Package');
-  const cards = page.locator(sectionSelector);
+  const cards = page.locator(sectionSelector).filter({ visible: true });
   for (let index = 0; index < await cards.count(); index += 1) {
     const text = await cards.nth(index).innerText();
     if (!/\bdraft\b/i.test(text)) continue;
@@ -106,13 +219,24 @@ async function readPackageVersion(page: Page): Promise<string | null> {
 }
 
 async function chooseLanguage(page: Page, language: string): Promise<void> {
-  await selectCombo(page, 'Language', language.replace(/^English – en \(default\)$/, 'English'));
+  const candidates = languageOptionCandidates(language);
+  if (candidates.includes(await selectedCombo(page, 'Language'))) return;
+  const combo = page.getByRole('combobox').filter({ hasText: 'Language', visible: true }).first();
+  await combo.evaluate(element => (element as HTMLElement).click());
+  for (const candidate of candidates) {
+    const option = page.getByRole('option', { name: candidate, exact: true }).filter({ visible: true });
+    if (await option.count() === 1) {
+      await option.evaluate(element => (element as HTMLElement).click());
+      return;
+    }
+  }
+  throw new Error(`Language option not found: ${language}`);
 }
 
 async function readListing(page: Page, language: string): Promise<DashboardState['listing']> {
   await openPage(page, 'Store listing');
   await chooseLanguage(page, language);
-  const description = await page.locator('textarea').first().inputValue();
+  const description = await page.locator('textarea').filter({ visible: true }).first().inputValue();
   const screenshotsSection = await section(page, await page.getByText('Localized screenshots', { exact: true }).count() ? 'Localized screenshots' : 'Screenshots');
   const videoSection = await section(page, await page.getByText('Localized promo video', { exact: true }).count() ? 'Localized promo video' : 'Global promo video');
   const official = await selectedCombo(page, 'Official URL');
@@ -144,7 +268,7 @@ async function sectionTextArea(page: Page, label: string): Promise<string> {
 
 async function readPermissionJustifications(page: Page): Promise<Record<string, string>> {
   const hashes: Record<string, string> = {};
-  const cards = page.locator(sectionSelector);
+  const cards = page.locator(sectionSelector).filter({ visible: true });
   for (let index = 0; index < await cards.count(); index += 1) {
     const card = cards.nth(index);
     const label = (await card.innerText()).match(/^([A-Za-z][A-Za-z0-9_.-]*) justification\b/m)?.[1];
@@ -159,7 +283,7 @@ async function readPermissionJustifications(page: Page): Promise<Record<string, 
 async function readPrivacy(page: Page): Promise<DashboardState['privacy']> {
   await openPage(page, 'Privacy');
   const permissionJustificationHashes = await readPermissionJustifications(page);
-  const hostSection = page.locator(sectionSelector).filter({ hasText: 'Host permission justification' }).first();
+  const hostSection = page.locator(sectionSelector).filter({ hasText: 'Host permission justification', visible: true }).first();
   const hostPermissionJustificationHash = await hostSection.count()
     ? sha256(await hostSection.locator('textarea').first().inputValue())
     : null;
@@ -188,7 +312,7 @@ async function readPrivacy(page: Page): Promise<DashboardState['privacy']> {
 }
 
 export async function readDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
-  if (!exactItemPage(page, workspace.config.target.itemId)) throw new Error('Dashboard item changed during read');
+  if (!isExactItemEditUrl(page.url(), workspace.config.target.itemId)) throw new Error('Dashboard item changed during read');
   const packageVersion = await readPackageVersion(page);
   const listing = await readListing(page, workspace.config.target.language);
   const privacy = await readPrivacy(page);
@@ -226,7 +350,7 @@ async function saveDraft(page: Page): Promise<void> {
 
 async function removeImages(page: Page, pattern: RegExp): Promise<void> {
   while (true) {
-    const buttons = page.getByRole('button', { name: pattern });
+    const buttons = page.getByRole('button', { name: pattern }).filter({ visible: true });
     const before = await buttons.count();
     if (before === 0) return;
     const button = buttons.first();
@@ -251,7 +375,7 @@ async function removeImages(page: Page, pattern: RegExp): Promise<void> {
 async function uploadToSection(page: Page, heading: string, files: string[]): Promise<void> {
   const target = await section(page, heading);
   for (const file of files) {
-    const previews = target.locator('img');
+    const previews = target.locator('img').filter({ visible: true });
     const before = await previews.count();
     await target.locator('input[type="file"]').setInputFiles(file);
     for (let attempt = 0; attempt < 120; attempt += 1) {
@@ -273,7 +397,7 @@ async function applyListing(page: Page, desired: DesiredState, plan: Reconciliat
   await openPage(page, 'Store listing');
   await chooseLanguage(page, desired.listing.language);
   const has = (field: string) => operations.some(operation => operation.field === field);
-  if (has('description')) await page.locator('textarea').first().fill(desired.listingValues.description);
+  if (has('description')) await page.locator('textarea').filter({ visible: true }).first().fill(desired.listingValues.description);
   if (has('category')) await selectCombo(page, 'Category', desired.listing.category);
   const videoHeading = await page.getByText('Localized promo video', { exact: true }).count() ? 'Localized promo video' : 'Global promo video';
   if (has('promoVideoUrl')) await (await section(page, videoHeading)).locator('input[type="text"]').fill(desired.listingValues.promoVideoUrl ?? '');

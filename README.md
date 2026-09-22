@@ -139,7 +139,10 @@ folder outside the project repository so login files cannot be accidentally
 committed to Git and your everyday browser session stays separate. The macOS
 example below uses a local application-data folder.
 
-Sign in manually and open exactly one edit tab for the intended item.
+Sign in manually. DashBye reuses an existing target edit tab or opens the
+Dashboard in this dedicated session and navigates by the exact configured item
+ID. If the login has expired, it stops for manual authentication. Multiple edit
+tabs for the same item are rejected to avoid conflicting page state.
 
 <details>
 <summary>macOS launch command</summary>
@@ -156,7 +159,8 @@ Sign in manually and open exactly one edit tab for the intended item.
 
 On other operating systems, use the same flags with the Chrome executable and a
 dedicated profile path. DashBye connects to the configured loopback endpoint; it
-does not control your daily Chrome, automate login or export cookies.
+does not control your daily Chrome, automate login or export cookies. It does not
+launch Chrome automatically.
 Headless session reuse remains unverified.
 
 ## 4. Review and save the draft

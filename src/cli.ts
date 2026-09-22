@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
 import { renderAgentPrompt } from './agent-prompt.js';
-import { applyReconciliationPlan, connectDashboard, readDashboardState } from './dashboard-v2.js';
+import { applyReconciliationPlan, connectDashboard, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
 import { sha256 } from './hash.js';
 import { guideInitialization, initialize } from './init.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
@@ -113,8 +113,9 @@ Examples
 
 Browser and release boundary
   Start official Chrome with a dedicated profile and loopback remote debugging, then
-  sign in manually. DashBye never automates login or stores cookies. It may update a
-  reviewed draft plan, but it never submits for review or publishes an item.
+  sign in manually. DashBye navigates that dedicated session to the exact configured
+  item, but never launches Chrome, automates login, or stores cookies. It may update
+  a reviewed draft plan, but it never submits for review or publishes an item.
 `);
 }
 
@@ -180,15 +181,15 @@ async function validate(args: Args) {
 async function doctor(args: Args) {
   const workspace = await loadWorkspace(await selectedConfig(args), overrides(args));
   const issues = validateWorkspace(workspace);
-  let browser: { connected: boolean; matchingEditTabs: number; error?: string };
+  let browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; error?: string };
   try {
     const connection = await chromium.connectOverCDP(workspace.config.target.endpoint, { timeout: 5_000 });
-    const tabs = connection.contexts().flatMap(context => context.pages())
-      .filter(page => page.url().includes(`/${workspace.config.target.itemId}/edit`));
-    browser = { connected: true, matchingEditTabs: tabs.length };
+    const pages = connection.contexts().flatMap(context => context.pages());
+    const tabs = pages.filter(page => isExactItemEditUrl(page.url(), workspace.config.target.itemId));
+    browser = { connected: true, matchingEditTabs: tabs.length, dashboardTabs: pages.filter(page => isDashboardUrl(page.url())).length };
   } catch (error) {
     const message = error instanceof Error ? (error.message.split('\n')[0] ?? 'connection failed') : 'connection failed';
-    browser = { connected: false, matchingEditTabs: 0, error: message };
+    browser = { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: message };
   }
   await outputJson({ config: basename(workspace.configPath), artifactVersion: workspace.artifact.manifest.version, issues, browser });
 }

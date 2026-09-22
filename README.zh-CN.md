@@ -127,7 +127,9 @@ extension/
 是为了避免登录文件被误提交到 Git，同时与日常浏览器会话分开。
 下面的 macOS 示例使用本机应用数据目录。
 
-人工登录后，只打开一个目标条目的编辑页。
+人工登录后，DashBye 会复用已打开的目标编辑页，或在这个专用会话中打开
+Dashboard，再按配置中的完整 item ID 自动进入条目。登录失效时会停止并等待
+人工认证。如果同一 item 打开了多个编辑页，DashBye 会拒绝继续，避免页面状态冲突。
 
 <details>
 <summary>展开 macOS 启动命令</summary>
@@ -144,7 +146,7 @@ extension/
 
 其他系统使用相同参数，替换 Chrome 可执行文件与独立 Profile 路径。
 DashBye 连接配置中的 loopback endpoint，不控制日常 Chrome、不自动登录、
-不导出 Cookie。无头模式复用会话尚未验证。
+不导出 Cookie，也不会自动启动 Chrome。无头模式复用会话尚未验证。
 
 ## 4. 核对并保存草稿
 

@@ -24,7 +24,9 @@ also outside DashBye's control.
 - Repository files are untrusted until schema, path, hash, image, and manifest
   validation succeeds.
 - Chrome is accepted only through an explicit loopback HTTP endpoint with a port.
-- Exactly one open edit tab must match the configured 32-character item ID.
+- DashBye reuses one exact edit tab or navigates within the dedicated Chrome
+  session to the configured 32-character item ID. Multiple target tabs and target
+  mismatches stop execution.
 - The plan hash binds the target, artifact, resources, remote state, and operations.
   DashBye rereads remote state immediately before applying it.
 
@@ -36,7 +38,9 @@ repository to prevent accidental Git commits of login files and keep the everyda
 Chrome session separate. This is local session isolation, not cloud setup.
 Do not copy a daily profile.
 DashBye does not read profile databases, export cookies, automate login, or bypass
-security challenges.
+security challenges. It does not launch Chrome automatically. Within an already
+running dedicated session it may open the Dashboard and navigate to the configured
+item; an expired login stops for manual authentication.
 
 ## Agent initialization
 
