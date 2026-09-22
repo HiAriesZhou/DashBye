@@ -1,21 +1,30 @@
 {
   "name": "dashbye",
   "version": "0.2.0",
-  "description": "Version and synchronize Chrome Web Store package, listing, and privacy drafts.",
+  "description": "Local-first CLI for versioning and synchronizing Chrome Web Store drafts.",
   "author": "AriesZhou <urchinzhou@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HiAriesZhou/DashBye.git"
+  },
+  "homepage": "https://github.com/HiAriesZhou/DashBye#readme",
+  "bugs": {
+    "url": "https://github.com/HiAriesZhou/DashBye/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "chrome-web-store",
+    "cli",
+    "playwright",
+    "release-automation"
+  ],
   "type": "module",
-  "private": true,
   "bin": {
     "dashbye": "dist/src/cli.js"
   },
   "files": [
     "dist/src",
-    "brand",
-    "src",
-    "scripts",
-    "tests",
-    "tsconfig.json",
-    "docs",
+    "docs/store-schema.md",
     "examples",
     "README.md",
     "README.zh-CN.md",
@@ -27,6 +36,7 @@
     "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "prepare": "npm run build",
+    "prepublishOnly": "npm test",
     "test": "npm run build && node --test dist/tests/*.test.js && node scripts/check-release-boundary.mjs",
     "start": "node dist/src/cli.js"
   },
@@ -43,5 +53,8 @@
     "@types/node": "^22.18.6",
     "typescript": "^5.9.2"
   },
-  "license": "GPL-3.0-only"
+  "license": "GPL-3.0-only",
+  "publishConfig": {
+    "access": "public"
+  }
 }
