@@ -23,9 +23,13 @@ Ask me for facts you cannot establish; never invent product claims, permission
 purposes, data-use declarations, or certifications.
 
 Keep browser profiles and diagnostic files outside repositories. When Dashboard
-access is needed, ask me to start a dedicated Chrome profile and sign in manually.
-Run validate, inspect, and plan. Show me the exact target and every proposed
-change, then wait for my explicit approval before sync-draft.
+access is needed, launch official Chrome with a dedicated profile outside all
+repositories and a loopback remote-debugging endpoint. Request any GUI permission
+you need instead of asking me to run the launch command. Ask me only to complete
+Google sign-in in the opened window. If your environment cannot launch GUI apps,
+explain why and give me the exact fallback command. Then run validate, inspect,
+and plan. Show me the exact target and every proposed change, and wait for my
+explicit approval before sync-draft.
 
 After an approved sync, require a successful read-back with zero remaining
 differences. Never submit for review or publish. Report files changed, checks
@@ -34,7 +38,7 @@ performed, and anything still unresolved.
 
 The agent will install or locate the CLI, initialize the repository, organize the release resources, validate them, and prepare a concrete change plan.
 
-You provide product facts the repository cannot prove, sign in to Google yourself, and approve the exact plan before DashBye writes to the draft.
+You provide product facts the repository cannot prove, sign in to Google in the Chrome window the agent opens, and approve the exact plan before DashBye writes to the draft.
 
 Want a prompt with known paths filled in? After installation:
 

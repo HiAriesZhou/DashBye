@@ -21,9 +21,11 @@ dashbye init --agent --json 配置当前仓库。检查真实构建产物、mani
 商店文案、截图、图片和隐私依据。无法从仓库确认的事实要问我；不得编造产品
 功能、权限用途、数据使用声明或认证。
 
-浏览器 Profile 和诊断文件放在仓库外。需要访问 Dashboard 时，让我启动专用
-Chrome Profile 并人工登录。运行 validate、inspect 和 plan，向我展示完整目标
-及每一项改动，在我明确批准后才能执行 sync-draft。
+浏览器 Profile 和诊断文件放在所有仓库外。需要访问 Dashboard 时，使用 loopback
+remote-debugging endpoint 启动官方 Chrome 和专用 Profile；需要 GUI 权限时自行
+请求授权，不要让我复制执行启动命令。只让我在打开的窗口中完成人工登录。如果
+当前环境无法启动 GUI，说明限制并提供准确的备用命令。随后运行 validate、
+inspect 和 plan，展示完整目标及每一项改动，在我明确批准后才能执行 sync-draft。
 
 批准同步后，必须回读并确认剩余差异为零。不得提交审核或发布。最后汇报修改的
 文件、执行的检查和仍未解决的问题。
@@ -31,7 +33,7 @@ Chrome Profile 并人工登录。运行 validate、inspect 和 plan，向我展�
 
 Agent 会安装或找到 CLI、初始化仓库、整理发布资源、完成校验，并准备一份具体的变更计划。
 
-你负责提供仓库无法证明的产品事实、亲自登录 Google，并在 DashBye 写入草稿前批准确切计划。
+你负责提供仓库无法证明的产品事实、在 Agent 打开的 Chrome 窗口中登录 Google，并在 DashBye 写入草稿前批准确切计划。
 
 想让提示词自动带上项目路径？安装后运行：
 

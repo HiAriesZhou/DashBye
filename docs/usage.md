@@ -29,10 +29,13 @@ Source: https://github.com/HiAriesZhou/DashBye
    listing, artwork and privacy state in this extension's configured resource
    directory. Never invent permissions, collection claims or certifications.
    Run validate; templates are placeholders, not release-ready declarations.
-5. Before Dashboard access, ask me to start a dedicated Chrome profile and sign
-   in manually. Keep the profile and diagnostic output outside repositories.
-   Run inspect and plan. Show the target and all proposed changes and wait for
-   my explicit approval before sync-draft.
+5. Before Dashboard access, launch official Chrome with a dedicated profile
+   outside all repositories and a loopback remote-debugging endpoint. Request
+   any required GUI permission instead of asking me to run the command. Ask me
+   only to sign in to Google in the opened window. If your environment cannot
+   launch GUI apps, explain the limitation and provide the exact fallback
+   command. Then run inspect and plan. Show the target and all proposed changes
+   and wait for my explicit approval before sync-draft.
 6. Require a successful read-back with no remaining operations. Never submit for
    review or publish. Report changes, validation and unresolved issues.
 ```
@@ -55,7 +58,7 @@ dashbye agent-prompt \
 
 This is a text protocol and needs no graphical control. A chat without local file and terminal access can only guide you.
 
-The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. You start Chrome and sign in manually. Every Dashboard write remains bound to the exact plan you approve.
+The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. The agent launches the dedicated Chrome session; you complete Google sign-in in the opened window. Every Dashboard write remains bound to the exact plan you approve.
 
 ## Manual CLI workflow
 
