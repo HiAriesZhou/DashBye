@@ -199,13 +199,13 @@ async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy
   await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
     throw new Error(`${name} navigation was not found`);
   });
-  await link.evaluate(element => (element as HTMLElement).click());
+  await link.click();
   await page.waitForLoadState('domcontentloaded').catch(() => {});
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if ((await page.title()).toLowerCase().includes(name.toLowerCase().split(' ')[0]!)) return;
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
-  throw new Error(`${name} page did not settle`);
+  await page.waitForFunction(
+    prefix => document.title.toLowerCase().includes(prefix),
+    name.toLowerCase().split(' ')[0]!,
+    { timeout: 30_000 },
+  ).catch(() => { throw new Error(`${name} page did not settle`); });
 }
 
 async function section(page: Page, text: string): Promise<Locator> {
@@ -528,14 +528,17 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   if (!plan.operations.some(operation => operation.area === 'package')) return;
   if (workspace.artifact.kind !== 'zip') throw new Error('package upload requires a ZIP artifact');
   await openPage(page, 'Package');
-  let input = page.locator('input[type="file"][accept*=".zip"]').first();
-  if (!await input.isVisible()) {
+  const dialog = page.locator('[role="dialog"]').filter({ has: page.locator('input[type="file"][accept*=".zip"]') }).last();
+  if (!await dialog.isVisible()) {
     await page.getByRole('button', { name: 'Upload new package', exact: true }).click();
-    input = page.locator('input[type="file"][accept*=".zip"]').first();
-    await input.waitFor({ state: 'visible', timeout: 30_000 });
   }
+  await dialog.waitFor({ state: 'visible', timeout: 30_000 });
+  const input = dialog.locator('input[type="file"][accept*=".zip"]').first();
+  // File inputs in the Dashboard dialog are hidden by design. Playwright can
+  // upload to an attached input without requiring it to be visible.
+  await input.waitFor({ state: 'attached', timeout: 30_000 });
   await input.setInputFiles(workspace.artifact.path);
-  for (let attempt = 0; attempt < 240 && await input.isVisible(); attempt += 1) {
+  for (let attempt = 0; attempt < 240 && await dialog.isVisible(); attempt += 1) {
     const dialogs = await page.locator('[role="dialog"]:visible').allInnerTexts();
     const message = dialogs.join(' ').replace(/\s+/g, ' ').trim();
     if (/problem uploading your file/i.test(message)) throw new Error('Dashboard rejected the package upload');
@@ -544,11 +547,13 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
     }
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  if (await input.isVisible()) throw new Error('package upload did not finish');
-  const uploadedVersion = await readPackageVersion(page);
-  if (uploadedVersion !== workspace.artifact.manifest.version) {
-    throw new Error('package upload did not reach the expected version');
+  if (await dialog.isVisible()) throw new Error('package upload did not finish');
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const uploadedVersion = await readPackageVersion(page);
+    if (uploadedVersion === workspace.artifact.manifest.version) return;
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
+  throw new Error('package upload did not reach the expected version');
 }
 
 export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
