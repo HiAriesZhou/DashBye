@@ -6,11 +6,15 @@ import { renderAgentPrompt } from './agent-prompt.js';
 import { applyReconciliationPlan, connectDashboard, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
 import { sha256 } from './hash.js';
 import { guideInitialization, initialize } from './init.js';
+import { settleReadBack } from './read-back.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
 import { compareManifest, loadLatestLock, writeReleaseLock } from './release-lock.js';
 import { discoverConfig, loadWorkspace, publicWorkspaceSummary, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
 type Args = Record<string, string | boolean>;
+
+const READ_BACK_ATTEMPTS = 6;
+const READ_BACK_DELAY_MS = 5_000;
 
 function parseArgs(values: string[]): { command: string; args: Args } {
   const args: Args = {};
@@ -223,9 +227,14 @@ async function syncDraft(args: Args) {
   const current = await readDashboardState(page, workspace);
   const freshPlan = createReconciliationPlan(workspace, desired, current);
   if (freshPlan.approvalHash !== approved.approvalHash) throw new Error('plan is stale because the Dashboard draft changed');
-  const after = await applyReconciliationPlan(page, workspace, desired, approved);
-  const remaining = createReconciliationPlan(workspace, desired, after);
-  if (remaining.operations.length) throw new Error('draft read-back still differs from the approved desired state');
+  const applied = await applyReconciliationPlan(page, workspace, desired, approved);
+  const { state: after, remaining } = await settleReadBack(
+    applied,
+    () => readDashboardState(page, workspace),
+    state => createReconciliationPlan(workspace, desired, state).operations.length,
+    { attempts: READ_BACK_ATTEMPTS, delayMs: READ_BACK_DELAY_MS },
+  );
+  if (remaining) throw new Error('draft read-back still differs from the approved desired state');
   const lockPath = await writeReleaseLock(workspace);
   await outputJson({ result: 'saved_and_reread', snapshot: publicDashboardState(after), releaseLock: basename(lockPath) });
 }

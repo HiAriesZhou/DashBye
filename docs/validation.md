@@ -64,6 +64,11 @@ flowchart TD
 - The Dashboard may retain duplicate hidden component trees. Reads and writes now
   target visible controls, and screenshot previews are de-duplicated by their
   rendered position rather than by image content.
+- After replacing a small promotional tile, the immediate read-back still differed
+  and `sync-draft` failed without a lock; a later zero-operation sync succeeded.
+  `sync-draft` now rereads the saved draft a bounded number of times (read-only,
+  no write is repeated) before reporting a difference. Unit-tested; the retry has
+  not yet been exercised on a real Dashboard.
 
 ## Not yet validated
 
