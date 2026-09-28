@@ -134,10 +134,16 @@ Sign in manually, then run `dashbye doctor --json` from the extension repository
 
 - If disconnected, check the Chrome process, debugging port, and configured endpoint.
 - If authentication expired, sign in again manually.
-- If multiple edit tabs target the same item, keep one open.
+- Duplicate edit tabs are supported; DashBye preserves them and reuses its own
+  work tab. Different publisher/account contexts still need to be resolved.
 - If the wrong language is selected, use the exact Dashboard language label. Multi-locale operation remains unverified.
 
-DashBye reuses the matching edit tab or navigates the dedicated session to the configured item. It does not launch Chrome, automate login, or export cookies. Headless session reuse remains unverified.
+DashBye opens one work tab for the configured item and reuses it across commands.
+Existing editor tabs remain untouched. A work-tab marker survives same-origin
+navigation and reloads; after a cross-origin login clears that marker, DashBye may
+open a replacement work tab. While Dashboard sign-in is pending, repeated commands
+stop without opening additional tabs. It does not launch Chrome, automate login,
+or export cookies. Headless session reuse remains unverified.
 
 ## Configuration and repeat releases
 

@@ -104,46 +104,101 @@ async function waitForItemEditor(page: Page, itemId: string): Promise<void> {
   throw new Error('configured Dashboard item is unavailable');
 }
 
-export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
-  const browser = await chromium.connectOverCDP(endpoint, { timeout: 30_000 });
-  const contexts = browser.contexts();
-  const pages = contexts.flatMap(context => context.pages());
-  const exactPages = pages.filter(page => isExactItemEditUrl(page.url(), itemId));
-  if (exactPages.length > 1) throw new Error('multiple edit tabs are open for the requested item');
-  if (exactPages.length === 1) {
-    await waitForItemEditor(exactPages[0]!, itemId);
-    return { browser, page: exactPages[0]! };
-  }
+// window.name survives same-origin navigation and reloads, so separate CLI
+// invocations can reuse our work page without taking over a user's editor.
+const workPageName = (itemId: string) => `dashbye:${sha256(itemId)}`;
 
+export function isDashboardLoginUrl(value: string, depth = 0): boolean {
+  if (depth > 4 || !loginRequired(value)) return false;
+  const url = new URL(value);
+  return [...url.searchParams.values()].some(target =>
+    isDashboardUrl(target) || isDashboardLoginUrl(target, depth + 1));
+}
+
+function publisherScope(value: string): string | null {
+  if (!isDashboardUrl(value)) return null;
+  const segments = new URL(value).pathname.split('/').filter(Boolean);
+  return segments[segments.indexOf('devconsole') + 1] ?? null;
+}
+
+export async function selectDashboardPage(browser: Browser, itemId: string): Promise<Page> {
+  const contexts = browser.contexts();
+  const pages = contexts.flatMap(context => context.pages()).filter(page => !page.isClosed());
+  const exactPages = pages.filter(page => isExactItemEditUrl(page.url(), itemId));
   const dashboardPages = pages.filter(page => isDashboardUrl(page.url()));
-  const scoped = dashboardPages
+  // An exact item editor takes precedence over unrelated Dashboard tabs.
+  const scoped = (exactPages.length ? exactPages : dashboardPages)
     .map(page => ({ page, target: itemEditUrlFromDashboardUrl(page.url(), itemId) }))
     .filter((candidate): candidate is { page: Page; target: string } => Boolean(candidate.target));
-  const targets = [...new Set(scoped.map(candidate => candidate.target))];
-  if (targets.length > 1) throw new Error('multiple publisher Dashboard contexts are open');
+  // Host aliases, subpages and query strings may name the same publisher.
+  if (new Set(scoped.map(candidate => publisherScope(candidate.target))).size > 1
+    || new Set(scoped.map(candidate => candidate.page.context())).size > 1) {
+    throw new Error('multiple publisher Dashboard contexts are open');
+  }
 
-  let page: Page;
+  const ownership = await Promise.all(pages.filter(page => isDashboardUrl(page.url()) || loginRequired(page.url())).map(async page => ({
+    page,
+    owned: await page.evaluate(name => window.name === name, workPageName(itemId)).catch(() => false),
+  })));
+  const ownedPages = ownership.filter(candidate => candidate.owned).map(candidate => candidate.page);
+  const existing = exactPages.find(page => ownedPages.includes(page));
+  if (existing) {
+    // Start from saved server state, including after an interrupted sync. Only
+    // our work page is reloaded; other editors may contain unsaved user changes.
+    await existing.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await existing.evaluate(name => { window.name = name; }, workPageName(itemId));
+    await waitForItemEditor(existing, itemId);
+    return existing;
+  }
+
+  // Login redirects still belong to this workflow. Repeated attempts must not
+  // open more pages that all redirect back to the editor after authentication.
+  // Stale user editors can retain an exact URL after the session expires.
+  // Their presence must not cause another work page on each login retry.
+  if (pages.some(page => isDashboardLoginUrl(page.url())
+    || (ownedPages.includes(page) && loginRequired(page.url())))) {
+    throw new Error('manual Google login is required in the dedicated Chrome window');
+  }
+
+  const context = scoped[0]?.page.context() ?? (contexts.length === 1 ? contexts[0] : undefined);
+  if (!context) throw new Error('expected one dedicated Chrome browser context');
+  const page = ownedPages.find(candidate => candidate.context() === context && isDashboardUrl(candidate.url()))
+    ?? await context.newPage();
+  const markOwned = () => page.evaluate(name => { window.name = name; }, workPageName(itemId));
+  const navigate = async (url: string) => {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    // Cross-origin login redirects may clear window.name; mark the landing page.
+    await markOwned();
+  };
+  await markOwned();
+
   let target: string;
   if (scoped.length) {
-    page = scoped[0]!.page;
     target = scoped[0]!.target;
   } else {
-    if (contexts.length !== 1) throw new Error('expected one dedicated Chrome browser context');
-    page = dashboardPages[0] ?? await contexts[0]!.newPage();
     if (!isDashboardUrl(page.url())) {
-      await page.goto(dashboardEntry, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await navigate(dashboardEntry);
     }
     target = await waitForPublisherScopedUrl(page, itemId);
   }
 
-  await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await navigate(target);
   await waitForItemEditor(page, itemId);
+  return page;
+}
+
+export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
+  const browser = await chromium.connectOverCDP(endpoint, { timeout: 30_000 });
+  const page = await selectDashboardPage(browser, itemId);
   return { browser, page };
 }
 
 async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy'): Promise<void> {
   const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
-  if (await link.count() !== 1) throw new Error(`${name} navigation was not found`);
+  // A reload or previous section click may still be rendering the navigation.
+  await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
+    throw new Error(`${name} navigation was not found`);
+  });
   await link.evaluate(element => (element as HTMLElement).click());
   await page.waitForLoadState('domcontentloaded').catch(() => {});
   for (let attempt = 0; attempt < 40; attempt += 1) {

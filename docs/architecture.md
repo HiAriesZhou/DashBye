@@ -11,9 +11,11 @@ DashBye separates local intent, remote observation, and approved writes.
    permissions, optional permissions, host scopes, and content-script matches.
 4. `release-lock.ts` records verified artifact and resource fingerprints after a
    successful save and read-back. The previous lock makes permission drift visible.
-5. `dashboard-v2.ts` connects only to a loopback CDP endpoint and one exact item edit
-   tab. It reads package, listing, and privacy state into hashes and booleans that do
-   not expose field contents.
+5. `dashboard-v2.ts` connects only to a loopback CDP endpoint and selects a work tab
+   for the exact item. A non-secret `window.name` marker lets separate CLI commands
+   reuse it; user editors remain untouched. Pending Dashboard login redirects are
+   recognized so retries do not open more tabs. It reads package, listing, and
+   privacy state into hashes and booleans that do not expose field contents.
 6. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
    remove, and reorder. The approval hash binds the item, artifact, resources, remote
    snapshot, and exact operations.

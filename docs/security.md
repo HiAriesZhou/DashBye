@@ -24,9 +24,10 @@ also outside DashBye's control.
 - Repository files are untrusted until schema, path, hash, image, and manifest
   validation succeeds.
 - Chrome is accepted only through an explicit loopback HTTP endpoint with a port.
-- DashBye reuses one exact edit tab or navigates within the dedicated Chrome
-  session to the configured 32-character item ID. Multiple target tabs and target
-  mismatches stop execution.
+- DashBye creates and reuses its own work tab for the configured 32-character
+  item ID. Duplicate user editors are left open and untouched, including unsaved
+  form state. Commands reload only the work tab to observe saved server state.
+  Different publisher/account contexts and target mismatches stop execution.
 - The plan hash binds the target, artifact, resources, remote state, and operations.
   DashBye rereads remote state immediately before applying it.
 
