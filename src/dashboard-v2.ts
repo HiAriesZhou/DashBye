@@ -215,6 +215,18 @@ async function section(page: Page, text: string): Promise<Locator> {
   return candidates.first();
 }
 
+// "Remote code" also appears in permission justifications (for example "does not
+// execute remote code"), and hasText is a case-insensitive substring match. Only the
+// remote-code card contains the yes/no radios, so require them to disambiguate.
+export async function remoteCodeSection(page: Page): Promise<Locator> {
+  const candidates = page
+    .locator(sectionSelector)
+    .filter({ hasText: 'Remote code', visible: true })
+    .filter({ has: page.locator('input[type="radio"]') });
+  if (await candidates.count() !== 1) throw new Error('Dashboard section not found: Remote code');
+  return candidates.first();
+}
+
 async function selectedCombo(page: Page, prefix: string): Promise<string> {
   const combo = page.getByRole('combobox').filter({ hasText: prefix, visible: true }).first();
   const content = (await combo.innerText()).replace(/\s+/g, ' ').trim();
@@ -342,7 +354,7 @@ async function readPrivacy(page: Page): Promise<DashboardState['privacy']> {
   const hostPermissionJustificationHash = await hostSection.count()
     ? sha256(await hostSection.locator('textarea').first().inputValue())
     : null;
-  const remote = await section(page, 'Remote code');
+  const remote = await remoteCodeSection(page);
   const radios = remote.locator('input[type="radio"]');
   const remoteUses = await radios.nth(1).isChecked();
   const remoteJustification = await remote.locator('textarea').inputValue();
@@ -506,7 +518,7 @@ async function applyPrivacy(page: Page, desired: DesiredState, plan: Reconciliat
     await (await section(page, 'Host permission justification')).locator('textarea').fill(values.hostPermissionJustification);
   }
   if (has('remoteCode')) {
-    const remote = await section(page, 'Remote code');
+    const remote = await remoteCodeSection(page);
     await remote.locator('input[type="radio"]').nth(values.remoteCode.uses ? 1 : 0).setChecked(true);
     await remote.locator('textarea').fill(values.remoteCode.justification ?? '');
   }

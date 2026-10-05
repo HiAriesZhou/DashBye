@@ -39,3 +39,30 @@ test('prefers the configured Dashboard language label with a legacy English fall
   assert.deepEqual(languageOptionCandidates('English – en (default)'), ['English – en (default)', 'English']);
   assert.deepEqual(languageOptionCandidates('Chinese (China) – zh-CN'), ['Chinese (China) – zh-CN']);
 });
+
+test('finds the remote-code card even when a justification mentions remote code', async (t) => {
+  const { chromium } = await import('playwright-core');
+  const { remoteCodeSection } = await import('../src/dashboard-v2.js');
+  let browser;
+  try {
+    browser = await chromium.launch({ channel: 'chrome', headless: true });
+  } catch (error) {
+    t.skip(`headless Chrome unavailable: ${(error as Error).message.split('\n')[0]}`);
+    return;
+  }
+  try {
+    const page = await browser.newPage();
+    await page.setContent(`
+      <div class="TVM7Wc">scripting justification
+        <textarea>It does not download or execute remote code.</textarea></div>
+      <div class="TVM7Wc">No, I am not using Remote code
+        <input type="radio" name="remote" checked>
+        Yes, I am using Remote code <input type="radio" name="remote">
+        Justification <textarea></textarea></div>`);
+    const remote = await remoteCodeSection(page);
+    assert.equal(await remote.locator('input[type="radio"]').count(), 2);
+    assert.equal(await remote.locator('textarea').inputValue(), '');
+  } finally {
+    await browser.close();
+  }
+});
