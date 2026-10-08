@@ -60,8 +60,11 @@ flowchart TD
   plan skipped the screenshot replacement. Screenshots now use a 64×40 grayscale
   signature compared by its worst 8×8 block. On real Dashboard thumbnails
   (160×100 CSS px), re-encoding noise peaked at 0.0155 and the redesign measured at
-  least 0.0357; the tolerance is 0.025. Icons and promo tiles keep the 16×16
-  comparison, which was not recalibrated.
+  least 0.0357; the tolerance is 0.025. Grayscale alone missed a colour-only change
+  at similar luminance (`#d03030` vs `#507a50`: 0.0078), so screenshots must also
+  match the existing 16×16 RGB signature. Icons and promo tiles keep the 16×16
+  comparison, which was not recalibrated. The combined check is unit-tested; the
+  real-thumbnail calibration above covered the grayscale part only.
 - The remote-code privacy card was located by the text "Remote code", which also
   matches permission justifications such as "does not execute remote code". Reads
   timed out on the wrong card, and writes could have filled its text area. The card

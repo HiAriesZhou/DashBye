@@ -83,6 +83,23 @@ test('screenshot fingerprints detect a redesign that the coarse fingerprint miss
   assert.equal(visuallyEqual(await detailHash(before), await detailHash(after)), false);
 });
 
+// Same layout and nearly the same luminance; only the panel colour changes.
+function colouredPanel(fill: string): Buffer {
+  return Buffer.from(`
+    <svg width="1280" height="800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1280" height="800" fill="#f7f7f5"/>
+      <rect x="160" y="120" width="960" height="560" rx="24" fill="${fill}"/>
+    </svg>`);
+}
+
+test('screenshot fingerprints detect a colour-only change', async () => {
+  const [before, after] = await Promise.all([
+    sharp(colouredPanel('#d03030')).png().toBuffer().then(detailHash),
+    sharp(colouredPanel('#507a50')).png().toBuffer().then(detailHash),
+  ]);
+  assert.equal(visuallyEqual(before, after), false);
+});
+
 test('fingerprints of different versions never compare as equal', async () => {
   const image = await sharp(settingsPage(true)).png().toBuffer();
   assert.equal(visuallyEqual(await visualHash(image), await detailHash(image)), false);
