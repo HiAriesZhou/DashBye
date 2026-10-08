@@ -1,5 +1,5 @@
 import { sha256 } from './hash.js';
-import { visualHash } from './image-fingerprint.js';
+import { detailHash, visualHash } from './image-fingerprint.js';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
@@ -266,7 +266,7 @@ async function imageHashes(locator: Locator): Promise<string[]> {
     const position = [box.x, box.y, box.width, box.height].map(value => Math.round(value * 10) / 10).join(':');
     if (positions.has(position)) continue;
     positions.add(position);
-    hashes.push(await visualHash(await image.screenshot({ animations: 'disabled' })));
+    hashes.push(await detailHash(await image.screenshot({ animations: 'disabled' })));
   }
   return hashes;
 }
