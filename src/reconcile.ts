@@ -1,5 +1,5 @@
 import { objectHash, sha256 } from './hash.js';
-import { visualHashFile, visuallyEqual } from './image-fingerprint.js';
+import { detailHashFile, visualHashFile, visuallyEqual } from './image-fingerprint.js';
 import type { LoadedWorkspace } from './workspace.js';
 
 export type PrivacyState = {
@@ -93,7 +93,7 @@ export async function createDesiredState(workspace: LoadedWorkspace): Promise<De
       category: workspace.release.listing.category,
       promoVideoUrlHash: hashNullable(locale.promoVideoUrl ?? workspace.release.listing.globalPromoVideoUrl),
       iconVisualHash: await visualHashFile(workspace.release.listing.assets.icon),
-      screenshotVisualHashes: await Promise.all(screenshots.map(visualHashFile)),
+      screenshotVisualHashes: await Promise.all(screenshots.map(detailHashFile)),
       smallPromoVisualHash: workspace.release.listing.assets.smallPromo ? await visualHashFile(workspace.release.listing.assets.smallPromo) : null,
       marqueePromoVisualHash: workspace.release.listing.assets.marqueePromo ? await visualHashFile(workspace.release.listing.assets.marqueePromo) : null,
       officialUrlHash: hashNullable(workspace.release.listing.officialUrl),
