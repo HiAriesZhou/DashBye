@@ -55,6 +55,17 @@ flowchart TD
   artwork as equal. Asset comparison now uses a 16×16 RGB signature with a measured
   thumbnail-encoding tolerance. Regression tests distinguish resizing from material
   artwork changes, and public inspect output exposes only hashes of these signatures.
+- The 16×16 mean also treated a redesigned settings screenshot as unchanged: thin
+  lines and text averaged away (0.5% difference against a 1.2% tolerance), so the
+  plan skipped the screenshot replacement. Screenshots now use a 64×40 grayscale
+  signature compared by its worst 8×8 block. On real Dashboard thumbnails
+  (160×100 CSS px), re-encoding noise peaked at 0.0155 and the redesign measured at
+  least 0.0357; the tolerance is 0.025. Icons and promo tiles keep the 16×16
+  comparison, which was not recalibrated.
+- The remote-code privacy card was located by the text "Remote code", which also
+  matches permission justifications such as "does not execute remote code". Reads
+  timed out on the wrong card, and writes could have filled its text area. The card
+  is now required to contain the yes/no radios.
 - Dashboard image removal opens a confirmation dialog. The adapter now confirms
   each planned removal, waits for the replacement preview to finish loading, and
   requires the Save draft state to remain settled before read-back.
