@@ -1,6 +1,6 @@
 {
   "name": "dashbye",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Local-first CLI for versioning and synchronizing Chrome Web Store drafts.",
   "author": "AriesZhou <urchinzhou@gmail.com>",
   "repository": {

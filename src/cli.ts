@@ -241,7 +241,7 @@ async function syncDraft(args: Args) {
 
 async function main() {
   const { command, args } = parseArgs(process.argv.slice(2));
-  if (args.version) { console.log('0.2.4'); return; }
+  if (args.version) { console.log('0.2.5'); return; }
   if (args.help || command === 'help') { help(); return; }
   if (!command) {
     if (!await discoverConfig() && process.stdin.isTTY) {
