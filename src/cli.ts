@@ -18,7 +18,7 @@ import { normalizeLoopbackEndpoint } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { discoverConfig, loadProjectConfig, loadWorkspace, publicWorkspaceSummary, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
-const VERSION = '0.2.5';
+const VERSION = '0.3.0';
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:9333';
 const READ_BACK_ATTEMPTS = 6;
 const READ_BACK_DELAY_MS = 5_000;
