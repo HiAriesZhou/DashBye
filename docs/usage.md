@@ -29,13 +29,11 @@ Source: https://github.com/HiAriesZhou/DashBye
    listing, artwork and privacy state in this extension's configured resource
    directory. Never invent permissions, collection claims or certifications.
    Run validate; templates are placeholders, not release-ready declarations.
-5. Before Dashboard access, launch official Chrome with a dedicated profile
-   outside all repositories and a loopback remote-debugging endpoint. Request
-   any required GUI permission instead of asking me to run the command. Ask me
-   only to sign in to Google in the opened window. If your environment cannot
-   launch GUI apps, explain the limitation and provide the exact fallback
-   command. Then run inspect and plan. Show the target and all proposed changes
-   and wait for my explicit approval before sync-draft.
+5. Run plan with --json. DashBye opens its dedicated Chrome when it needs the
+   Dashboard; ask me only to sign in to Google in that window, then run plan
+   again. If your environment cannot open GUI apps, explain the limitation and
+   ask me to run "dashbye chrome". Show the target and all proposed changes and
+   wait for my explicit approval before sync-draft --approve-plan <approvalHash>.
 6. Require a successful read-back with no remaining operations. Never submit for
    review or publish. Report changes, validation and unresolved issues.
 ```
@@ -58,7 +56,7 @@ dashbye agent-prompt \
 
 This is a text protocol and needs no graphical control. A chat without local file and terminal access can only guide you.
 
-The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. The agent launches the dedicated Chrome session; you complete Google sign-in in the opened window. Every Dashboard write remains bound to the exact plan you approve.
+The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. DashBye opens the dedicated Chrome session; you complete Google sign-in in that window. Every Dashboard write remains bound to the exact plan you approve.
 
 ## Manual CLI workflow
 
@@ -76,30 +74,24 @@ The wizard collects the project, built artifact, resource root, exact item ID, D
 
 Fill the generated release templates with the complete desired listing and privacy state. Empty lists and `null` can request removal; include all content you intend to retain. See the [resource schema](store-schema.md).
 
-Validate before browser access:
+Validate, then generate a plan:
 
 ```bash
 dashbye validate
+dashbye plan
 ```
 
-After connecting Chrome as described below, store diagnostic files in an existing private directory outside the repository:
+`plan` opens the dedicated DashBye Chrome when it is not running (see [Chrome and sign-in](#chrome-and-sign-in)), reads the draft, and lists the target and every add, update, reorder, replacement, and removal. It saves the plan outside the repository; see [Saved files](#saved-files).
+
+Execute the reviewed plan:
 
 ```bash
-dashbye doctor --json
-dashbye inspect --output /path/to/private-output/current-draft.json
-dashbye plan --output /path/to/private-output/draft-plan.json
+dashbye sync-draft
 ```
 
-Review the target and every add, update, reorder, replacement, and removal. To execute the reviewed plan, use its exact `approvalHash`:
+`sync-draft` rereads the draft, shows the plan again, and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save or `n` to cancel. DashBye rejects the plan if the target, artifact, resources, or remote draft changed. A successful run saves the draft, reads it back with zero remaining operations, and writes the release lock.
 
-```bash
-dashbye sync-draft \
-  --plan /path/to/private-output/draft-plan.json \
-  --approve-plan APPROVED_PLAN_HASH \
-  --non-interactive
-```
-
-DashBye rejects the plan if the target, artifact, resources, or remote draft changed. A successful run saves the draft, reads it back with zero remaining operations, and writes the release lock.
+In a terminal, commands print readable summaries; add `--json` for JSON. Scripts and agents, whose output is not a terminal, get JSON and must approve with `--approve-plan <approvalHash>`. Run `dashbye <command> -h` for the options of one command; unknown options are rejected.
 
 ## Install from source
 
@@ -114,26 +106,18 @@ node dist/src/cli.js -h
 
 The prepare script builds the CLI during `npm ci`. Run subsequent commands from the extension repository, replacing `dashbye` with `node /absolute/path/to/DashBye/dist/src/cli.js`.
 
-## Connect Chrome
+## Chrome and sign-in
 
-Use official Chrome with a dedicated profile outside all repositories. The profile stores Chrome settings and the login session; it is not a DashBye account. Keep it separate from your everyday browser.
+`inspect`, `plan`, and `sync-draft` open official Chrome with a dedicated DashBye profile and the configured loopback debugging port when that endpoint is not answering. `dashbye chrome` does the same on request, for example to sign in ahead of time. Pass `--no-launch` to require an already running session instead.
 
-On macOS:
+The profile stores Chrome settings and the login session; it is not a DashBye account, and it is separate from your everyday browser. Sign in to Google in the opened window yourself. In a terminal DashBye waits for the sign-in (up to about ten minutes) and then continues; otherwise it stops and asks you to sign in and run the command again.
 
-```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --user-data-dir="$HOME/Library/Application Support/DashBye/chrome-profile" \
-  --remote-debugging-address=127.0.0.1 \
-  --remote-debugging-port=9333 \
-  https://chromewebstore.google.com/devconsole
-```
+DashBye looks for Chrome in the standard install locations. If yours is elsewhere, set `DASHBYE_CHROME` to the absolute path of the Chrome executable. The configured endpoint must be loopback, such as `http://127.0.0.1:9333`.
 
-On Windows or Linux, invoke the installed official Chrome executable with the same remote-debugging flags and a dedicated absolute profile path. Executable locations vary. The configured endpoint must match the port, such as `http://127.0.0.1:9333`; DashBye accepts only loopback endpoints.
+Run `dashbye doctor` to check the configuration and the Chrome connection.
 
-Sign in manually, then run `dashbye doctor --json` from the extension repository and inspect `browser.connected` and all reported issues.
-
-- If disconnected, check the Chrome process, debugging port, and configured endpoint.
-- If authentication expired, sign in again manually.
+- If Chrome does not open the debugging endpoint, a window using the DashBye profile may already be open without it; quit that Chrome and retry.
+- If authentication expired, sign in again in the DashBye Chrome window.
 - Duplicate edit tabs are supported; DashBye preserves them and reuses its own
   work tab. Different publisher/account contexts still need to be resolved.
 - If the wrong language is selected, use the exact Dashboard language label. Multi-locale operation remains unverified.
@@ -142,16 +126,28 @@ DashBye opens one work tab for the configured item and reuses it across commands
 Existing editor tabs remain untouched. A work-tab marker survives same-origin
 navigation and reloads; after a cross-origin login clears that marker, DashBye may
 open a replacement work tab. While Dashboard sign-in is pending, repeated commands
-stop without opening additional tabs. It does not launch Chrome, automate login,
-or export cookies. Headless session reuse remains unverified.
+do not open additional tabs. DashBye never automates login, reads profile data, or
+exports cookies. Headless session reuse remains unverified.
+
+## Saved files
+
+Plans, inspect results, and the Chrome profile are kept in the platform's per-user application directory, outside every repository:
+
+| Platform | Directory |
+| --- | --- |
+| macOS | `~/Library/Application Support/DashBye` |
+| Windows | `%LOCALAPPDATA%\DashBye` |
+| Linux and others | `$XDG_STATE_HOME/dashbye` (default `~/.local/state/dashbye`) |
+
+The Chrome profile is in `chrome-profile/`; each item's latest `plan.json` and `inspect.json` are in `items/<hash>/`, named by a hash of the item ID. `--output` saves an additional copy wherever you choose.
 
 ## Configuration and repeat releases
 
 Initialization is normally once per extension. Later commands discover the nearest `dashbye.config.yml`; explicit CLI options override its values. YAML paths resolve relative to their config or resource directory, while CLI paths resolve from the current working directory.
 
-Keep browser profiles, inspect output, plans, screenshots of real listings, and other diagnostics outside repositories. Release locks belong in the configured resource directory.
+Keep screenshots of real listings and other diagnostics outside repositories; DashBye's own plans, inspect output, and Chrome profile already are. Release locks belong in the configured resource directory.
 
-For each release: rebuild the extension, update the resource files, validate, generate a plan, review and approve it, then sync. Regenerate the plan whenever the package, resources, or Dashboard draft changes. Never reuse an old approval hash.
+For each release: rebuild the extension, update the resource files, then run validate, plan, and sync-draft. Regenerate the plan whenever the package, resources, or Dashboard draft changes. Never reuse an old approval hash.
 
 DashBye has no backend or telemetry. An external agent’s treatment of files and conversation content depends separately on that agent’s permissions and policies.
 
