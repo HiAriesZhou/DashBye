@@ -39,9 +39,11 @@ repository to prevent accidental Git commits of login files and keep the everyda
 Chrome session separate. This is local session isolation, not cloud setup.
 Do not copy a daily profile.
 DashBye does not read profile databases, export cookies, automate login, or bypass
-security challenges. It does not launch Chrome automatically. Within an already
-running dedicated session it may open the Dashboard and navigate to the configured
-item; an expired login stops for manual authentication.
+security challenges. When the configured loopback endpoint is not running, it
+opens official Chrome with the dedicated DashBye profile in the per-user state
+directory, never the daily profile; `--no-launch` disables this. Within that session
+it may open the Dashboard and navigate to the configured item. Sign-in is always
+manual: in a terminal DashBye waits for it, otherwise it stops.
 
 ## Agent initialization
 

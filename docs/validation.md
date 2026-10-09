@@ -86,6 +86,10 @@ flowchart TD
 
 ## Not yet validated
 
+- Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
+  manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
+  with injected dependencies; `dashbye chrome` was checked against an already
+  running dedicated session only. Windows and Linux Chrome locations are untested.
 - Reusing a manually authenticated profile in a newly launched headless process.
   The supported path remains a visible dedicated Chrome connected over loopback CDP.
 - A collected-data change, certification change, or new permission confirmation.

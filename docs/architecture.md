@@ -23,8 +23,11 @@ DashBye separates local intent, remote observation, and approved writes.
    before writing. After **Save draft**, it rereads all supported state and writes a
    lock only when no operation remains.
 
-The CLI does not launch or authenticate Chrome. A person starts official Chrome with
-a dedicated profile, signs in, and opens the intended item. Browser selectors are
+When the loopback endpoint is not answering, the CLI opens official Chrome with a
+dedicated DashBye profile (`chrome.ts`); it never authenticates. A person signs in,
+and `session.ts` waits for that in a terminal before selecting the intended item.
+Plans and inspect results are saved in the platform state directory (`paths.ts`),
+outside every repository. Browser selectors are
 guarded by page, heading, language, and final state checks. A mismatch stops the run
 instead of guessing another field or item.
 

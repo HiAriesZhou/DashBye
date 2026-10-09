@@ -40,14 +40,11 @@ build, manifest, existing store copy, screenshots, artwork, and privacy evidence
 Ask me for facts you cannot establish; never invent product claims, permission
 purposes, data-use declarations, or certifications.
 
-Keep browser profiles and diagnostic files outside repositories. When Dashboard
-access is needed, launch official Chrome with a dedicated profile outside all
-repositories and a loopback remote-debugging endpoint. Request any GUI permission
-you need instead of asking me to run the launch command. Ask me only to complete
-Google sign-in in the opened window. If your environment cannot launch GUI apps,
-explain why and give me the exact fallback command. Then run validate, inspect,
-and plan. Show me the exact target and every proposed change, and wait for my
-explicit approval before sync-draft.
+Keep diagnostic files outside repositories. Run validate and plan with --json;
+DashBye opens its dedicated Chrome when it needs the Dashboard. Ask me only to
+complete Google sign-in in that window. If your environment cannot open GUI apps,
+explain why and ask me to run "dashbye chrome". Show me the exact target and
+every proposed change, and wait for my explicit approval before sync-draft.
 
 After an approved sync, require a successful read-back with zero remaining
 differences. Never submit for review or publish. Report files changed, checks
@@ -56,7 +53,7 @@ performed, and anything still unresolved.
 
 The agent will install or locate the CLI, initialize the repository, organize the release resources, validate them, and prepare a concrete change plan.
 
-You provide product facts the repository cannot prove, sign in to Google in the Chrome window the agent opens, and approve the exact plan before DashBye writes to the draft.
+You provide product facts the repository cannot prove, sign in to Google in the Chrome window DashBye opens, and approve the exact plan before DashBye writes to the draft.
 
 Want a prompt with known paths filled in? After installation:
 
@@ -88,36 +85,23 @@ cd /path/to/extension
 dashbye init
 ```
 
-Fill the generated `store/` templates with real copy, images, and privacy declarations. Then validate:
+Fill the generated `store/` templates with real copy, images, and privacy declarations. Then validate, plan, and sync:
 
 ```bash
 dashbye validate
+dashbye plan
+dashbye sync-draft
 ```
 
-Start a dedicated Chrome profile outside the repository and sign in manually. The [browser guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md#connect-chrome) includes the launch command and troubleshooting steps.
+`plan` opens a dedicated DashBye Chrome window when needed. Sign in to Google there the first time; DashBye waits and then reads the draft. It lists every change and saves the plan outside the repository.
 
-Choose an existing private output directory outside the repository, inspect the current draft, and generate a plan:
+`sync-draft` shows the plan again and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save, or `n` to cancel. Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock.
 
-```bash
-dashbye doctor --json
-dashbye inspect --output /path/to/private-output/current-draft.json
-dashbye plan --output /path/to/private-output/draft-plan.json
-```
-
-Review every operation. Replace `APPROVED_PLAN_HASH` with that plan’s `approvalHash` only after you approve it:
-
-```bash
-dashbye sync-draft \
-  --plan /path/to/private-output/draft-plan.json \
-  --approve-plan APPROVED_PLAN_HASH \
-  --non-interactive
-```
-
-Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock. The [usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) covers source installation, resource layout, Chrome setup, and failure cases.
+Run `dashbye <command> -h` to see the options of a command. The [usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) covers source installation, resource layout, Chrome setup, and failure cases.
 
 ## Later releases
 
-Update the extension build and files in `store/`. With the dedicated Chrome session running and signed in, repeat **validate → plan → review → sync-draft** with the new plan hash.
+Update the extension build and files in `store/`, then repeat **validate → plan → sync-draft**. The dedicated Chrome profile keeps your sign-in between releases.
 
 DashBye discovers the nearest `dashbye.config.yml`. You only need to explain where the screenshots live once. If the build, resources, or remote draft changes after approval, generate and review a fresh plan.
 

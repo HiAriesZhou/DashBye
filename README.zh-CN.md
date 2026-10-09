@@ -39,12 +39,10 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 和隐私依据为准。仓库里确认不了的事实直接问我；产品功能、权限用途、数据使用声明
 和各项认证，一律不能编。
 
-浏览器 Profile 和诊断文件都放在所有仓库之外。需要访问 Dashboard 时，由你启动
-官方 Chrome：使用放在仓库外的专用 Profile，并开启只监听本机回环地址（loopback）
-的远程调试端口。需要图形界面权限就直接申请，别把启动命令丢给我执行；我只负责在
-打开的窗口里登录 Google。如果当前环境启动不了图形界面，说明原因，并给出能直接
-运行的备用命令。之后依次运行 validate、inspect 和 plan，把目标条目和每一项改动
-都列给我看，等我明确同意后再执行 sync-draft。
+诊断文件都放在所有仓库之外。运行 validate 和 plan 时加上 --json；需要访问
+Dashboard 时，DashBye 会自己打开专用的 Chrome。我只负责在那个窗口里登录 Google。
+如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye chrome"。把目标条目和
+每一项改动都列给我看，等我明确同意后再执行 sync-draft。
 
 同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布。最后告诉我改了哪些
 文件、做了哪些检查、还有哪些问题没解决。
@@ -52,7 +50,7 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 
 Agent 会安装（或找到已装好的）CLI，初始化仓库，整理发布素材，跑完校验，最后交给你一份具体的变更计划。
 
-你只需要做三件事：补充仓库里查不到的产品事实；在 Agent 打开的 Chrome 窗口里登录 Google；在 DashBye 写入草稿之前，批准那份计划。
+你只需要做三件事：补充仓库里查不到的产品事实；在 DashBye 打开的 Chrome 窗口里登录 Google；在 DashBye 写入草稿之前，批准那份计划。
 
 希望提示词里直接带上项目路径？安装后运行：
 
@@ -84,36 +82,23 @@ cd /path/to/extension
 dashbye init
 ```
 
-用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后校验：
+用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后依次校验、生成计划、同步：
 
 ```bash
 dashbye validate
+dashbye plan
+dashbye sync-draft
 ```
 
-在仓库之外启动一个专用的 Chrome Profile，手动登录 Google。启动命令和常见问题见[浏览器连接指南](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md#连接-chrome)。
+`plan` 需要时会自动打开 DashBye 专用的 Chrome 窗口。第一次使用时在窗口里登录 Google，DashBye 会等你登录完再读取草稿，列出每一项改动，并把计划保存在仓库之外。
 
-在仓库之外准备好一个私有输出目录（需事先建好），读取当前草稿并生成计划：
+`sync-draft` 会再列一遍改动，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。执行成功，意味着草稿已保存、回读后**剩余差异为零**，并写入了版本锁文件。
 
-```bash
-dashbye doctor --json
-dashbye inspect --output /path/to/private-output/current-draft.json
-dashbye plan --output /path/to/private-output/draft-plan.json
-```
-
-逐项审阅计划。确认无误后，把 `APPROVED_PLAN_HASH` 换成这份计划里的 `approvalHash`：
-
-```bash
-dashbye sync-draft \
-  --plan /path/to/private-output/draft-plan.json \
-  --approve-plan APPROVED_PLAN_HASH \
-  --non-interactive
-```
-
-执行成功，意味着草稿已保存、回读后**剩余差异为零**，并写入了版本锁文件。源码安装、素材目录结构、Chrome 设置和各种失败情况，见[使用指南](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md)。
+想看某个命令有哪些参数，运行 `dashbye <命令> -h`。源码安装、素材目录结构、Chrome 设置和各种失败情况，见[使用指南](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md)。
 
 ## 后续发版
 
-更新构建产物和 `store/` 里的文件，保持专用 Chrome 会话开着并已登录，然后用新计划的 hash 再走一遍 **validate → plan → 审阅 → sync-draft**。
+更新构建产物和 `store/` 里的文件，再走一遍 **validate → plan → sync-draft**。专用 Chrome 会记住登录状态，下次发版不用重新登录。
 
 DashBye 会自动找到最近的 `dashbye.config.yml`，截图放在哪儿，说一次就够了。批准之后，只要构建产物、素材或线上草稿有任何变化，都要重新生成计划、重新审阅。
 
