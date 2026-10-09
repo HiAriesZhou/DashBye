@@ -1,8 +1,10 @@
-schema: dashbye/config/v1
+schema: dashbye/config/v2
 project: .
-artifact: release.zip
 resources: store
-target:
-  itemId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-  language: English – en (default)
+browser:
   endpoint: http://127.0.0.1:9333
+targets:
+  chrome:
+    artifact: release.zip
+    itemId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    language: English – en (default)

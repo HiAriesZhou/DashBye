@@ -34,3 +34,10 @@ test('writes private files and creates private directories', async () => {
   assert.equal((await stat(file)).mode & 0o777, 0o600);
   assert.equal((await stat(join(root, 'items', 'x'))).mode & 0o777, 0o700);
 });
+
+test('keeps project state under a hash of the config path', async () => {
+  const { projectStateDir } = await import('../src/paths.js');
+  const dir = projectStateDir('/repo/dashbye.config.yml', { platform: 'darwin', home: '/Users/u', env: {} });
+  assert.match(dir, /^\/Users\/u\/Library\/Application Support\/DashBye\/projects\/[0-9a-f]{16}$/);
+  assert.equal(dir.includes('repo'), false);
+});

@@ -1,5 +1,6 @@
 import type { ReconcileOperation, ReconciliationPlan } from './reconcile.js';
 import type { ManifestChange } from './release-lock.js';
+import { STORE_IDS, STORE_LABELS, type StoreId } from './stores/types.js';
 import type { ValidationIssue } from './workspace.js';
 
 const FIELD_LABELS: Record<string, string> = {
@@ -52,22 +53,28 @@ export function formatPlan(plan: ReconciliationPlan, target: { itemId: string; l
 }
 
 type ValidationView = {
-  artifact: { kind: string; version: string };
-  release: { locales: string[] };
-  issues: ValidationIssue[];
-  baseline: { version: string; manifestChanges: ManifestChange[] } | null;
+  packages: Partial<Record<StoreId, { version: string; kind: string }>>;
+  chrome?: { release: { locales: string[] }; baseline: { version: string; manifestChanges: ManifestChange[] } | null };
+  issues: Array<ValidationIssue & { store: StoreId }>;
+  hints: string[];
 };
 
 export function formatValidation(result: ValidationView): string {
-  const lines = [`Extension ${result.artifact.version} (${result.artifact.kind}) · ${result.release.locales.join(', ')}`];
-  if (result.baseline?.manifestChanges.length) {
-    lines.push(`Since ${result.baseline.version}:`);
-    for (const { field, added, removed } of result.baseline.manifestChanges) {
-      lines.push(`  ${field}: ${[...added.map(value => `+${value}`), ...removed.map(value => `-${value}`)].join(' ')}`);
+  const lines = STORE_IDS.flatMap(store => {
+    const entry = result.packages[store];
+    if (!entry) return [];
+    const locales = store === 'chrome' && result.chrome ? ` · ${result.chrome.release.locales.join(', ')}` : '';
+    return [`${STORE_LABELS[store].padEnd(24)} ${entry.version} (${entry.kind})${locales}`];
+  });
+  const baseline = result.chrome?.baseline;
+  if (baseline?.manifestChanges.length) {
+    for (const { field, added, removed } of baseline.manifestChanges) {
+      lines.push(`${STORE_LABELS.chrome} since ${baseline.version}: ${field}: ${[...added.map(value => `+${value}`), ...removed.map(value => `-${value}`)].join(' ')}`);
     }
   }
-  if (!result.issues.length) return [...lines, 'No issues found.'].join('\n');
-  for (const issue of result.issues) lines.push(`  ${issue.severity.padEnd(8)} ${issue.message}`);
+  for (const issue of result.issues) lines.push(`  ${issue.severity.padEnd(8)} ${STORE_LABELS[issue.store]}: ${issue.message}`);
+  for (const hint of result.hints) lines.push(`  ${'hint'.padEnd(8)} ${hint}`);
+  if (!result.issues.length) lines.push('No issues found.');
   return lines.join('\n');
 }
 

@@ -19,10 +19,12 @@ Source: https://github.com/HiAriesZhou/DashBye
    node /absolute/path/to/DashBye/dist/src/cli.js in place of dashbye.
 2. Read dashbye -h and docs/store-schema.md from the source repository. Run:
    dashbye init --agent --json --project <absolute extension repository path>
-   Supply known values as flags. For needs_input, ask one concise chat question.
-   Map itemId to --item-id; the other input fields use --project, --artifact,
-   --resources, --language and --endpoint. Repeat with accumulated flags.
-3. For existing_config, recommend reuse; reconfigure only if I choose it.
+   Supply known values as flags. For needs_input, ask one concise chat question
+   and pass the answer with that question's flag. The first question is which
+   stores to manage: show me the detected evidence and let me choose. Repeat
+   with accumulated flags.
+3. For existing_config, recommend reuse; change stores or reconfigure only if I
+   choose it.
    For ready, show the preview and execute writeCommand as an argument array
    after my confirmation. With the local CLI fallback, replace its executable.
 4. Audit the actual build and existing store resources. Keep the complete desired
@@ -50,9 +52,9 @@ dashbye agent-prompt \
 
 `init --agent --json` returns one of three states:
 
-- `needs_input`: the agent asks you for one missing value and retries with accumulated flags.
+- `needs_input`: the agent asks you for one missing value and retries with accumulated flags. Each question names its flag; the first one asks which stores to manage.
 - `ready`: the agent shows the preview, then runs the argument-array `writeCommand` after confirmation.
-- `existing_config`: the agent recommends reuse unless you explicitly choose reconfiguration.
+- `existing_config`: the agent recommends reuse unless you choose to change stores (`--stores`) or reconfigure (`--overwrite`).
 
 This is a text protocol and needs no graphical control. A chat without local file and terminal access can only guide you.
 
@@ -106,6 +108,14 @@ node dist/src/cli.js -h
 
 The prepare script builds the CLI during `npm ci`. Run subsequent commands from the extension repository, replacing `dashbye` with `node /absolute/path/to/DashBye/dist/src/cli.js`.
 
+## Choosing stores
+
+`dashbye init` looks for packages (`*.zip`, `*.xpi`, `dist/<browser>/`, `web-ext-artifacts/`, WXT `.output/`), packaging scripts in `package.json`, and store links in the README, then asks which stores to manage. Only the stores you choose are written to `targets` in `dashbye.config.yml`, and only those are validated, planned, and synchronized.
+
+To add or remove a store later, edit `targets` or run `dashbye init` and choose **change stores**; existing targets are kept and only new stores are asked about. `--store chrome` limits `validate`, `plan`, or `sync-draft` to some of the configured stores. `validate` mentions packages it finds for stores you have not configured.
+
+Chrome Web Store drafts are saved and read back. Firefox Add-ons has no draft, so DashBye only uploads the package for AMO validation and lists listing fields to update by hand in AMO Developer Hub; it never creates a version or submits for review (see [Firefox Add-ons](store-schema.md#firefox-add-ons)). Edge targets are validated and appear in the plan as not yet supported; nothing is written to them.
+
 ## Chrome and sign-in
 
 `inspect`, `plan`, and `sync-draft` open official Chrome with a dedicated DashBye profile and the configured loopback debugging port when that endpoint is not answering. `dashbye chrome` does the same on request, for example to sign in ahead of time. Pass `--no-launch` to require an already running session instead.
@@ -139,7 +149,7 @@ Plans, inspect results, and the Chrome profile are kept in the platform's per-us
 | Windows | `%LOCALAPPDATA%\DashBye` |
 | Linux and others | `$XDG_STATE_HOME/dashbye` (default `~/.local/state/dashbye`) |
 
-The Chrome profile is in `chrome-profile/`; each item's latest `plan.json` and `inspect.json` are in `items/<hash>/`, named by a hash of the item ID. `--output` saves an additional copy wherever you choose.
+The Chrome profile is in `chrome-profile/`; each project's latest `plan.json` and `inspect.json` are in `projects/<hash>/`, named by a hash of the configuration path. `--output` saves an additional copy wherever you choose.
 
 ## Configuration and repeat releases
 

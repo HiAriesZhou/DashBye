@@ -1,15 +1,17 @@
 import { access, readFile } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import sharp from 'sharp';
 import YAML from 'yaml';
 import { loadArtifact, type ArtifactFacts } from './artifact.js';
 import { fileHash, objectHash } from './hash.js';
+import { boolean, nullableText, pathFrom, record, stringList, text } from './parse.js';
+import { loadProject } from './project.js';
 import { normalizeLoopbackEndpoint, assertItemId } from './security.js';
 
 export const CONFIG_NAME = 'dashbye.config.yml';
 
 export type ProjectConfig = {
-  schema: 'dashbye/config/v1';
+  schema: 'dashbye/config/v1' | 'dashbye/config/v2';
   project: string;
   artifact: string;
   resources: string;
@@ -92,38 +94,6 @@ export type ValidationIssue = {
   message: string;
 };
 
-function record(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`);
-  return value as Record<string, unknown>;
-}
-
-function text(value: unknown, label: string): string {
-  if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} must be a non-empty string`);
-  return value.trim();
-}
-
-function nullableText(value: unknown, label: string): string | null {
-  if (value === null || value === undefined || value === '') return null;
-  return text(value, label);
-}
-
-function boolean(value: unknown, label: string): boolean {
-  if (typeof value !== 'boolean') throw new Error(`${label} must be true or false`);
-  return value;
-}
-
-function stringList(value: unknown, label: string): string[] {
-  if (value === undefined) return [];
-  if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || !item.trim())) {
-    throw new Error(`${label} must be a list of strings`);
-  }
-  return value.map(item => item.trim());
-}
-
-function pathFrom(base: string, value: string): string {
-  return isAbsolute(value) ? value : resolve(base, value);
-}
-
 async function validateImage(path: string, kind: 'icon' | 'screenshot' | 'smallPromo' | 'marqueePromo'): Promise<void> {
   let metadata;
   try {
@@ -155,29 +125,17 @@ export async function discoverConfig(start = process.cwd()): Promise<string | nu
   }
 }
 
+// The Chrome target in the legacy single-target shape used by the Chrome adapter.
 export async function loadProjectConfig(configPath: string): Promise<ProjectConfig & { project: string; artifact: string; resources: string }> {
-  const absolute = resolve(configPath);
-  let raw: Record<string, unknown>;
-  try {
-    raw = record(YAML.parse(await readFile(absolute, 'utf8')), 'config');
-  } catch (error) {
-    if (error instanceof Error && error.message !== 'config must be an object') throw new Error(`cannot read config: ${basename(absolute)}`);
-    throw error;
-  }
-  if (raw.schema !== 'dashbye/config/v1') throw new Error('unsupported project config schema');
-  const base = dirname(absolute);
-  const project = pathFrom(base, text(raw.project ?? '.', 'project'));
-  const target = record(raw.target, 'target');
+  const setup = await loadProject(configPath);
+  const chrome = setup.targets.chrome;
+  if (!chrome) throw new Error('the Chrome Web Store is not configured for this project; run dashbye init to change stores');
   return {
-    schema: 'dashbye/config/v1',
-    project,
-    artifact: pathFrom(project, text(raw.artifact, 'artifact')),
-    resources: pathFrom(project, text(raw.resources ?? 'store', 'resources')),
-    target: {
-      itemId: assertItemId(text(target.itemId, 'target.itemId')),
-      language: text(target.language, 'target.language'),
-      endpoint: normalizeLoopbackEndpoint(text(target.endpoint ?? 'http://127.0.0.1:9333', 'target.endpoint')),
-    },
+    schema: setup.schema,
+    project: setup.project,
+    artifact: chrome.artifact,
+    resources: setup.resources,
+    target: { itemId: chrome.itemId, language: chrome.language, endpoint: setup.endpoint },
   };
 }
 

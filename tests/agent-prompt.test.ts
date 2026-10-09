@@ -11,7 +11,10 @@ test('renders a product-neutral repository handoff prompt', () => {
     language: 'English',
   });
   assert.match(prompt, /extension repository owns all release resources/);
+  assert.match(prompt, /dashbye\/config\/v2/);
   assert.match(prompt, /dashbye\/release\/v1/);
+  assert.match(prompt, /which stores/);
+  assert.match(prompt, /question's flag/);
   assert.match(prompt, /actual artifact manifest/);
   assert.match(prompt, /dashbye init --agent --json/);
   assert.match(prompt, /text-based CLI protocol/);

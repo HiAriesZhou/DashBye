@@ -34,3 +34,20 @@ export function sanitizedPageLabel(page: Page): string {
   const url = new URL(page.url());
   return `${url.hostname}/…/${url.pathname.endsWith('/edit') ? 'edit' : 'item'}`;
 }
+
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+export function assertEdgeProductId(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (!GUID.test(normalized)) throw new Error('Edge product ID must be the Partner Center product GUID');
+  return normalized;
+}
+
+// AMO accepts the numeric ID, the slug, or the add-on GUID ({uuid} or email-like).
+const FIREFOX_ADDON = /^(?:\d+|[a-z0-9][a-z0-9_-]*|\{[0-9a-f-]{36}\}|[\w.+-]+@[\w.-]+)$/i;
+
+export function assertFirefoxAddon(value: string): string {
+  const trimmed = value.trim();
+  if (!FIREFOX_ADDON.test(trimmed)) throw new Error('Firefox add-on must be its AMO slug, numeric ID, or add-on ID');
+  return trimmed;
+}

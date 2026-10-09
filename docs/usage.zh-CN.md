@@ -19,10 +19,10 @@ DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重�
    node /绝对路径/DashBye/dist/src/cli.js 代替 dashbye。
 2. 阅读 dashbye -h 及源码中的 docs/store-schema.md，运行：
    dashbye init --agent --json --project <扩展仓库绝对路径>
-   已知信息直接传参。返回 needs_input 时，通过普通对话一次询问一个问题。
-   itemId 对应 --item-id，其余字段对应 --project、--artifact、--resources、
-   --language、--endpoint。带上累积参数继续调用。
-3. 返回 existing_config 时推荐复用，只有我选择后才重新配置。
+   已知信息直接传参。返回 needs_input 时，通过普通对话一次询问一个问题，
+   把回答用该问题给出的参数（flag）传回。第一个问题是要管理哪些商店：
+   把检测到的依据给我看，由我来选。带上累积参数继续调用。
+3. 返回 existing_config 时推荐复用；只有我选择后，才修改商店或重新配置。
    返回 ready 时展示预览，经我确认后，将 writeCommand 作为参数数组执行。
    使用本地 CLI 时替换其中的可执行入口。
 4. 审计实际构建产物及已有素材，将完整文案、图片和隐私状态整理在当前扩展的
@@ -48,9 +48,9 @@ dashbye agent-prompt \
 
 `init --agent --json` 会返回三种状态之一：
 
-- `needs_input`：Agent 向你询问一个缺失信息，带上累积参数重试。
+- `needs_input`：Agent 向你询问一个缺失信息，带上累积参数重试。每个问题都注明对应参数；第一个问题是要管理哪些商店。
 - `ready`：Agent 展示预览，确认后执行参数数组形式的 `writeCommand`。
-- `existing_config`：Agent 推荐复用已有配置，除非你明确选择重新配置。
+- `existing_config`：Agent 推荐复用已有配置，除非你选择修改商店（`--stores`）或重新配置（`--overwrite`）。
 
 这是文本协议，不依赖图形控件。无法访问本地文件和终端的聊天只能提供指导。
 
@@ -104,6 +104,14 @@ node dist/src/cli.js -h
 
 `npm ci` 会通过 prepare 脚本构建 CLI。后续在扩展仓库中操作，将 `dashbye` 替换为 `node /绝对路径/DashBye/dist/src/cli.js`。
 
+## 选择商店
+
+`dashbye init` 会在仓库里查找扩展包（`*.zip`、`*.xpi`、`dist/<浏览器>/`、`web-ext-artifacts/`、WXT 的 `.output/`）、`package.json` 里的打包脚本，以及 README 里的商店链接，然后问你要管理哪些商店。只有你选中的商店会写进 `dashbye.config.yml` 的 `targets`，也只有它们会被校验、生成计划和同步。
+
+以后想增减商店，可以直接改 `targets`，也可以运行 `dashbye init` 并选择 **change stores**：已配置的商店保持不变，只会询问新加的商店。`validate`、`plan`、`sync-draft` 加上 `--store chrome` 这样的参数，可以只处理其中一部分。`validate` 发现仓库里有某个商店的包、但这个商店没配置时，会给出提示。
+
+Chrome 应用商店：保存草稿并回读核对。Firefox 附加组件（AMO）没有草稿，DashBye 只上传扩展包让 AMO 验证，并列出需要你在 AMO 开发者中心手动修改的商店字段；它不会创建版本，也不会提交审核（见 [Firefox Add-ons](store-schema.md#firefox-add-ons)）。Edge 会参与校验，并在计划里标为“暂不支持”，不会写入任何内容。
+
 ## Chrome 与登录
 
 `inspect`、`plan` 和 `sync-draft` 发现调试端口没有响应时，会用 DashBye 专用的 Profile 和配置里的本机回环端口打开官方 Chrome。想提前登录，可以运行 `dashbye chrome` 手动打开。加上 `--no-launch` 则不自动打开，只使用已经在运行的会话。
@@ -131,7 +139,7 @@ DashBye 为配置的条目建立一个工作标签页，并在后续命令中复
 | Windows | `%LOCALAPPDATA%\DashBye` |
 | Linux 等 | `$XDG_STATE_HOME/dashbye`（默认 `~/.local/state/dashbye`） |
 
-Chrome Profile 在 `chrome-profile/` 下；每个条目最近一次的 `plan.json` 和 `inspect.json` 在 `items/<hash>/` 下，目录名是条目 ID 的哈希。需要另存一份时，用 `--output` 指定位置。
+Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.json` 和 `inspect.json` 在 `projects/<hash>/` 下，目录名是配置文件路径的哈希。需要另存一份时，用 `--output` 指定位置。
 
 ## 配置与后续版本
 
