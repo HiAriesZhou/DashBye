@@ -65,6 +65,13 @@ export function itemEditUrlFromDashboardUrl(value: string, itemId: string): stri
   }
 }
 
+export class LoginRequiredError extends Error {
+  constructor() {
+    super('manual Google login is required in the dedicated Chrome window');
+    this.name = 'LoginRequiredError';
+  }
+}
+
 function loginRequired(value: string): boolean {
   try {
     return new URL(value).hostname === 'accounts.google.com';
@@ -75,7 +82,7 @@ function loginRequired(value: string): boolean {
 
 async function waitForPublisherScopedUrl(page: Page, itemId: string): Promise<string> {
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    if (loginRequired(page.url())) throw new Error('manual Google login is required in the dedicated Chrome window');
+    if (loginRequired(page.url())) throw new LoginRequiredError();
     const derived = itemEditUrlFromDashboardUrl(page.url(), itemId);
     if (derived) return derived;
     const itemLink = page.locator(`a[href*="/${itemId}/edit"]`).first();
@@ -93,7 +100,7 @@ async function waitForPublisherScopedUrl(page: Page, itemId: string): Promise<st
 
 async function waitForItemEditor(page: Page, itemId: string): Promise<void> {
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (loginRequired(page.url())) throw new Error('manual Google login is required in the dedicated Chrome window');
+    if (loginRequired(page.url())) throw new LoginRequiredError();
     if (isExactItemEditUrl(page.url(), itemId)) {
       const navigation = page.getByRole('link', { name: 'Package', exact: true });
       if (await navigation.count()) return;
@@ -157,7 +164,7 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
   // Their presence must not cause another work page on each login retry.
   if (pages.some(page => isDashboardLoginUrl(page.url())
     || (ownedPages.includes(page) && loginRequired(page.url())))) {
-    throw new Error('manual Google login is required in the dedicated Chrome window');
+    throw new LoginRequiredError();
   }
 
   const context = scoped[0]?.page.context() ?? (contexts.length === 1 ? contexts[0] : undefined);

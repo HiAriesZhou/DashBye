@@ -16,8 +16,9 @@ test('renders a product-neutral repository handoff prompt', () => {
   assert.match(prompt, /dashbye init --agent --json/);
   assert.match(prompt, /text-based CLI protocol/);
   assert.doesNotMatch(prompt, /native menu UI/);
-  assert.match(prompt, /launch official Chrome with a dedicated profile/);
-  assert.match(prompt, /instead of asking the owner to run the launch command/);
+  assert.match(prompt, /DashBye opens official Chrome with its dedicated profile/);
+  assert.match(prompt, /--json/);
+  assert.match(prompt, /--approve-plan/);
   assert.match(prompt, /Ask the owner only to sign in to Google/);
   assert.match(prompt, /never automate authentication/);
   assert.match(prompt, /exact fallback command/);
