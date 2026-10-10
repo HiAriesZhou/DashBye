@@ -14,6 +14,7 @@ test('renders a product-neutral repository handoff prompt', () => {
   assert.match(prompt, /dashbye\/config\/v2/);
   assert.match(prompt, /dashbye\/release\/v1/);
   assert.match(prompt, /which stores/);
+  assert.match(prompt, /marketing\/rendered/);
   assert.match(prompt, /question's flag/);
   assert.match(prompt, /actual artifact manifest/);
   assert.match(prompt, /dashbye init --agent --json/);

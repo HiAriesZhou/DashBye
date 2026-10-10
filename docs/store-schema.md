@@ -55,6 +55,17 @@ still read as a Chrome-only configuration.
 Paths in this file resolve from the configuration and project directories. CLI path
 overrides resolve from the current directory.
 
+## Marketing sources beside the release root
+
+Keep generators, HTML templates, fixtures, and unapproved candidate images outside
+the DashBye resources directory. Prefer a name such as `marketing/rendered/` for
+exported candidates. Do **not** create a second directory also called `store` for
+finished upload copies: DashBye treats only the configured `resources` root plus
+paths referenced by `release.yml` as desired draft state. A common pattern is to
+render candidates under `marketing/rendered/`, copy approved files into
+`store/assets/`, and let a repository check assert the pairs match.
+
+
 `store/release.yml` is the complete desired draft state:
 
 ```yaml
