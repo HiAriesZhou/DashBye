@@ -80,11 +80,11 @@ export class AmoClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  async uploadForValidation(path: string, options: { sleep?: (ms: number) => Promise<void> } = {}): Promise<AmoValidation> {
+  async uploadForValidation(path: string, options: { sleep?: (ms: number) => Promise<void>; bytes?: Uint8Array } = {}): Promise<AmoValidation> {
     if (!this.credentials) throw new Error('an AMO API key is required to validate the Firefox package; set DASHBYE_AMO_ISSUER and DASHBYE_AMO_SECRET');
     const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
     const form = new FormData();
-    form.set('upload', new Blob([await readFile(path)]), basename(path));
+    form.set('upload', new Blob([new Uint8Array(options.bytes ?? await readFile(path))]), basename(path));
     form.set('channel', 'listed');
     let upload = await this.json('/addons/upload/', { method: 'POST', body: form });
     for (let attempt = 0; !upload.processed; attempt += 1) {

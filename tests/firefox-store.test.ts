@@ -7,8 +7,10 @@ import { strToU8, zipSync } from 'fflate';
 import sharp from 'sharp';
 import YAML from 'yaml';
 import { loadFirefoxRelease } from '../src/stores/firefox/release.js';
-import { planFirefox } from '../src/stores/firefox/index.js';
+import { planFirefox, uploadFirefoxForValidation } from '../src/stores/firefox/index.js';
 import type { AmoAddon } from '../src/stores/firefox/amo.js';
+import { sha256 } from '../src/hash.js';
+import { firefoxApprovalHash, type FirefoxPlan } from '../src/stores/firefox/plan.js';
 
 async function png(color: string): Promise<Buffer> {
   return sharp({ create: { width: 1280, height: 800, channels: 3, background: color } }).png().toBuffer();
@@ -71,4 +73,31 @@ test('plans a Firefox release against AMO without writing anything', async () =>
   assert.deepEqual(plan.blocking, []);
   assert.deepEqual(plan.version, { local: '1.2.0', remote: '1.1.0' });
   assert.deepEqual(calls, ['get x', 'image']);
+});
+
+test('refuses to plan a Firefox package without gecko.id', async () => {
+  const root = await fixture({ summary: 'Short summary' });
+  await writeFile(join(root, 'dist/x.xpi'), zipSync({ 'manifest.json': strToU8(JSON.stringify({ manifest_version: 3, name: 'X', version: '1.2.0', description: 'X' })) }));
+  const client = {
+    getAddon: async () => ({ id: 9, slug: 'x', currentVersion: null, summary: null, description: null, homepageUrl: null, supportUrl: null, supportEmail: null, categories: [], previewUrls: [] }) as AmoAddon,
+    fetchImage: async () => new Uint8Array(),
+  };
+  await assert.rejects(planFirefox({ artifact: join(root, 'dist/x.xpi'), addon: 'x' }, join(root, 'store'), client), /Firefox package manifest must set browser_specific_settings\.gecko\.id/);
+});
+
+test('refuses a changed Firefox package immediately before validation upload', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dashbye-ff-upload-'));
+  const path = join(root, 'x.xpi');
+  const approved = new Uint8Array([1, 2, 3]);
+  await writeFile(path, approved);
+  const base = {
+    schema: 'dashbye/firefox-plan/v1' as const, addonHash: 'a', slug: 'x', artifactSha256: sha256(approved), releaseHash: 'r', remoteHash: 'h',
+    version: { local: '1.2.0', remote: null }, differences: [], blocking: [],
+  };
+  const plan: FirefoxPlan = { ...base, approvalHash: firefoxApprovalHash(base) };
+  await writeFile(path, new Uint8Array([4, 5, 6]));
+  let uploaded = false;
+  const client = { uploadForValidation: async () => { uploaded = true; throw new Error('upload must not run'); } };
+  await assert.rejects(uploadFirefoxForValidation({ artifact: path, addon: 'x' }, client, plan), /Firefox package changed after approval/);
+  assert.equal(uploaded, false);
 });

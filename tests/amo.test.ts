@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadAmoCredentials } from '../src/credentials.js';
@@ -95,6 +95,22 @@ test('uploads for validation only and polls until processed', async () => {
   const result = await new AmoClient(credentials, impl).uploadForValidation(xpi, { sleep: async () => {} });
   assert.deepEqual(result, { uuid: 'u1', valid: true, errors: 0, warnings: 2, notices: 1, messages: ['warning: unsafe assignment'] });
   assert.deepEqual(calls.map(call => `${call.method} ${new URL(call.url).pathname}`), ['POST /api/v5/addons/upload/', 'GET /api/v5/addons/upload/u1/', 'GET /api/v5/addons/upload/u1/']);
+});
+
+test('uses supplied package bytes without reopening the path', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dashbye-xpi-bytes-'));
+  const xpi = join(dir, 'x.xpi');
+  await writeFile(xpi, 'old bytes');
+  const bytes = new TextEncoder().encode('approved bytes');
+  await unlink(xpi);
+  const impl = (async (_input: string | URL | Request, init?: RequestInit) => {
+    const upload = (init?.body as FormData).get('upload');
+    assert.ok(upload instanceof File);
+    assert.equal(upload.name, 'x.xpi');
+    assert.deepEqual(new Uint8Array(await upload.arrayBuffer()), bytes);
+    return Response.json({ uuid: 'u1', processed: true, valid: true });
+  }) as typeof fetch;
+  await new AmoClient(credentials, impl).uploadForValidation(xpi, { bytes });
 });
 
 test('uploading requires credentials', async () => {

@@ -36,6 +36,11 @@ test('lists listing differences for the owner to update in AMO, without values',
   assert.doesNotMatch(JSON.stringify(plan), /New/);
 });
 
+test('empty desired categories report categories still present on AMO', () => {
+  const plan = createFirefoxPlan({ ...desired, categories: [] }, remote, () => true);
+  assert.deepEqual(plan.differences, [{ field: 'categories', action: 'update' }]);
+});
+
 test('blocks validation when the package is not newer or cannot be uploaded', () => {
   assert.match(createFirefoxPlan({ ...desired, version: '1.1.0' }, remote, () => true).blocking[0]!, /1\.1\.0 is not newer than the AMO version 1\.1\.0/);
   assert.match(createFirefoxPlan({ ...desired, packageKind: 'directory' }, remote, () => true).blocking[0]!, /ZIP or XPI file/);

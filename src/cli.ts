@@ -24,6 +24,7 @@ import { planFirefox, uploadFirefoxForValidation, verifyFirefox } from './stores
 import type { FirefoxPlan } from './stores/firefox/plan.js';
 import { validateStores } from './stores/validate.js';
 import { STORE_LABELS, type StoreId } from './stores/types.js';
+import { syncOutcome } from './sync-outcome.js';
 import { discoverConfig, loadWorkspace, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
 const VERSION = '0.3.0';
@@ -279,12 +280,14 @@ async function syncDraft(args: Args) {
   }
   const failed = Object.entries(results).filter(([, entry]) => entry?.result === 'failed' || entry?.result === 'validation_failed');
   const result = {
-    result: failed.length ? 'failed' : 'saved_and_reread',
+    result: syncOutcome(results),
     stores: results,
     pending: approved.pending,
     ...(chromeResult ? { snapshot: chromeResult.snapshot, releaseLock: chromeResult.releaseLock } : {}),
   };
-  await emit(args, result, () => Object.entries(results).map(([store, entry]) => `${STORE_LABELS[store as StoreId]}: ${describeResult(entry!)}`).join('\n'));
+  await emit(args, result, () => Object.entries(results).length
+    ? Object.entries(results).map(([store, entry]) => `${STORE_LABELS[store as StoreId]}: ${describeResult(entry!)}`).join('\n')
+    : 'Only pending stores were selected. Nothing was written.');
   if (failed.length) throw new Error(`synchronization failed for ${failed.map(([store]) => store).join(', ')}`);
 }
 

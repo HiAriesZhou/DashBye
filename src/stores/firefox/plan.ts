@@ -44,6 +44,11 @@ export type FirefoxPlan = {
   approvalHash: string;
 };
 
+export function firefoxApprovalHash(plan: Omit<FirefoxPlan, 'approvalHash'>): string {
+  const { schema, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking } = plan;
+  return objectHash({ schema, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking });
+}
+
 export function compareVersions(left: string, right: string): number {
   const a = left.split('.').map(part => Number.parseInt(part, 10) || 0);
   const b = right.split('.').map(part => Number.parseInt(part, 10) || 0);
@@ -67,7 +72,7 @@ export function createFirefoxPlan(desired: FirefoxDesired, remote: FirefoxRemote
   text('homepageUrl', desired.homepageUrl, remote.homepageUrl);
   text('supportUrl', desired.supportUrl, remote.supportUrl);
   text('supportEmail', desired.supportEmail, remote.supportEmail);
-  if (desired.categories.length && objectHash([...desired.categories].sort()) !== objectHash([...remote.categories].sort())) {
+  if (objectHash([...desired.categories].sort()) !== objectHash([...remote.categories].sort())) {
     differences.push({ field: 'categories', action: 'update' });
   }
   const screenshotsEqual = desired.screenshotHashes.length === remote.screenshotHashes.length
@@ -90,5 +95,5 @@ export function createFirefoxPlan(desired: FirefoxDesired, remote: FirefoxRemote
     differences,
     blocking,
   };
-  return { ...base, approvalHash: objectHash(base) };
+  return { ...base, approvalHash: firefoxApprovalHash(base) };
 }

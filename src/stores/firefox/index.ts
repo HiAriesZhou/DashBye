@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { loadArtifact } from '../../artifact.js';
+import { loadArtifact, loadRawManifest } from '../../artifact.js';
+import { sha256 } from '../../hash.js';
 import { detailHash, visuallyEqual } from '../../image-fingerprint.js';
 import type { FirefoxTarget } from '../../project.js';
 import type { AmoClient } from './amo.js';
@@ -12,6 +13,8 @@ export const developerHubUrl = (slug: string) => `https://addons.mozilla.org/dev
 
 export async function planFirefox(target: FirefoxTarget, resources: string, client: Reader): Promise<FirefoxPlan> {
   const [artifact, release, addon] = await Promise.all([loadArtifact(target.artifact), loadFirefoxRelease(resources), client.getAddon(target.addon)]);
+  const settings = (await loadRawManifest(target.artifact)).browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
+  if (typeof settings?.gecko?.id !== 'string') throw new Error('Firefox package manifest must set browser_specific_settings.gecko.id');
   const [localShots, remoteShots] = await Promise.all([
     Promise.all(release.screenshots.map(async file => detailHash(await readFile(file)))),
     Promise.all(addon.previewUrls.map(async url => detailHash(await client.fetchImage(url)))),
@@ -43,7 +46,9 @@ export async function verifyFirefox(target: FirefoxTarget, resources: string, cl
 // After confirmation: upload for validation only. No version is created and no
 // listing field is changed.
 export async function uploadFirefoxForValidation(target: FirefoxTarget, client: Pick<AmoClient, 'uploadForValidation'>, plan: FirefoxPlan) {
-  const validation = await client.uploadForValidation(target.artifact);
+  const bytes = await readFile(target.artifact);
+  if (sha256(bytes) !== plan.artifactSha256) throw new Error('Firefox package changed after approval; run dashbye plan again');
+  const validation = await client.uploadForValidation(target.artifact, { bytes });
   return {
     result: validation.valid ? 'validated' as const : 'validation_failed' as const,
     errors: validation.errors,

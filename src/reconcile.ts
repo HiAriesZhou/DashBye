@@ -76,6 +76,11 @@ export type ReconciliationPlan = {
   approvalHash: string;
 };
 
+export function chromeApprovalHash(plan: Omit<ReconciliationPlan, 'approvalHash'>): string {
+  const { schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations } = plan;
+  return objectHash({ schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations });
+}
+
 const hashNullable = (value: string | null) => value === null ? null : sha256(value);
 
 export async function createDesiredState(workspace: LoadedWorkspace): Promise<DesiredState> {
@@ -195,7 +200,7 @@ export function createReconciliationPlan(workspace: LoadedWorkspace, desired: De
     remoteHash: objectHash(current),
     operations,
   };
-  return { ...base, approvalHash: objectHash(base) };
+  return { ...base, approvalHash: chromeApprovalHash(base) };
 }
 
 export function publicDashboardState(state: DashboardState) {
