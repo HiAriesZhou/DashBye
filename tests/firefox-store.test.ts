@@ -59,7 +59,7 @@ test('plans a Firefox release against AMO without writing anything', async () =>
   const root = await fixture({ summary: 'Short summary', categories: ['other'] });
   const image = await png('#336699');
   const addon: AmoAddon = {
-    id: 9, slug: 'x', currentVersion: '1.1.0', summary: 'Old summary', description: 'Shared description',
+    id: 9, guid: 'x@example.com', slug: 'x', currentVersion: '1.1.0', summary: 'Old summary', description: 'Shared description',
     homepageUrl: 'https://example.com', supportUrl: null, supportEmail: null, categories: ['other'],
     previewUrls: ['https://addons.mozilla.org/user-media/previews/full/1.png'],
   };
@@ -79,10 +79,24 @@ test('refuses to plan a Firefox package without gecko.id', async () => {
   const root = await fixture({ summary: 'Short summary' });
   await writeFile(join(root, 'dist/x.xpi'), zipSync({ 'manifest.json': strToU8(JSON.stringify({ manifest_version: 3, name: 'X', version: '1.2.0', description: 'X' })) }));
   const client = {
-    getAddon: async () => ({ id: 9, slug: 'x', currentVersion: null, summary: null, description: null, homepageUrl: null, supportUrl: null, supportEmail: null, categories: [], previewUrls: [] }) as AmoAddon,
+    getAddon: async () => ({ id: 9, guid: 'x@example.com', slug: 'x', currentVersion: null, summary: null, description: null, homepageUrl: null, supportUrl: null, supportEmail: null, categories: [], previewUrls: [] }) as AmoAddon,
     fetchImage: async () => new Uint8Array(),
   };
   await assert.rejects(planFirefox({ artifact: join(root, 'dist/x.xpi'), addon: 'x' }, join(root, 'store'), client), /Firefox package manifest must set browser_specific_settings\.gecko\.id/);
+  await writeFile(join(root, 'dist/x.xpi'), zipSync({ 'manifest.json': strToU8(JSON.stringify({ manifest_version: 3, name: 'X', version: '1.2.0', description: 'X', browser_specific_settings: { gecko: { id: '' } } })) }));
+  await assert.rejects(planFirefox({ artifact: join(root, 'dist/x.xpi'), addon: 'x' }, join(root, 'store'), client), /Firefox package manifest must set browser_specific_settings\.gecko\.id/);
+});
+
+test('refuses a Firefox package whose gecko.id differs from the configured AMO add-on', async () => {
+  const root = await fixture({ summary: 'Short summary' });
+  const client = {
+    getAddon: async () => ({ id: 9, guid: 'other@example.com', slug: 'x', currentVersion: null, summary: null, description: null, homepageUrl: null, supportUrl: null, supportEmail: null, categories: [], previewUrls: [] }) as AmoAddon,
+    fetchImage: async () => new Uint8Array(),
+  };
+  await assert.rejects(planFirefox({ artifact: join(root, 'dist/x.xpi'), addon: 'x' }, join(root, 'store'), client), error => {
+    assert.equal((error as Error).message, 'Firefox package gecko.id does not match the configured AMO add-on');
+    return true;
+  });
 });
 
 test('refuses a changed Firefox package immediately before validation upload', async () => {

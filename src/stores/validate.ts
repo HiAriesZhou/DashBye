@@ -1,4 +1,4 @@
-import { loadArtifact, loadRawManifest } from '../artifact.js';
+import { loadArtifact, loadArtifactWithRaw } from '../artifact.js';
 import type { ProjectSetup } from '../project.js';
 import { compareManifest, loadLatestLock } from '../release-lock.js';
 import { loadWorkspace, publicWorkspaceSummary, validateWorkspace, type ValidationIssue, type WorkspaceOverrides } from '../workspace.js';
@@ -31,11 +31,12 @@ async function chromeValidation(configPath: string, overrides: WorkspaceOverride
 // here every configured package must load and Firefox must name its add-on ID.
 async function packageIssues(store: StoreId, artifact: string): Promise<{ version?: { version: string; kind: string }; issues: StoreIssue[] }> {
   try {
-    const facts = await loadArtifact(artifact);
+    const loaded = store === 'firefox' ? await loadArtifactWithRaw(artifact) : null;
+    const facts = loaded?.artifact ?? await loadArtifact(artifact);
     const issues: StoreIssue[] = [];
     if (store === 'firefox') {
-      const settings = (await loadRawManifest(artifact)).browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
-      if (typeof settings?.gecko?.id !== 'string') {
+      const settings = loaded!.raw.browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
+      if (typeof settings?.gecko?.id !== 'string' || !settings.gecko.id.trim()) {
         issues.push({ store, severity: 'error', code: 'missing_gecko_id', message: 'Firefox package manifest must set browser_specific_settings.gecko.id' });
       }
     }

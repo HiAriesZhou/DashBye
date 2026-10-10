@@ -53,10 +53,6 @@ export function normalizeManifest(value: unknown): ManifestFacts {
   };
 }
 
-function parseManifest(input: Uint8Array): ManifestFacts {
-  return normalizeManifest(parseJson(input));
-}
-
 function parseJson(input: Uint8Array): unknown {
   try {
     return JSON.parse(new TextDecoder().decode(input));
@@ -101,8 +97,14 @@ async function readArtifact(inputPath: string): Promise<{ path: string; kind: Ar
 }
 
 export async function loadArtifact(inputPath: string): Promise<ArtifactFacts> {
+  return (await loadArtifactWithRaw(inputPath)).artifact;
+}
+
+export async function loadArtifactWithRaw(inputPath: string): Promise<{ artifact: ArtifactFacts; raw: Record<string, unknown> }> {
   const { path, kind, digestSource, manifestBytes } = await readArtifact(inputPath);
-  return { path, kind, sha256: sha256(digestSource), manifest: parseManifest(manifestBytes) };
+  const raw = parseJson(manifestBytes);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('manifest must be a JSON object');
+  return { artifact: { path, kind, sha256: sha256(digestSource), manifest: normalizeManifest(raw) }, raw: raw as Record<string, unknown> };
 }
 
 // The unnormalized manifest, for browser-specific keys such as browser_specific_settings.

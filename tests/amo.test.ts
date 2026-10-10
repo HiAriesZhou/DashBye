@@ -50,7 +50,7 @@ function fakeFetch(responses: Array<[RegExp, unknown]>) {
 
 test('reads an add-on and normalizes localized fields to its default locale', async () => {
   const { impl, calls } = fakeFetch([[/\/addons\/addon\/x-toc\/$/, {
-    id: 9, slug: 'x-toc', default_locale: 'en-US', current_version: { version: '1.1.0' },
+    id: 9, guid: 'x@example.com', slug: 'x-toc', default_locale: 'en-US', current_version: { version: '1.1.0' },
     summary: { 'en-US': 'Summary' }, description: { 'en-US': 'Body' },
     homepage: { url: { 'en-US': 'https://example.com' } }, support_url: { url: { 'en-US': 'https://example.com/help' } },
     support_email: { 'en-US': 'help@example.com' }, categories: ['other'],
@@ -58,7 +58,7 @@ test('reads an add-on and normalizes localized fields to its default locale', as
   }]]);
   const addon = await new AmoClient(credentials, impl).getAddon('x-toc');
   assert.deepEqual(addon, {
-    id: 9, slug: 'x-toc', currentVersion: '1.1.0', summary: 'Summary', description: 'Body', homepageUrl: 'https://example.com',
+    id: 9, guid: 'x@example.com', slug: 'x-toc', currentVersion: '1.1.0', summary: 'Summary', description: 'Body', homepageUrl: 'https://example.com',
     supportUrl: 'https://example.com/help', supportEmail: 'help@example.com', categories: ['other'],
     previewUrls: ['https://addons.mozilla.org/user-media/previews/full/1.png'],
   });
@@ -67,10 +67,19 @@ test('reads an add-on and normalizes localized fields to its default locale', as
 });
 
 test('reads public add-on data without credentials', async () => {
-  const { impl, calls } = fakeFetch([[/\/addons\/addon\/x-toc\/$/, { id: 9, slug: 'x-toc', default_locale: 'en-US', current_version: null, summary: null, description: null, homepage: null, support_url: null, support_email: null, categories: [], previews: [] }]]);
+  const { impl, calls } = fakeFetch([[/\/addons\/addon\/x-toc\/$/, { id: 9, guid: 'x@example.com', slug: 'x-toc', default_locale: 'en-US', current_version: null, summary: null, description: null, homepage: null, support_url: null, support_email: null, categories: [], previews: [] }]]);
   const addon = await new AmoClient(null, impl).getAddon('x-toc');
   assert.equal(addon.currentVersion, null);
   assert.equal(calls[0]!.auth, null);
+});
+
+test('AMO getAddon errors report the operation and status without the add-on ID', async () => {
+  const { impl } = fakeFetch([]);
+  await assert.rejects(new AmoClient(null, impl).getAddon('synthetic@example.com'), error => {
+    assert.equal((error as Error).message, 'AMO getAddon failed (404)');
+    assert.doesNotMatch((error as Error).message, /synthetic|example\.com|addons\/addon/i);
+    return true;
+  });
 });
 
 test('uploads for validation only and polls until processed', async () => {

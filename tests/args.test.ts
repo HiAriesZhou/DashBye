@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { commandHelp, parseCommandLine } from '../src/args.js';
+import { assertNoFirefoxPathOverrides, commandHelp, parseCommandLine } from '../src/args.js';
 
 test('parses a command with string and boolean options', () => {
   const parsed = parseCommandLine(['plan', '--output', 'plan.json', '--json']);
@@ -46,4 +46,14 @@ test('command help lists only that command\'s options', () => {
   assert.match(text, /--approve-plan <hash>/);
   assert.match(text, /--no-launch/);
   assert.doesNotMatch(text, /--overwrite/);
+});
+
+test('path overrides are rejected when Firefox is selected for plan, sync, or validate', () => {
+  for (const command of ['plan', 'sync-draft', 'validate']) {
+    for (const flag of ['artifact', 'resources']) {
+      const { args } = parseCommandLine([command, `--${flag}`, 'synthetic-path']);
+      assert.throws(() => assertNoFirefoxPathOverrides(['firefox'], args), /--artifact and --resources apply only to Chrome/);
+      assert.doesNotThrow(() => assertNoFirefoxPathOverrides(['chrome'], args));
+    }
+  }
 });

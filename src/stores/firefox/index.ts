@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { loadArtifact, loadRawManifest } from '../../artifact.js';
+import { loadArtifactWithRaw } from '../../artifact.js';
 import { sha256 } from '../../hash.js';
 import { detailHash, visuallyEqual } from '../../image-fingerprint.js';
 import type { FirefoxTarget } from '../../project.js';
@@ -12,9 +12,11 @@ type Reader = Pick<AmoClient, 'getAddon' | 'fetchImage'>;
 export const developerHubUrl = (slug: string) => `https://addons.mozilla.org/developers/addon/${encodeURIComponent(slug)}/versions/submit/`;
 
 export async function planFirefox(target: FirefoxTarget, resources: string, client: Reader): Promise<FirefoxPlan> {
-  const [artifact, release, addon] = await Promise.all([loadArtifact(target.artifact), loadFirefoxRelease(resources), client.getAddon(target.addon)]);
-  const settings = (await loadRawManifest(target.artifact)).browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
-  if (typeof settings?.gecko?.id !== 'string') throw new Error('Firefox package manifest must set browser_specific_settings.gecko.id');
+  const [{ artifact, raw }, release, addon] = await Promise.all([loadArtifactWithRaw(target.artifact), loadFirefoxRelease(resources), client.getAddon(target.addon)]);
+  const settings = raw.browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
+  const geckoId = settings?.gecko?.id;
+  if (typeof geckoId !== 'string' || !geckoId.trim()) throw new Error('Firefox package manifest must set browser_specific_settings.gecko.id');
+  if (geckoId !== addon.guid) throw new Error('Firefox package gecko.id does not match the configured AMO add-on');
   const [localShots, remoteShots] = await Promise.all([
     Promise.all(release.screenshots.map(async file => detailHash(await readFile(file)))),
     Promise.all(addon.previewUrls.map(async url => detailHash(await client.fetchImage(url)))),

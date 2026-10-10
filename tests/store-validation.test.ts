@@ -48,6 +48,11 @@ test('Firefox packages must declare a gecko add-on ID', async () => {
   const { configPath, setup } = await fixture({ 'dist/firefox.xpi': pkg('1.0.0') }, { firefox: { artifact: 'dist/firefox.xpi', addon: 'x' } });
   const result = await validateStores(configPath, setup, setup.stores, {});
   assert.ok(result.issues.some(issue => issue.code === 'missing_gecko_id' && issue.severity === 'error'));
+  for (const id of ['', '   ']) {
+    await writeFile(setup.targets.firefox!.artifact, pkg('1.0.0', { browser_specific_settings: { gecko: { id } } }));
+    const empty = await validateStores(configPath, setup, setup.stores, {});
+    assert.ok(empty.issues.some(issue => issue.code === 'missing_gecko_id' && issue.severity === 'error'));
+  }
 });
 
 test('hints at packages for stores that are not configured', async () => {

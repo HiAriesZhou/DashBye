@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, selectStores } from '../src/multi-plan.js';
+import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForRun, selectStores, storesToRun } from '../src/multi-plan.js';
 import { chromeApprovalHash, type ReconciliationPlan } from '../src/reconcile.js';
 import { firefoxApprovalHash, type FirefoxPlan } from '../src/stores/firefox/plan.js';
 
@@ -80,4 +80,21 @@ test('asks one question that names what will happen in each store', () => {
   assert.equal(confirmQuestion(combinePlans({ chrome: chrome('1') }, [])), 'Verify the draft and record the release lock?');
   assert.equal(confirmQuestion(combinePlans({ chrome: chrome('1', change), firefox: firefoxPlan }, [])), 'Save these changes to the Dashboard draft and validate the Firefox package on AMO?');
   assert.equal(confirmQuestion(combinePlans({ firefox: firefoxPlan }, [])), 'Upload the Firefox package to AMO for validation?');
+});
+
+test('an explicit pending Edge selection runs no store', () => {
+  const plan = combinePlans({ chrome: chrome(), firefox: firefox() }, ['edge']);
+  assert.deepEqual(storesToRun(plan, 'edge'), { run: [], pending: ['edge'] });
+  assert.deepEqual(storesToRun(plan, 'firefox'), { run: ['firefox'], pending: [] });
+  assert.deepEqual(storesToRun(plan), { run: ['chrome', 'firefox'], pending: ['edge'] });
+});
+
+test('confirmation text shows only selected stores', () => {
+  const change = [{ area: 'listing' as const, action: 'update' as const, field: 'description', before: 'a', after: 'b', destructive: false, ownerApprovalRequired: false }];
+  const approved = combinePlans({ chrome: chrome('1', change), firefox: firefox() }, ['edge']);
+  const { run, pending } = storesToRun(approved, 'firefox');
+  const shown = planForRun(approved, run, pending);
+  assert.match(formatMultiPlan(shown, { chrome: { itemId: 'a'.repeat(32), language: 'English' } }), /Firefox Add-ons/);
+  assert.doesNotMatch(formatMultiPlan(shown, { chrome: { itemId: 'a'.repeat(32), language: 'English' } }), /Chrome Web Store|Edge Add-ons/);
+  assert.equal(confirmQuestion(shown), 'Upload the Firefox package to AMO for validation?');
 });

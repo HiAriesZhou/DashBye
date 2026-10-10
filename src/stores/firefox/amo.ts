@@ -9,6 +9,7 @@ const UPLOAD_POLL_MS = 3_000;
 
 export type AmoAddon = {
   id: number;
+  guid: string;
   slug: string;
   currentVersion: string | null;
   summary: string | null;
@@ -48,18 +49,20 @@ export class AmoClient {
     return this.credentials ? { Authorization: `JWT ${amoJwt(this.credentials)}` } : {};
   }
 
-  private async json(path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
+  private async json(operation: string, path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
     const response = await this.fetchImpl(`${API}${path}`, { ...init, headers: { ...this.headers(), ...init.headers as Record<string, string> } });
-    if (!response.ok) throw new Error(`AMO request failed (${response.status}) for ${path.split('?')[0]}`);
+    if (!response.ok) throw new Error(`AMO ${operation} failed (${response.status})`);
     return await response.json() as Record<string, unknown>;
   }
 
   async getAddon(addon: string): Promise<AmoAddon> {
-    const raw = await this.json(`/addons/addon/${encodeURIComponent(addon)}/`);
+    const raw = await this.json('getAddon', `/addons/addon/${encodeURIComponent(addon)}/`);
+    if (typeof raw.guid !== 'string' || !raw.guid.trim()) throw new Error('AMO getAddon response is missing guid');
     const locale = typeof raw.default_locale === 'string' ? raw.default_locale : 'en-US';
     const url = (value: unknown) => localized((value as { url?: Localized } | null)?.url, locale);
     return {
       id: raw.id as number,
+      guid: raw.guid,
       slug: raw.slug as string,
       currentVersion: (raw.current_version as { version?: string } | null)?.version ?? null,
       summary: localized(raw.summary as Localized, locale),
@@ -86,11 +89,11 @@ export class AmoClient {
     const form = new FormData();
     form.set('upload', new Blob([new Uint8Array(options.bytes ?? await readFile(path))]), basename(path));
     form.set('channel', 'listed');
-    let upload = await this.json('/addons/upload/', { method: 'POST', body: form });
+    let upload = await this.json('upload', '/addons/upload/', { method: 'POST', body: form });
     for (let attempt = 0; !upload.processed; attempt += 1) {
       if (attempt >= UPLOAD_POLLS) throw new Error('AMO did not finish validating the package in time');
       await sleep(UPLOAD_POLL_MS);
-      upload = await this.json(`/addons/upload/${encodeURIComponent(String(upload.uuid))}/`);
+      upload = await this.json('upload status', `/addons/upload/${encodeURIComponent(String(upload.uuid))}/`);
     }
     const validation = (upload.validation ?? {}) as { errors?: number; warnings?: number; notices?: number; messages?: Array<{ type?: string; message?: string }> };
     return {

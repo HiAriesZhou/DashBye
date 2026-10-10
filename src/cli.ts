@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
 import { renderAgentPrompt } from './agent-prompt.js';
-import { commandHelp, optional, parseCommandLine, type Args } from './args.js';
+import { assertNoFirefoxPathOverrides, commandHelp, optional, parseCommandLine, type Args } from './args.js';
 import { ensureChrome } from './chrome.js';
 import { applyReconciliationPlan, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
 import { formatDoctor, formatSyncResult, formatValidation } from './format.js';
@@ -12,7 +12,7 @@ import { manual } from './help.js';
 import { guideInitialization, initialize } from './init.js';
 import { projectStateDir, writePrivateFile } from './paths.js';
 import { settleReadBack } from './read-back.js';
-import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, selectStores, type MultiPlan, type StorePlans } from './multi-plan.js';
+import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForRun, selectStores, storesToRun, type MultiPlan, type StorePlans } from './multi-plan.js';
 import { DEFAULT_ENDPOINT, loadProject } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
@@ -78,6 +78,7 @@ async function agentPrompt(args: Args) {
 
 async function validate(args: Args) {
   const { configPath, setup, stores } = await loadSetup(args);
+  assertNoFirefoxPathOverrides(stores, args);
   const checked = await validateStores(configPath, setup, stores, workspaceValues(args));
   const valid = !checked.issues.some(issue => issue.severity === 'error');
   // Chrome's summary stays at the top level for agents written against 0.3.
@@ -149,6 +150,7 @@ const chromeTargets = (workspace: LoadedWorkspace | null) => workspace ? { chrom
 
 async function plan(args: Args) {
   const { configPath, setup, stores } = await loadSetup(args);
+  assertNoFirefoxPathOverrides(stores, args);
   const plans: StorePlans = {};
   let workspace: LoadedWorkspace | null = null;
   if (stores.includes('chrome')) {
@@ -185,7 +187,7 @@ function approvalMode(args: Args, plan: MultiPlan): 'hash' | 'prompt' {
   return 'prompt';
 }
 
-function confirm(plan: MultiPlan, workspace: LoadedWorkspace | null): Promise<boolean> {
+function confirm(plan: Pick<MultiPlan, 'stores' | 'pending'>, workspace: LoadedWorkspace | null): Promise<boolean> {
   console.log(formatMultiPlan(plan, chromeTargets(workspace)));
   return askYesNo(confirmQuestion(plan), { input: process.stdin, output: process.stdout });
 }
@@ -235,21 +237,12 @@ function describeResult(entry: StoreResult): string {
   return `validated by AMO (${counts}). Nothing was submitted. Next, upload this version${listing} in AMO Developer Hub: ${entry.developerHub}`;
 }
 
-function storesToRun(args: Args, approved: MultiPlan): StoreId[] {
-  const planned = Object.keys(approved.stores) as StoreId[];
-  const requested = optional(args, 'store');
-  if (!requested) return planned;
-  const selected = selectStores([...planned, ...approved.pending], requested);
-  const notPlanned = selected.filter(store => !planned.includes(store));
-  if (notPlanned.length) throw new Error(`${notPlanned.join(', ')} cannot be synchronized by this DashBye version`);
-  return selected;
-}
-
 async function syncDraft(args: Args) {
   const { configPath } = await loadSetup({ ...args, store: false });
   const approved = await loadPlan(args, configPath);
-  const run = storesToRun(args, approved);
-  const mode = approvalMode(args, approved);
+  const { run, pending } = storesToRun(approved, optional(args, 'store'));
+  assertNoFirefoxPathOverrides(run, args);
+  const mode = run.length ? approvalMode(args, approved) : null;
   const setup = await loadProject(configPath);
   const chrome = run.includes('chrome') && approved.stores.chrome ? await prepareChrome(args, configPath, approved.stores.chrome) : null;
   if (chrome) await verifyChrome(chrome);
@@ -257,7 +250,8 @@ async function syncDraft(args: Args) {
   const firefox: FirefoxPlan | null = client ? await verifyFirefox(setup.targets.firefox!, setup.resources, client, approved.stores.firefox!) : null;
   // Ask only after every plan is confirmed against the current drafts, so the person
   // approves exactly what will be written.
-  if (mode === 'prompt' && !await confirm(approved, chrome?.workspace ?? null)) {
+  const shown = planForRun(approved, run, pending);
+  if (mode === 'prompt' && !await confirm(shown, chrome?.workspace ?? null)) {
     console.log('Cancelled. Nothing was written to any store.');
     return;
   }
@@ -282,7 +276,7 @@ async function syncDraft(args: Args) {
   const result = {
     result: syncOutcome(results),
     stores: results,
-    pending: approved.pending,
+    pending,
     ...(chromeResult ? { snapshot: chromeResult.snapshot, releaseLock: chromeResult.releaseLock } : {}),
   };
   await emit(args, result, () => Object.entries(results).length

@@ -1,4 +1,12 @@
+import type { StoreId } from './stores/types.js';
+
 export type Args = Record<string, string | boolean>;
+
+export function assertNoFirefoxPathOverrides(stores: StoreId[], args: Args): void {
+  if (stores.includes('firefox') && (args.artifact !== undefined || args.resources !== undefined)) {
+    throw new Error('--artifact and --resources apply only to Chrome; for Firefox change targets.firefox.artifact / resources in dashbye.config.yml');
+  }
+}
 
 export type ParsedCommandLine = { command: string; args: Args; help: boolean; version: boolean };
 

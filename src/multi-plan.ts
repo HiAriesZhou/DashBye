@@ -73,9 +73,22 @@ export function selectStores(configured: StoreId[], requested?: string): StoreId
   return stores;
 }
 
+export function storesToRun(plan: MultiPlan, requested?: string): { run: StoreId[]; pending: StoreId[] } {
+  const planned = Object.keys(plan.stores) as StoreId[];
+  const selected = selectStores([...planned, ...plan.pending], requested);
+  return { run: selected.filter(store => planned.includes(store)), pending: selected.filter(store => plan.pending.includes(store)) };
+}
+
+export function planForRun(plan: MultiPlan, run: StoreId[], pending: StoreId[]): Pick<MultiPlan, 'stores' | 'pending'> {
+  return { stores: {
+    ...(run.includes('chrome') ? { chrome: plan.stores.chrome } : {}),
+    ...(run.includes('firefox') ? { firefox: plan.stores.firefox } : {}),
+  }, pending };
+}
+
 const indent = (text: string) => text.split('\n').map(line => `  ${line}`).join('\n');
 
-export function formatMultiPlan(plan: MultiPlan, targets: { chrome?: { itemId: string; language: string } }): string {
+export function formatMultiPlan(plan: Pick<MultiPlan, 'stores' | 'pending'>, targets: { chrome?: { itemId: string; language: string } }): string {
   const sections = STORE_IDS.flatMap(store => {
     if (store === 'chrome' && plan.stores.chrome && targets.chrome) return [`${STORE_LABELS.chrome}\n${indent(formatPlan(plan.stores.chrome, targets.chrome))}`];
     if (store === 'firefox' && plan.stores.firefox) return [`${STORE_LABELS.firefox}\n${indent(formatFirefox(plan.stores.firefox))}`];
@@ -101,7 +114,7 @@ function formatFirefox(plan: FirefoxPlan): string {
   return lines.join('\n');
 }
 
-export function confirmQuestion(plan: MultiPlan): string {
+export function confirmQuestion(plan: Pick<MultiPlan, 'stores'>): string {
   const chrome = plan.stores.chrome;
   const parts = [
     ...(chrome ? [chrome.operations.length ? 'Save these changes to the Dashboard draft' : 'Verify the draft and record the release lock'] : []),
