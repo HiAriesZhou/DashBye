@@ -2,6 +2,9 @@
 
 DashBye separates local intent, remote observation, and approved writes.
 
+0. `project.ts` reads `dashbye.config.yml`. Its `targets` name the stores this
+   extension is managed in; commands touch only those (or a `--store` subset).
+   `stores/detect.ts` suggests stores from packages, scripts, and links during init.
 1. `init.ts` supports a confirmed terminal wizard and a non-writing Agent JSON
    protocol that returns one missing input or a complete configuration preview.
 2. `workspace.ts` discovers `dashbye.config.yml`, resolves project-controlled paths,

@@ -1,4 +1,12 @@
+import type { StoreId } from './stores/types.js';
+
 export type Args = Record<string, string | boolean>;
+
+export function assertNoFirefoxPathOverrides(stores: StoreId[], args: Args): void {
+  if (stores.includes('firefox') && (args.artifact !== undefined || args.resources !== undefined)) {
+    throw new Error('--artifact and --resources apply only to Chrome; for Firefox change targets.firefox.artifact / resources in dashbye.config.yml');
+  }
+}
 
 export type ParsedCommandLine = { command: string; args: Args; help: boolean; version: boolean };
 
@@ -20,6 +28,13 @@ const OPTIONS: Record<string, OptionSpec> = {
   agent: { description: 'Return the next init question or a ready preview as JSON' },
   overwrite: { description: 'Allow init to replace the project configuration' },
   json: { description: 'Emit JSON instead of a readable summary' },
+  stores: { value: 'list', description: 'Stores to manage, e.g. chrome,edge,firefox' },
+  store: { value: 'list', description: 'Limit to these configured stores, e.g. chrome,edge' },
+  'edge-artifact': { value: 'path', description: 'Edge package (ZIP or build directory)' },
+  'edge-product-id': { value: 'guid', description: 'Edge Partner Center product ID' },
+  'edge-language': { value: 'label', description: 'Edge store listing language' },
+  'firefox-artifact': { value: 'path', description: 'Firefox package (XPI, ZIP, or build directory)' },
+  'firefox-addon': { value: 'id', description: 'Firefox add-on slug, numeric ID, or add-on ID' },
 };
 
 const WORKSPACE = ['config', 'project', 'artifact', 'resources', 'item-id', 'language', 'endpoint'];
@@ -27,14 +42,14 @@ const WORKSPACE = ['config', 'project', 'artifact', 'resources', 'item-id', 'lan
 type CommandSpec = { summary: string; options: string[] };
 
 export const COMMANDS: Record<string, CommandSpec> = {
-  init: { summary: 'Create or reconfigure a project configuration and resource templates', options: [...WORKSPACE, 'agent', 'json', 'overwrite', 'non-interactive'] },
+  init: { summary: 'Choose stores and create or change the project configuration', options: [...WORKSPACE, 'stores', 'edge-artifact', 'edge-product-id', 'edge-language', 'firefox-artifact', 'firefox-addon', 'agent', 'json', 'overwrite', 'non-interactive'] },
   'agent-prompt': { summary: 'Print a copy-paste prompt for an extension repository agent', options: ['project', 'artifact', 'resources', 'item-id', 'language', 'endpoint', 'output'] },
-  validate: { summary: 'Validate artifact, listing assets, permissions, and privacy declarations', options: [...WORKSPACE, 'output', 'json'] },
+  validate: { summary: 'Validate each configured store package, listing assets, and privacy declarations', options: [...WORKSPACE, 'store', 'output', 'json'] },
   doctor: { summary: 'Check configuration paths and the dedicated Chrome connection', options: [...WORKSPACE, 'json'] },
   chrome: { summary: 'Open the dedicated Chrome profile for Dashboard sign-in', options: [...WORKSPACE, 'json'] },
   inspect: { summary: 'Read the current Dashboard draft without changing it', options: [...WORKSPACE, 'output', 'json', 'no-launch', 'non-interactive'] },
-  plan: { summary: 'Compare local intent with the Dashboard draft and save the plan', options: [...WORKSPACE, 'output', 'json', 'no-launch', 'non-interactive'] },
-  'sync-draft': { summary: 'Confirm and execute a plan, save the draft, and read it back', options: [...WORKSPACE, 'plan', 'approve-plan', 'non-interactive', 'json', 'no-launch'] },
+  plan: { summary: 'Compare local intent with each configured store draft and save the plan', options: [...WORKSPACE, 'store', 'output', 'json', 'no-launch', 'non-interactive'] },
+  'sync-draft': { summary: 'Confirm and execute the plan, save each store draft, and read it back', options: [...WORKSPACE, 'store', 'plan', 'approve-plan', 'non-interactive', 'json', 'no-launch'] },
 };
 
 function distance(left: string, right: string): number {

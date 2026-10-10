@@ -19,11 +19,13 @@ ${commands}
   --version     Show the installed version
 
 First run
-  Run "dashbye init" in the extension repository. It asks for the project path, the
-  extension ZIP, build directory, or manifest, the release resources path (default
-  ./store), the Chrome Web Store item ID and language, and the loopback Chrome
-  endpoint (default http://127.0.0.1:9333), then previews the configuration.
-  Later runs discover the nearest dashbye.config.yml.
+  Run "dashbye init" in the extension repository. It shows which stores the
+  repository appears to ship to, asks which ones to manage (chrome, edge, firefox),
+  then asks only for those stores' packages and IDs, the release resources path
+  (default ./store), and the loopback Chrome endpoint, and previews the result.
+  Later runs discover the nearest dashbye.config.yml. To add or remove a store,
+  edit its targets or run "dashbye init" again and choose "change stores".
+  --store chrome limits validate, plan, or sync-draft to some configured stores.
 
 Each release
   dashbye validate     Check the build and store resources

@@ -53,16 +53,18 @@ export function normalizeManifest(value: unknown): ManifestFacts {
   };
 }
 
-function parseManifest(input: Uint8Array): ManifestFacts {
+function parseJson(input: Uint8Array): unknown {
   try {
-    return normalizeManifest(JSON.parse(new TextDecoder().decode(input)));
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith('manifest ')) throw error;
+    return JSON.parse(new TextDecoder().decode(input));
+  } catch {
     throw new Error('artifact manifest.json is not valid JSON');
   }
 }
 
-export async function loadArtifact(inputPath: string): Promise<ArtifactFacts> {
+// Firefox packages (.xpi) are ZIP archives with the same root manifest.json.
+const archive = (path: string) => ['.zip', '.xpi'].includes(extname(path).toLowerCase());
+
+async function readArtifact(inputPath: string): Promise<{ path: string; kind: ArtifactFacts['kind']; digestSource: Uint8Array; manifestBytes: Uint8Array }> {
   const path = resolve(inputPath);
   let metadata;
   try {
@@ -74,10 +76,10 @@ export async function loadArtifact(inputPath: string): Promise<ArtifactFacts> {
     const manifestBytes = await readFile(join(path, 'manifest.json')).catch(() => {
       throw new Error('artifact directory does not contain manifest.json');
     });
-    return { path, kind: 'directory', sha256: sha256(manifestBytes), manifest: parseManifest(manifestBytes) };
+    return { path, kind: 'directory', digestSource: manifestBytes, manifestBytes };
   }
   const bytes = await readFile(path);
-  if (extname(path).toLowerCase() === '.zip') {
+  if (archive(path)) {
     let entries: Record<string, Uint8Array>;
     try {
       entries = unzipSync(bytes);
@@ -86,10 +88,28 @@ export async function loadArtifact(inputPath: string): Promise<ArtifactFacts> {
     }
     const manifestBytes = entries['manifest.json'];
     if (!manifestBytes) throw new Error('artifact ZIP does not contain a root manifest.json');
-    return { path, kind: 'zip', sha256: sha256(bytes), manifest: parseManifest(manifestBytes) };
+    return { path, kind: 'zip', digestSource: bytes, manifestBytes };
   }
   if (basename(path) !== 'manifest.json' && extname(path).toLowerCase() !== '.json') {
-    throw new Error('artifact must be a ZIP, build directory, or manifest JSON');
+    throw new Error('artifact must be a ZIP, XPI, build directory, or manifest JSON');
   }
-  return { path, kind: 'manifest', sha256: sha256(bytes), manifest: parseManifest(bytes) };
+  return { path, kind: 'manifest', digestSource: bytes, manifestBytes: bytes };
+}
+
+export async function loadArtifact(inputPath: string): Promise<ArtifactFacts> {
+  return (await loadArtifactWithRaw(inputPath)).artifact;
+}
+
+export async function loadArtifactWithRaw(inputPath: string): Promise<{ artifact: ArtifactFacts; raw: Record<string, unknown> }> {
+  const { path, kind, digestSource, manifestBytes } = await readArtifact(inputPath);
+  const raw = parseJson(manifestBytes);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('manifest must be a JSON object');
+  return { artifact: { path, kind, sha256: sha256(digestSource), manifest: normalizeManifest(raw) }, raw: raw as Record<string, unknown> };
+}
+
+// The unnormalized manifest, for browser-specific keys such as browser_specific_settings.
+export async function loadRawManifest(inputPath: string): Promise<Record<string, unknown>> {
+  const raw = parseJson((await readArtifact(inputPath)).manifestBytes);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('manifest must be a JSON object');
+  return raw as Record<string, unknown>;
 }

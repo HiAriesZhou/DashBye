@@ -31,18 +31,26 @@ test('says when the draft already matches', () => {
   assert.match(formatPlan(plan([]), target), /No changes: the Dashboard draft already matches/);
 });
 
-test('summarizes validation issues and permission changes', () => {
+test('summarizes packages, issues, and hints per store', () => {
   const text = formatValidation({
-    artifact: { kind: 'zip', version: '1.4.2' },
-    release: { locales: ['English – en (default)'] },
-    issues: [{ severity: 'error', code: 'x', message: 'missing justification for permission tabs' }, { severity: 'warning', code: 'y', message: 'screenshot is small' }],
-    baseline: { version: '1.4.1', manifestChanges: [{ field: 'permissions', added: ['tabs'], removed: [] }] },
+    packages: { chrome: { version: '1.4.2', kind: 'zip' }, firefox: { version: '1.4.1', kind: 'zip' } },
+    chrome: { release: { locales: ['English – en (default)'] }, baseline: { version: '1.4.1', manifestChanges: [{ field: 'permissions', added: ['tabs'], removed: [] }] } },
+    issues: [
+      { store: 'chrome', severity: 'error', code: 'x', message: 'missing justification for permission tabs' },
+      { store: 'firefox', severity: 'warning', code: 'y', message: 'package versions differ across stores: chrome 1.4.2, firefox 1.4.1' },
+    ],
+    hints: ['Found a Microsoft Edge Add-ons package (dist/edge.zip), but that store is not configured; run dashbye init to change stores.'],
   });
-  assert.match(text, /Extension 1\.4\.2 \(zip\)/);
-  assert.match(text, /error\s+missing justification for permission tabs/);
-  assert.match(text, /warning\s+screenshot is small/);
-  assert.match(text, /permissions: \+tabs/);
-  assert.match(text, /Since 1\.4\.1/);
+  assert.match(text, /Chrome Web Store\s+1\.4\.2 \(zip\) · English – en \(default\)/);
+  assert.match(text, /Firefox Add-ons\s+1\.4\.1 \(zip\)/);
+  assert.match(text, /Chrome Web Store since 1\.4\.1: permissions: \+tabs/);
+  assert.match(text, /error\s+Chrome Web Store: missing justification for permission tabs/);
+  assert.match(text, /warning\s+Firefox Add-ons: package versions differ/);
+  assert.match(text, /hint\s+Found a Microsoft Edge Add-ons package/);
+});
+
+test('says when validation found nothing', () => {
+  assert.match(formatValidation({ packages: { edge: { version: '1.0.0', kind: 'zip' } }, issues: [], hints: [] }), /No issues found\./);
 });
 
 test('reports a successful sync', () => {

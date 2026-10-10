@@ -35,3 +35,8 @@ export async function writePrivateFile(path: string, contents: string): Promise<
   await writeFile(path, contents, { mode: 0o600 });
   await chmod(path, 0o600);
 }
+
+// Plans cover every configured store, so they belong to the project config.
+export function projectStateDir(configPath: string, context: PlatformContext = current()): string {
+  return join(appStateDir(context), 'projects', sha256(configPath).slice(0, 16));
+}

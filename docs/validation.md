@@ -86,6 +86,12 @@ flowchart TD
 
 ## Not yet validated
 
+- Firefox: the AMO read and preview fingerprinting were checked read-only against a
+  public add-on. The validation upload and a plan against an add-on the owner
+  controls have not run; they need the owner's AMO API key. Store detection and
+  store selection were checked read-only on X-TOC and Bookmark Assistant.
+- Edge: no Partner Center automation exists yet; configured Edge targets are
+  validated locally and reported as not supported.
 - Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
   with injected dependencies; `dashbye chrome` was checked against an already
