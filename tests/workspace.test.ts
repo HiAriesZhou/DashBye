@@ -58,3 +58,18 @@ test('reports host and remote-code inconsistencies', () => {
     'missing_remote_code_justification',
   ]);
 });
+
+test('reports unknown collected-data categories with the closest valid identifier', () => {
+  const value = workspace();
+  value.release.privacy.collectedData = ['authenticationInfo', 'websiteContent'];
+  const issues = validateWorkspace(value);
+  assert.deepEqual(issues.map(issue => [issue.severity, issue.code]), [['error', 'unknown_collected_data_category']]);
+  assert.match(issues[0]!.message, /authenticationInfo/);
+  assert.match(issues[0]!.message, /did you mean authenticationInformation\?/);
+});
+
+test('accepts every known collected-data category', () => {
+  const value = workspace();
+  value.release.privacy.collectedData = ['authenticationInformation', 'location', 'websiteContent'];
+  assert.deepEqual(validateWorkspace(value), []);
+});

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { DashboardState, DesiredState } from '../src/reconcile.js';
 import { createReconciliationPlan } from '../src/reconcile.js';
+import { UNLOCKED } from '../src/edit-lock.js';
 import type { LoadedWorkspace } from '../src/workspace.js';
 
 const privacy = {
@@ -20,7 +21,7 @@ const listing = {
 };
 
 function current(): DashboardState {
-  return { itemId: 'a'.repeat(32), packageVersion: '1.0.0', listing: structuredClone(listing), privacy: structuredClone(privacy) };
+  return { itemId: 'a'.repeat(32), packageVersion: '1.0.0', listing: structuredClone(listing), privacy: structuredClone(privacy), editLock: { ...UNLOCKED } };
 }
 
 function desired(): DesiredState {
@@ -70,4 +71,18 @@ test('rejects a Dashboard state for another item', () => {
   const state = current();
   state.itemId = 'b'.repeat(32);
   assert.throws(() => createReconciliationPlan(workspace, desired(), state), /does not match/);
+});
+
+test('still plans a locked draft read-only and records why it cannot be written', () => {
+  const editable = createReconciliationPlan(workspace, desired(), current());
+  const locked = createReconciliationPlan(workspace, desired(), { ...current(), editLock: { pendingReview: true, listingFieldsDisabled: true, privacyFieldsDisabled: true } });
+  assert.equal(editable.blocking, undefined);
+  assert.deepEqual(locked.operations, editable.operations);
+  assert.deepEqual(locked.blocking, ['item is in review; drafts cannot be edited until review completes']);
+  assert.notEqual(locked.approvalHash, editable.approvalHash);
+});
+
+test('reports disabled fields as a lock even without a review status', () => {
+  const plan = createReconciliationPlan(workspace, desired(), { ...current(), editLock: { ...UNLOCKED, privacyFieldsDisabled: true } });
+  assert.deepEqual(plan.blocking, ['Privacy fields are read-only on the Dashboard']);
 });

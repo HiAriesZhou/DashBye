@@ -65,4 +65,15 @@ test('summarizes doctor results with a next step when Chrome is not running', ()
   assert.match(down, /warning\s+screenshot is small/);
   const up = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: true, matchingEditTabs: 1, dashboardTabs: 2 } });
   assert.match(up, /Chrome: connected · 2 Dashboard tabs, 1 for this item/);
+  const windowless = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: false, matchingEditTabs: 0, dashboardTabs: 0, noWindow: true, error: 'running without an open window' } });
+  assert.match(windowless, /Chrome: running without an open window; run "dashbye chrome" to open one/);
+  assert.doesNotMatch(windowless, /not reachable/);
+});
+
+test('warns that a locked draft will not be written', () => {
+  const blocked = { ...plan([{ area: 'listing', action: 'update', field: 'description', before: 'a', after: 'b', destructive: false, ownerApprovalRequired: false }]), blocking: ['item is in review; drafts cannot be edited until review completes'] };
+  const text = formatPlan(blocked, target);
+  assert.match(text, /1 change:\n.*update description\nBlocked: item is in review; drafts cannot be edited until review completes\nsync-draft will not write/);
+  assert.match(formatPlan({ ...plan([]), blocking: blocked.blocking }, target), /already matches\.\nBlocked: item is in review/);
+  assert.doesNotMatch(formatPlan(plan([]), target), /Blocked/);
 });
