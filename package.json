@@ -33,7 +33,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/mark-bin.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "prepare": "npm run build",
     "prepublishOnly": "npm test",
