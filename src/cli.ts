@@ -6,6 +6,7 @@ import { renderAgentPrompt } from './agent-prompt.js';
 import { assertNoFirefoxPathOverrides, commandHelp, optional, parseCommandLine, type Args } from './args.js';
 import { ensureChrome } from './chrome.js';
 import { applyReconciliationPlan, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
+import { assertDraftEditable, assertPlanWritable } from './edit-lock.js';
 import { formatDoctor, formatSyncResult, formatValidation } from './format.js';
 import { sha256 } from './hash.js';
 import { manual } from './help.js';
@@ -208,6 +209,8 @@ async function prepareChrome(args: Args, configPath: string, approved: Reconcili
 
 async function verifyChrome(run: ChromeRun): Promise<void> {
   const current = await readDashboardState(run.page, run.workspace);
+  // A lock is reported as such rather than as a stale plan.
+  assertDraftEditable(current.editLock);
   if (createReconciliationPlan(run.workspace, run.desired, current).approvalHash !== run.approved.approvalHash) {
     throw new Error('plan is stale because the Chrome Web Store draft changed; run dashbye plan again');
   }
@@ -242,6 +245,8 @@ async function syncDraft(args: Args) {
   const approved = await loadPlan(args, configPath);
   const { run, pending } = storesToRun(approved, optional(args, 'store'));
   assertNoFirefoxPathOverrides(run, args);
+  // A plan read while the item was in review is refused before Chrome is opened.
+  if (run.includes('chrome') && approved.stores.chrome) assertPlanWritable(approved.stores.chrome);
   const mode = run.length ? approvalMode(args, approved) : null;
   const setup = await loadProject(configPath);
   const chrome = run.includes('chrome') && approved.stores.chrome ? await prepareChrome(args, configPath, approved.stores.chrome) : null;

@@ -18,12 +18,16 @@ DashBye separates local intent, remote observation, and approved writes.
    for the exact item. A non-secret `window.name` marker lets separate CLI commands
    reuse it; user editors remain untouched. Pending Dashboard login redirects are
    recognized so retries do not open more tabs. It reads package, listing, and
-   privacy state into hashes and booleans that do not expose field contents.
+   privacy state into hashes and booleans that do not expose field contents. It also
+   reads an edit lock (`edit-lock.ts`): whether the item shows **Pending review** and
+   whether the listing or privacy page has disabled fields.
 6. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
    remove, and reorder. The approval hash binds the item, artifact, resources, remote
-   snapshot, and exact operations.
-7. `cli.ts` revalidates the approved plan against a fresh remote read immediately
-   before writing. After **Save draft**, it rereads all supported state and writes a
+   snapshot, and exact operations. A locked draft still gets a plan, with the reasons
+   bound under `blocking`.
+7. `cli.ts` refuses a blocked plan before opening Chrome, and refuses to write when
+   a fresh read finds the draft locked. It revalidates the approved plan against a
+   fresh remote read immediately before writing. After **Save draft**, it rereads all supported state and writes a
    lock only when no operation remains.
 
 When the loopback endpoint is not answering, the CLI opens official Chrome with a
