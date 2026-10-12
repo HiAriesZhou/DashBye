@@ -2,6 +2,7 @@ import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
+import { connectChrome } from './chrome.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
 import type { LoadedWorkspace } from './workspace.js';
 
@@ -195,7 +196,7 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
 }
 
 export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
-  const browser = await chromium.connectOverCDP(endpoint, { timeout: 30_000 });
+  const browser = await connectChrome(endpoint, value => chromium.connectOverCDP(value, { timeout: 30_000 }));
   const page = await selectDashboardPage(browser, itemId);
   return { browser, page };
 }

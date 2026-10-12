@@ -127,6 +127,7 @@ DashBye looks for Chrome in the standard install locations. If yours is elsewher
 Run `dashbye doctor` to check the configuration and the Chrome connection.
 
 - If Chrome does not open the debugging endpoint, a window using the DashBye profile may already be open without it; quit that Chrome and retry.
+- If the DashBye Chrome is still running but every window is closed (common on macOS), the endpoint answers but cannot be used. DashBye opens a Dashboard window in it; with `--no-launch` it stops and asks you to run `dashbye chrome` or open a new window (Cmd+N / Ctrl+N). `doctor` reports this as "running without an open window".
 - If authentication expired, sign in again in the DashBye Chrome window.
 - Duplicate edit tabs are supported; DashBye preserves them and reuses its own
   work tab. Different publisher/account contexts still need to be resolved.
