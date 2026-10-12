@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isDashboardUrl, isExactItemEditUrl, itemEditUrlFromDashboardUrl, languageOptionCandidates } from '../src/dashboard-v2.js';
+import { isDashboardUrl, isExactItemEditUrl, itemEditUrlFromDashboardUrl, itemSectionUrl, languageOptionCandidates } from '../src/dashboard-v2.js';
 
 const itemId = 'a'.repeat(32);
 
@@ -65,4 +65,17 @@ test('finds the remote-code card even when a justification mentions remote code'
   } finally {
     await browser.close();
   }
+});
+
+test('builds a section URL only from the configured item edit URL', () => {
+  const edit = `https://chromewebstore.google.com/devconsole/publisher-id/${itemId}/edit`;
+  assert.equal(itemSectionUrl(edit, itemId, 'Store listing'), `${edit}/listing`);
+  assert.equal(itemSectionUrl(`${edit}/privacy?hl=en#top`, itemId, 'Package'), `${edit}/package`);
+  const legacy = `https://chrome.google.com/webstore/devconsole/publisher-id/${itemId}/edit`;
+  assert.equal(itemSectionUrl(`${legacy}/package`, itemId, 'Privacy'), `${legacy}/privacy`);
+  assert.equal(itemSectionUrl(edit, 'b'.repeat(32), 'Package'), null);
+  assert.equal(itemSectionUrl(`https://chromewebstore.google.com/devconsole/publisher-id/${itemId}`, itemId, 'Package'), null);
+  assert.equal(itemSectionUrl(`https://example.com/devconsole/publisher-id/${itemId}/edit`, itemId, 'Package'), null);
+  assert.equal(itemSectionUrl(`http://chromewebstore.google.com/devconsole/publisher-id/${itemId}/edit`, itemId, 'Package'), null);
+  assert.equal(itemSectionUrl('not a URL', itemId, 'Package'), null);
 });

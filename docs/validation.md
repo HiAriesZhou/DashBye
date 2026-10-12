@@ -111,6 +111,18 @@ flowchart TD
   `sync-draft` now rereads the saved draft a bounded number of times (read-only,
   no write is repeated) before reporting a difference. Unit-tested; the retry has
   not yet been exercised on a real Dashboard.
+- Section navigation was made to skip the click when the tab is already on the
+  section and to fall back to the section URL when the click does not settle. The
+  first version accepted either the section path or the title, and the Dashboard
+  updates the URL about 250 ms before it renders the section, so reads ran on the
+  previous section and timed out on the Language selector. The root Dashboard title
+  also contains "Store". A section now counts as open only when the path ends with
+  the section suffix and the title starts with the section name. Checked on
+  2026-10-12 with read-only `plan` runs: two consecutive runs matched the previous
+  adapter's operations and remote snapshot hash exactly. The fallback builds the
+  section URL only from the current edit URL of the configured item on either
+  Dashboard host; those runs settled after the click, so the fallback itself did not
+  run.
 
 ## Not yet validated
 
@@ -123,7 +135,8 @@ flowchart TD
 - Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
   with injected dependencies; `dashbye chrome` was checked against an already
-  running dedicated session only. Windows and Linux Chrome locations are untested.
+  running dedicated session, and on 2026-10-12 against one with every window closed
+  (it opened a Dashboard window and `doctor` then connected). Windows and Linux Chrome locations are untested.
 - Fingerprinting images from the stored original during read-back after a real
   image replacement. Only the read path on unchanged images has run; blob: and data:
   upload previews are accepted but have not been observed on a real Dashboard.
@@ -132,4 +145,5 @@ flowchart TD
 - A collected-data change, certification change, or new permission confirmation.
   These remain plan-bound and owner-approved operations.
 - Multiple locales and Dashboard languages other than English.
+- The section-URL fallback when a section link click does not settle.
 - Review submission and publication. They are intentionally outside DashBye.
