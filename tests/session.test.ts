@@ -40,7 +40,7 @@ function deps(failures: number) {
     messages,
     attempts: () => attempts,
     value: {
-      ensure: async () => ({ launched: true }),
+      ensure: async () => ({ launched: true, windowOpened: false }),
       connect: async () => ({}) as never,
       select: async () => {
         attempts += 1;
@@ -88,4 +88,26 @@ test('does not retry other Dashboard errors', async () => {
     }),
     /multiple publisher/,
   );
+});
+
+test('says when it opened a window in an already running Chrome', async () => {
+  const fake = deps(0);
+  const messages: string[] = [];
+  await openDashboard('http://127.0.0.1:9333', 'a'.repeat(32), { launch: true, waitForLogin: false, notify: message => messages.push(message) }, {
+    ...fake.value,
+    ensure: async () => ({ launched: false, windowOpened: true }),
+  });
+  assert.deepEqual(messages, ['Opened a Dashboard window in the running DashBye Chrome.']);
+});
+
+test('explains a connection refused because Chrome has no open window', async () => {
+  const fake = deps(0);
+  await assert.rejects(
+    openDashboard('http://127.0.0.1:9333', 'a'.repeat(32), { launch: true, waitForLogin: false, notify: () => {} }, {
+      ...fake.value,
+      connect: async () => { throw new Error('Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.'); },
+    }),
+    /running without an open window; run "dashbye chrome" or open a new window/,
+  );
+  assert.equal(fake.attempts(), 0);
 });

@@ -93,6 +93,8 @@ dashbye sync-draft
 
 `sync-draft` rereads the draft, shows the plan again, and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save or `n` to cancel. DashBye rejects the plan if the target, artifact, resources, or remote draft changed. A successful run saves the draft, reads it back with zero remaining operations, and writes the release lock.
 
+While the item is in review, the Dashboard makes every draft field read-only. `plan` still reads the draft and lists the differences, adds `Blocked: item is in review; drafts cannot be edited until review completes`, and records the reason under `blocking` in the JSON plan. `sync-draft` refuses such a plan before opening Chrome, and refuses any plan if the item enters review before writing. Run `plan` again once the review completes.
+
 In a terminal, commands print readable summaries; add `--json` for JSON. Scripts and agents, whose output is not a terminal, get JSON and must approve with `--approve-plan <approvalHash>`. Run `dashbye <command> -h` for the options of one command; unknown options are rejected.
 
 ## Install from source
@@ -127,6 +129,7 @@ DashBye looks for Chrome in the standard install locations. If yours is elsewher
 Run `dashbye doctor` to check the configuration and the Chrome connection.
 
 - If Chrome does not open the debugging endpoint, a window using the DashBye profile may already be open without it; quit that Chrome and retry.
+- If the DashBye Chrome is still running but every window is closed (common on macOS), the endpoint answers but cannot be used. DashBye opens a Dashboard window in it; with `--no-launch` it stops and asks you to run `dashbye chrome` or open a new window (Cmd+N / Ctrl+N). `doctor` reports this as "running without an open window".
 - If authentication expired, sign in again in the DashBye Chrome window.
 - Duplicate edit tabs are supported; DashBye preserves them and reuses its own
   work tab. Different publisher/account contexts still need to be resolved.

@@ -30,6 +30,7 @@ const strings = (value: unknown): value is string[] => Array.isArray(value) && v
 function validChrome(value: unknown): value is ReconciliationPlan {
   return record(value) && value.schema === 'dashbye/plan/v2'
     && ['itemIdHash', 'artifactSha256', 'releaseHash', 'remoteHash', 'approvalHash'].every(key => typeof value[key] === 'string')
+    && (value.blocking === undefined || strings(value.blocking))
     && Array.isArray(value.operations) && value.operations.every(operation => record(operation)
       && ['area', 'action', 'field'].every(key => typeof operation[key] === 'string')
       && ['destructive', 'ownerApprovalRequired'].every(key => typeof operation[key] === 'boolean')

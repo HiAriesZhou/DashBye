@@ -44,12 +44,14 @@ function warning(operation: ReconcileOperation): string {
 
 export function formatPlan(plan: ReconciliationPlan, target: { itemId: string; language: string }): string {
   const lines = [`Target: item ${target.itemId}, ${target.language}`];
-  if (!plan.operations.length) return [...lines, 'No changes: the Dashboard draft already matches.'].join('\n');
+  const blocked = (plan.blocking ?? []).map(reason => `Blocked: ${reason}`);
+  if (blocked.length) blocked.push('sync-draft will not write to this draft; run dashbye plan again once it is editable.');
+  if (!plan.operations.length) return [...lines, 'No changes: the Dashboard draft already matches.', ...blocked].join('\n');
   lines.push(`${plan.operations.length} change${plan.operations.length === 1 ? '' : 's'}:`);
   for (const operation of plan.operations) {
     lines.push(`  ${AREA_LABELS[operation.area].padEnd(8)} ${change(operation)}${warning(operation)}`);
   }
-  return lines.join('\n');
+  return [...lines, ...blocked].join('\n');
 }
 
 type ValidationView = {
@@ -86,14 +88,16 @@ type DoctorView = {
   config: string;
   artifactVersion: string;
   issues: ValidationIssue[];
-  browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; error?: string };
+  browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; noWindow?: boolean; error?: string };
 };
 
 export function formatDoctor(result: DoctorView): string {
   const { browser } = result;
   const chrome = browser.connected
     ? `Chrome: connected · ${browser.dashboardTabs} Dashboard tab${browser.dashboardTabs === 1 ? '' : 's'}, ${browser.matchingEditTabs} for this item`
-    : `Chrome: not reachable (${browser.error ?? 'connection failed'}); run "dashbye chrome"`;
+    : browser.noWindow
+      ? 'Chrome: running without an open window; run "dashbye chrome" to open one'
+      : `Chrome: not reachable (${browser.error ?? 'connection failed'}); run "dashbye chrome"`;
   const lines = [`Config: ${result.config} · extension ${result.artifactVersion}`, chrome];
   for (const issue of result.issues) lines.push(`  ${issue.severity.padEnd(8)} ${issue.message}`);
   return lines.join('\n');
