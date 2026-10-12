@@ -95,6 +95,17 @@ flowchart TD
 - The Dashboard may retain duplicate hidden component trees. Reads and writes now
   target visible controls, and screenshot previews are de-duplicated by their
   rendered position rather than by image content.
+- On 2026-10-12, with the item in **Pending review**, `sync-draft` timed out after
+  30 s in `locator.fill` because every listing text area was disabled; no draft
+  changed. A read-only check of the same item then found the header text
+  `Status: Pending review` and every visible text area and text input disabled on
+  the Store listing (1 text area, 3 inputs) and Privacy (8 text areas, 1 input)
+  pages, with Save draft disabled. The read now records `editLock` (the review
+  status and whether each page has a disabled field) as booleans. On the same item,
+  `plan` still listed its 3 differences and added the lock as `blocking`, and
+  `sync-draft` refused that plan before opening Chrome. The live-page guard that
+  runs again before the first fill, and the unlocked path of these selectors after
+  review, have not been exercised on a real Dashboard yet.
 - After replacing a small promotional tile, the immediate read-back still differed
   and `sync-draft` failed without a lock; a later zero-operation sync succeeded.
   `sync-draft` now rereads the saved draft a bounded number of times (read-only,

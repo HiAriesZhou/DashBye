@@ -98,3 +98,17 @@ test('confirmation text shows only selected stores', () => {
   assert.doesNotMatch(formatMultiPlan(shown, { chrome: { itemId: 'a'.repeat(32), language: 'English' } }), /Chrome Web Store|Edge Add-ons/);
   assert.equal(confirmQuestion(shown), 'Upload the Firefox package to AMO for validation?');
 });
+
+test('binds the lock reasons of a Chrome plan and keeps editable plans compatible', () => {
+  const editable = chrome('1');
+  const blockedBase = { ...editable, approvalHash: undefined, blocking: ['item is in review; drafts cannot be edited until review completes'] };
+  const blocked = { ...blockedBase, approvalHash: chromeApprovalHash(blockedBase) };
+  assert.notEqual(blocked.approvalHash, editable.approvalHash);
+  assert.equal(chromeApprovalHash({ ...editable, blocking: [] }), editable.approvalHash);
+  const plan = combinePlans({ chrome: blocked }, []);
+  assert.deepEqual(parsePlanFile(JSON.parse(JSON.stringify(plan))), plan);
+  const unblocked = structuredClone(plan);
+  delete unblocked.stores.chrome!.blocking;
+  assert.throws(() => parsePlanFile(unblocked), /plan file was modified/);
+  assert.throws(() => parsePlanFile({ ...plan, stores: { chrome: { ...blocked, blocking: [1] } } }), /invalid plan/);
+});

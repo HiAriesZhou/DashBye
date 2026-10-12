@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline';
 import { chromium, type Browser, type Page } from 'playwright-core';
-import { ensureChrome } from './chrome.js';
+import { connectChrome, ensureChrome, type EnsureChromeResult } from './chrome.js';
 import { LoginRequiredError, selectDashboardPage } from './dashboard-v2.js';
 
 const LOGIN_POLL_MS = 3_000;
@@ -23,7 +23,7 @@ export function askYesNo(question: string, streams: { input: NodeJS.ReadableStre
 }
 
 export type SessionDependencies = {
-  ensure: (endpoint: string, options: { launch: boolean }) => Promise<{ launched: boolean }>;
+  ensure: (endpoint: string, options: { launch: boolean }) => Promise<EnsureChromeResult>;
   connect: (endpoint: string) => Promise<Browser>;
   select: (browser: Browser, itemId: string) => Promise<Page>;
   sleep: (ms: number) => Promise<void>;
@@ -48,9 +48,10 @@ export type SessionOptions = {
 // Retries reuse one connection, and page selection never opens extra login tabs.
 export async function openDashboard(endpoint: string, itemId: string, options: SessionOptions, overrides: Partial<SessionDependencies> = {}): Promise<{ browser: Browser; page: Page }> {
   const deps = { ...defaults, ...overrides };
-  const { launched } = await deps.ensure(endpoint, { launch: options.launch });
+  const { launched, windowOpened } = await deps.ensure(endpoint, { launch: options.launch });
   if (launched) options.notify('Opened the dedicated DashBye Chrome.');
-  const browser = await deps.connect(endpoint);
+  if (windowOpened) options.notify('Opened a Dashboard window in the running DashBye Chrome.');
+  const browser = await connectChrome(endpoint, deps.connect);
   const attempts = options.loginAttempts ?? LOGIN_ATTEMPTS;
   for (let attempt = 1; ; attempt += 1) {
     try {

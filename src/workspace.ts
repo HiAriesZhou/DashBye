@@ -5,6 +5,7 @@ import YAML from 'yaml';
 import { loadArtifact, type ArtifactFacts } from './artifact.js';
 import { fileHash, objectHash } from './hash.js';
 import { boolean, nullableText, pathFrom, record, stringList, text } from './parse.js';
+import { closestCollectedDataCategory, isCollectedDataCategory } from './privacy-categories.js';
 import { loadProject } from './project.js';
 import { normalizeLoopbackEndpoint, assertItemId } from './security.js';
 
@@ -289,6 +290,15 @@ export function validateWorkspace(workspace: LoadedWorkspace): ValidationIssue[]
   }
   if (!privacy.remoteCode.uses && privacy.remoteCode.justification) {
     issues.push({ severity: 'error', code: 'stale_remote_code_justification', message: 'remote code justification exists while remote code is disabled' });
+  }
+  for (const category of privacy.collectedData) {
+    if (!isCollectedDataCategory(category)) {
+      issues.push({
+        severity: 'error',
+        code: 'unknown_collected_data_category',
+        message: `unknown privacy.collectedData category ${category}; did you mean ${closestCollectedDataCategory(category)}?`,
+      });
+    }
   }
   for (const [key, value] of Object.entries(privacy.certifications)) {
     if (!value) issues.push({ severity: 'error', code: 'uncertified_data_use', message: `data-use certification is not affirmed: ${key}` });

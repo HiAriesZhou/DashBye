@@ -35,6 +35,18 @@ export function sanitizedPageLabel(page: Page): string {
   return `${url.hostname}/…/${url.pathname.endsWith('/edit') ? 'edit' : 'item'}`;
 }
 
+const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
+const STORE_URL = /https?:\/\/(chrome\.google\.com|chromewebstore\.google\.com)\/\S*/g;
+const MAX_ERROR_LENGTH = 300;
+
+// Playwright appends a call log that can quote filled field contents, and its
+// first line can carry an authenticated Dashboard URL; neither may be printed.
+export function publicErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return 'unknown error';
+  const firstLine = error.message.replace(ANSI_ESCAPE, '').split('\n')[0]?.trim() || 'unknown error';
+  return firstLine.replace(STORE_URL, (_, host: string) => `${host}/…`).slice(0, MAX_ERROR_LENGTH);
+}
+
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function assertEdgeProductId(value: string): string {
