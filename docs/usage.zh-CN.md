@@ -89,6 +89,8 @@ dashbye sync-draft
 
 `sync-draft` 会重新读取草稿，再列一遍计划，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。目标、构建产物、资源或线上草稿有变化时，DashBye 会拒绝执行旧计划。执行成功会保存草稿、回读确认剩余操作为零，并写入版本锁文件。
 
+商品处于审核中（Pending review）时，Dashboard 会把所有草稿字段设为只读。`plan` 仍会读取草稿并列出差异，同时提示 `Blocked: item is in review; drafts cannot be edited until review completes`，并在 JSON 计划的 `blocking` 中记录原因。`sync-draft` 会在打开 Chrome 之前拒绝这样的计划；如果写入前商品进入审核，也会拒绝写入。审核结束后重新运行 `plan` 即可。
+
 在终端里，各命令输出便于阅读的摘要；需要 JSON 时加 `--json`。脚本和 Agent 的输出不是终端，会得到 JSON，批准时必须使用 `--approve-plan <approvalHash>`。想看某个命令的参数，运行 `dashbye <命令> -h`；写错的参数会直接报错。
 
 ## 从源码安装
@@ -123,6 +125,7 @@ DashBye 会在 Chrome 的标准安装位置查找。如果你装在别处，把 
 运行 `dashbye doctor` 可以检查配置和 Chrome 连接。
 
 - Chrome 打开后调试端口仍没有响应：可能已经有一个使用 DashBye Profile、但没开调试端口的窗口。退出那个 Chrome 后重试。
+- DashBye Chrome 仍在运行、但所有窗口都关了（macOS 上常见）：调试端口有响应，却无法使用。DashBye 会在其中打开一个 Dashboard 窗口；加了 `--no-launch` 时它会停下，提示你运行 `dashbye chrome` 或新建窗口（Cmd+N / Ctrl+N）。`doctor` 会显示为“running without an open window”。
 - 登录过期：在 DashBye 的 Chrome 窗口里重新登录。
 - 同一条目的重复编辑页可以保留；DashBye 会使用自己的工作标签页。不同发布者或浏览器账户上下文仍需明确。
 - 语言选择错误：使用完整的 Dashboard 语言标签。多语言操作尚未验证。

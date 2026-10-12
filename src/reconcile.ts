@@ -1,5 +1,6 @@
 import { objectHash, sha256 } from './hash.js';
 import { detailHashFile, visualHashFile, visuallyEqual } from './image-fingerprint.js';
+import { editLockReasons, type EditLock } from './edit-lock.js';
 import type { LoadedWorkspace } from './workspace.js';
 
 export type PrivacyState = {
@@ -36,9 +37,10 @@ export type DashboardState = {
   packageVersion: string | null;
   listing: ListingState;
   privacy: PrivacyState;
+  editLock: EditLock;
 };
 
-export type DesiredState = DashboardState & {
+export type DesiredState = Omit<DashboardState, 'editLock'> & {
   artifactPath: string;
   listingFiles: {
     icon: string;
@@ -73,12 +75,15 @@ export type ReconciliationPlan = {
   releaseHash: string;
   remoteHash: string;
   operations: ReconcileOperation[];
+  // Reasons the draft cannot be written now (for example, the item is in review).
+  // Absent when the draft is editable, so plans saved by 0.3 keep their hash.
+  blocking?: string[];
   approvalHash: string;
 };
 
 export function chromeApprovalHash(plan: Omit<ReconciliationPlan, 'approvalHash'>): string {
-  const { schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations } = plan;
-  return objectHash({ schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations });
+  const { schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations, blocking } = plan;
+  return objectHash({ schema, itemIdHash, artifactSha256, releaseHash, remoteHash, operations, ...(blocking?.length ? { blocking } : {}) });
 }
 
 const hashNullable = (value: string | null) => value === null ? null : sha256(value);
@@ -200,6 +205,11 @@ export function createReconciliationPlan(workspace: LoadedWorkspace, desired: De
     remoteHash: objectHash(current),
     operations,
   };
+  const blocking = editLockReasons(current.editLock);
+  if (blocking.length) {
+    const blocked = { ...base, blocking };
+    return { ...blocked, approvalHash: chromeApprovalHash(blocked) };
+  }
   return { ...base, approvalHash: chromeApprovalHash(base) };
 }
 
