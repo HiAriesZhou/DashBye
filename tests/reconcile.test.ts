@@ -71,3 +71,14 @@ test('rejects a Dashboard state for another item', () => {
   state.itemId = 'b'.repeat(32);
   assert.throws(() => createReconciliationPlan(workspace, desired(), state), /does not match/);
 });
+
+test('summarizes object-valued privacy fields as hashes instead of raw objects', () => {
+  const target = desired();
+  target.privacy.permissionJustificationHashes = { storage: 'changed' };
+  const plan = createReconciliationPlan(workspace, target, current());
+  const operation = plan.operations.find(item => item.field === 'permissionJustifications');
+  assert.equal(operation?.action, 'update');
+  assert.match(String(operation?.before), /^[0-9a-f]{64}$/);
+  assert.match(String(operation?.after), /^[0-9a-f]{64}$/);
+  assert.notEqual(operation?.before, operation?.after);
+});
