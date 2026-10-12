@@ -11,7 +11,10 @@ const maximumMeanDifference = 0.012;
 // signature, compared by its mean. Both must match: greyscale alone misses a
 // colour-only change at similar luminance. Block tolerance calibrated on Dashboard
 // thumbnails (160x100 CSS px) against local sources: re-encoding noise peaked at
-// 0.0155, a Settings redesign measured 0.0357 or more.
+// 0.0155, a Settings redesign measured 0.0357 or more. A text-dense item later
+// reached 0.032 on unchanged thumbnails, so the Chrome adapter now fingerprints the
+// stored original (dashboard-image.ts); the tolerance remains for re-encoded
+// sources such as AMO previews.
 const detailWidth = 64;
 const detailHeight = 40;
 const detailBlock = 8;

@@ -137,14 +137,21 @@ export async function createDesiredState(workspace: LoadedWorkspace): Promise<De
   };
 }
 
+function scalarField(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.length;
+  return objectHash(value);
+}
+
 function fieldOperation(area: ReconcileOperation['area'], field: string, before: unknown, after: unknown, privacy = false): ReconcileOperation | null {
   if (objectHash(before) === objectHash(after)) return null;
   return {
     area,
     action: after === null || (Array.isArray(after) && after.length === 0) ? 'remove' : 'update',
     field,
-    before: Array.isArray(before) ? before.length : before as string | number | boolean | null,
-    after: Array.isArray(after) ? after.length : after as string | number | boolean | null,
+    before: scalarField(before),
+    after: scalarField(after),
     destructive: after === null || (Array.isArray(after) && after.length === 0),
     ownerApprovalRequired: privacy,
   };

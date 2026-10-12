@@ -65,6 +65,23 @@ flowchart TD
   match the existing 16×16 RGB signature. Icons and promo tiles keep the 16×16
   comparison, which was not recalibrated. The combined check is unit-tested; the
   real-thumbnail calibration above covered the grayscale part only.
+- On 2026-10-12 a read-only check on a second, text-dense item found its three
+  unchanged screenshots at 0.027–0.032 worst-block against their local sources
+  (cross-pairings ≥ 0.118, colour mean 0.007–0.009) and the icon at 0.0153, so
+  `plan` proposed replacing images that had not changed. The Dashboard previews
+  are lossy WebP renditions from Google's image service (`w320-h200-rw` for
+  screenshots, `s256-rw` for the 128 px icon); the element screenshots copied them.
+  Requesting the same images with the `s0` size option returned the stored 1280×800
+  PNG screenshots and 128×128 PNG icon, which compared at exactly 0.0000 with the
+  local files. The difference was thumbnail noise, not a different upload. The
+  Chrome adapter now fetches that stored original through the work tab, without
+  cookies, instead of screenshotting the preview, and stops on any image source
+  that is not the image service or a local upload preview. With that change,
+  `plan` on the same item reported zero operations. Tolerances are unchanged
+  (block 0.025, colour 0.012), so the redesign (≥ 0.0357) and colour-only
+  (`#d03030` vs `#507a50`) cases remain detected. The check used only navigation,
+  image reads, and `plan`; no draft was saved, and no screenshots or image URLs were
+  kept.
 - The remote-code privacy card was located by the text "Remote code", which also
   matches permission justifications such as "does not execute remote code". Reads
   timed out on the wrong card, and writes could have filled its text area. The card
@@ -120,6 +137,9 @@ flowchart TD
   with injected dependencies; `dashbye chrome` was checked against an already
   running dedicated session, and on 2026-10-12 against one with every window closed
   (it opened a Dashboard window and `doctor` then connected). Windows and Linux Chrome locations are untested.
+- Fingerprinting images from the stored original during read-back after a real
+  image replacement. Only the read path on unchanged images has run; blob: and data:
+  upload previews are accepted but have not been observed on a real Dashboard.
 - Reusing a manually authenticated profile in a newly launched headless process.
   The supported path remains a visible dedicated Chrome connected over loopback CDP.
 - A collected-data change, certification change, or new permission confirmation.
