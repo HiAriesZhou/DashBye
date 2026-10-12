@@ -102,7 +102,10 @@ flowchart TD
   also contains "Store". A section now counts as open only when the path ends with
   the section suffix and the title starts with the section name. Checked on
   2026-10-12 with read-only `plan` runs: two consecutive runs matched the previous
-  adapter's operations and remote snapshot hash exactly.
+  adapter's operations and remote snapshot hash exactly. The fallback builds the
+  section URL only from the current edit URL of the configured item on either
+  Dashboard host; those runs settled after the click, so the fallback itself did not
+  run.
 
 ## Not yet validated
 
@@ -115,19 +118,12 @@ flowchart TD
 - Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
   with injected dependencies; `dashbye chrome` was checked against an already
-  running dedicated session only. Windows and Linux Chrome locations are untested.
+  running dedicated session, and on 2026-10-12 against one with every window closed
+  (it opened a Dashboard window and `doctor` then connected). Windows and Linux Chrome locations are untested.
 - Reusing a manually authenticated profile in a newly launched headless process.
   The supported path remains a visible dedicated Chrome connected over loopback CDP.
 - A collected-data change, certification change, or new permission confirmation.
   These remain plan-bound and owner-approved operations.
 - Multiple locales and Dashboard languages other than English.
-- Image tolerance on a second item (2026-10-12, read-only): its three screenshots
-  matched their local sources one-to-one with a worst-block difference of
-  0.027–0.032 (other pairings 0.118 or more), and the icon differed by 0.0153. Both
-  exceed the current tolerances (0.025 and 0.012), so `plan` proposed replacing
-  unchanged images. Whether this is thumbnail noise or a slightly different upload
-  is unresolved; the tolerances are unchanged.
-- Writes while an item is in **Pending review**: every listing text area is
-  disabled, and `sync-draft` fails on a fill timeout instead of reporting the lock
-  before writing. No draft change was made.
+- The section-URL fallback when a section link click does not settle.
 - Review submission and publication. They are intentionally outside DashBye.
