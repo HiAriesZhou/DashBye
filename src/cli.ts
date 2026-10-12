@@ -16,7 +16,7 @@ import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForR
 import { DEFAULT_ENDPOINT, loadProject } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
-import { normalizeLoopbackEndpoint } from './security.js';
+import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { loadAmoCredentials } from './credentials.js';
 import { AmoClient } from './stores/firefox/amo.js';
@@ -100,8 +100,7 @@ async function doctorBrowser(endpoint: string, itemId: string | undefined): Prom
     return { connected: true, matchingEditTabs: tabs.length, dashboardTabs: pages.filter(page => isDashboardUrl(page.url())).length };
   } catch (error) {
     if (isNoWindowError(error)) return NO_WINDOW;
-    const message = error instanceof Error ? (error.message.split('\n')[0] ?? 'connection failed') : 'connection failed';
-    return { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: message };
+    return { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: publicErrorMessage(error) };
   }
 }
 
@@ -272,14 +271,14 @@ async function syncDraft(args: Args) {
       chromeResult = await syncChrome(chrome);
       results.chrome = { result: chromeResult.result, releaseLock: chromeResult.releaseLock };
     } catch (error) {
-      results.chrome = { result: 'failed', error: error instanceof Error ? error.message : 'unknown error' };
+      results.chrome = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
   if (firefox && client) {
     try {
       results.firefox = await uploadFirefoxForValidation(setup.targets.firefox!, client, firefox);
     } catch (error) {
-      results.firefox = { result: 'failed', error: error instanceof Error ? error.message : 'unknown error' };
+      results.firefox = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
   const failed = Object.entries(results).filter(([, entry]) => entry?.result === 'failed' || entry?.result === 'validation_failed');
@@ -339,7 +338,7 @@ async function main() {
 main().then(
   () => process.stdout.write('', () => process.exit(0)),
   error => {
-    console.error(error instanceof Error ? error.message : 'unknown error');
+    console.error(publicErrorMessage(error));
     process.stderr.write('', () => process.exit(1));
   },
 );
