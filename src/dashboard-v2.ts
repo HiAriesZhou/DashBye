@@ -201,18 +201,30 @@ export async function connectDashboard(endpoint: string, itemId: string): Promis
 }
 
 async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy'): Promise<void> {
-  const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
-  // A reload or previous section click may still be rendering the navigation.
-  await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
-    throw new Error(`${name} navigation was not found`);
-  });
-  await link.click();
+  const pathSuffix = name === 'Package' ? '/package' : name === 'Privacy' ? '/privacy' : '/listing';
+  const titlePrefix = name.toLowerCase().split(' ')[0]!;
+  // The Dashboard updates the URL before it renders the new section, and its
+  // root title also contains "Store", so only path and title together are settled.
+  const waitSettled = (timeout: number) => page.waitForFunction(
+    ({ prefix, suffix }) => location.pathname.endsWith(suffix) && document.title.toLowerCase().startsWith(prefix),
+    { prefix: titlePrefix, suffix: pathSuffix },
+    { timeout },
+  ).then(() => true, () => false);
+  const settled = async () => new URL(page.url()).pathname.endsWith(pathSuffix)
+    && (await page.title()).toLowerCase().startsWith(titlePrefix);
+  if (!await settled()) {
+    const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
+    await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
+      throw new Error(`${name} navigation was not found`);
+    });
+    await link.click();
+  }
   await page.waitForLoadState('domcontentloaded').catch(() => {});
-  await page.waitForFunction(
-    prefix => document.title.toLowerCase().includes(prefix),
-    name.toLowerCase().split(' ')[0]!,
-    { timeout: 30_000 },
-  ).catch(() => { throw new Error(`${name} page did not settle`); });
+  if (await waitSettled(20_000)) return;
+  const match = page.url().match(/^(https:\/\/chrome\.google\.com\/webstore\/devconsole\/[^/]+\/[^/]+\/edit)/);
+  if (!match) throw new Error(`${name} page did not settle`);
+  await page.goto(`${match[1]}${pathSuffix}`, { waitUntil: 'domcontentloaded' });
+  if (!await waitSettled(30_000)) throw new Error(`${name} page did not settle`);
 }
 
 async function section(page: Page, text: string): Promise<Locator> {

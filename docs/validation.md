@@ -83,6 +83,15 @@ flowchart TD
   `sync-draft` now rereads the saved draft a bounded number of times (read-only,
   no write is repeated) before reporting a difference. Unit-tested; the retry has
   not yet been exercised on a real Dashboard.
+- Section navigation was made to skip the click when the tab is already on the
+  section and to fall back to the section URL when the click does not settle. The
+  first version accepted either the section path or the title, and the Dashboard
+  updates the URL about 250 ms before it renders the section, so reads ran on the
+  previous section and timed out on the Language selector. The root Dashboard title
+  also contains "Store". A section now counts as open only when the path ends with
+  the section suffix and the title starts with the section name. Checked on
+  2026-10-12 with read-only `plan` runs: two consecutive runs matched the previous
+  adapter's operations and remote snapshot hash exactly.
 
 ## Not yet validated
 
@@ -101,4 +110,13 @@ flowchart TD
 - A collected-data change, certification change, or new permission confirmation.
   These remain plan-bound and owner-approved operations.
 - Multiple locales and Dashboard languages other than English.
+- Image tolerance on a second item (2026-10-12, read-only): its three screenshots
+  matched their local sources one-to-one with a worst-block difference of
+  0.027–0.032 (other pairings 0.118 or more), and the icon differed by 0.0153. Both
+  exceed the current tolerances (0.025 and 0.012), so `plan` proposed replacing
+  unchanged images. Whether this is thumbnail noise or a slightly different upload
+  is unresolved; the tolerances are unchanged.
+- Writes while an item is in **Pending review**: every listing text area is
+  disabled, and `sync-draft` fails on a fill timeout instead of reporting the lock
+  before writing. No draft change was made.
 - Review submission and publication. They are intentionally outside DashBye.
