@@ -21,6 +21,13 @@ official Chrome profile and loopback CDP connection.
 - Agent initialization as a multi-turn JSON protocol: `needs_input` questions for
   artifact, resource root, item ID, language, and endpoint; a `ready` preview with
   an argument-array write command; and `existing_config` detection after writing.
+- Faster Save draft completion (2026-10-12, Chrome 154, published item): Save draft
+  returns on a fresh `Item saved.` snackbar or after 800 ms disabled, and the
+  post-write read-back now reloads the page first. A reversible description write
+  (one appended character) planned exactly one operation, saved and reread with zero
+  remaining operations in about 20 s, and an independent `plan` also found zero. The
+  revert ran the same way and restored the original remote hash. Which of the two
+  completion signals ended each save was not recorded.
 
 ## Agent CLI behavior
 
@@ -83,6 +90,15 @@ flowchart TD
   `sync-draft` now rereads the saved draft a bounded number of times (read-only,
   no write is repeated) before reporting a difference. Unit-tested; the retry has
   not yet been exercised on a real Dashboard.
+
+- The post-write read-back only navigated inside the Dashboard, which keeps unsaved
+  form values, so a save that never completed could still read back as zero
+  operations and write a lock. The read-back now reloads the page first. This
+  matters more with the 800 ms Save draft completion window, which can end before
+  a slow save finishes.
+- Chrome 154 rejects `Browser.setDownloadBehavior` without a browser context, which
+  playwright-core 1.63 sends while connecting over CDP; every command failed to
+  connect. playwright-core 1.64 connects.
 
 ## Not yet validated
 

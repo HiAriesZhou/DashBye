@@ -408,16 +408,20 @@ async function saveDraft(page: Page): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   if (!await button.isEnabled()) throw new Error('Save draft did not become enabled');
+  // Clear any previous snackbar so a fresh "Item saved." is meaningful.
+  await page.getByText('Item saved.', { exact: true }).evaluateAll(nodes => nodes.forEach(node => node.remove())).catch(() => undefined);
   await button.evaluate(element => (element as HTMLElement).click());
   let disabledSince = 0;
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (await page.getByText('Item saved.', { exact: true }).count()) return;
     if (!await button.isEnabled()) {
       if (!disabledSince) disabledSince = Date.now();
-      if (Date.now() - disabledSince >= 3_000) return;
+      // CWS often re-enables Save draft in under 3s after a successful save.
+      if (Date.now() - disabledSince >= 800) return;
     } else {
       disabledSince = 0;
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 250));
   }
   throw new Error('Save draft did not settle');
 }
@@ -579,5 +583,15 @@ export async function applyReconciliationPlan(page: Page, workspace: LoadedWorks
   await applyPackage(page, workspace, plan);
   await applyListing(page, desired, plan);
   await applyPrivacy(page, desired, plan);
+  return readSavedDashboardState(page, workspace);
+}
+
+// saveDraft only observes UI signals, and in-page navigation keeps unsaved form
+// values. Reloading makes the read-back reflect the draft the server stored.
+export async function readSavedDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
+  const { itemId } = workspace.config.target;
+  if (!isExactItemEditUrl(page.url(), itemId)) throw new Error('Dashboard item changed during read');
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await waitForItemEditor(page, itemId);
   return readDashboardState(page, workspace);
 }
