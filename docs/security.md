@@ -28,6 +28,9 @@ also outside DashBye's control.
   item ID. Duplicate user editors are left open and untouched, including unsaved
   form state. Commands reload only the work tab to observe saved server state.
   Different publisher/account contexts and target mismatches stop execution.
+- Listing images are read through the work tab only from blob:, data:, or Google's
+  `lhN.googleusercontent.com` image service, without cookies. Other sources stop
+  the read, and image URLs are never logged or stored.
 - The plan hash binds the target, artifact, resources, remote state, and operations.
   DashBye rereads remote state immediately before applying it.
 

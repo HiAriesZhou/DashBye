@@ -20,7 +20,9 @@ DashBye separates local intent, remote observation, and approved writes.
    recognized so retries do not open more tabs. It reads package, listing, and
    privacy state into hashes and booleans that do not expose field contents. It also
    reads an edit lock (`edit-lock.ts`): whether the item shows **Pending review** and
-   whether the listing or privacy page has disabled fields.
+   whether the listing or privacy page has disabled fields. Listing images are
+   fingerprinted from the stored upload (`dashboard-image.ts` requests the image
+   service's original size through the page), not from the lossy preview thumbnail.
 6. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
    remove, and reorder. The approval hash binds the item, artifact, resources, remote
    snapshot, and exact operations. A locked draft still gets a plan, with the reasons
