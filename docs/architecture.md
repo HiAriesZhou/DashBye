@@ -19,6 +19,9 @@ DashBye separates local intent, remote observation, and approved writes.
    reuse it; user editors remain untouched. Pending Dashboard login redirects are
    recognized so retries do not open more tabs. It reads package, listing, and
    privacy state into hashes and booleans that do not expose field contents.
+   Listing images are fingerprinted from the stored upload (`dashboard-image.ts`
+   requests the image service's original size through the page), not from the
+   lossy preview thumbnail.
 6. `reconcile.ts` creates a complete desired-state plan: upload, update, replace,
    remove, and reorder. The approval hash binds the item, artifact, resources, remote
    snapshot, and exact operations.

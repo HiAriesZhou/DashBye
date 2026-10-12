@@ -1,3 +1,4 @@
+import { readOriginalImage } from './dashboard-image.js';
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import type { Browser, Locator, Page } from 'playwright-core';
@@ -259,7 +260,7 @@ export function languageOptionCandidates(language: string): string[] {
 async function imageHash(locator: Locator): Promise<string | null> {
   const visible = locator.filter({ visible: true });
   if (await visible.count() === 0) return null;
-  return visualHash(await visible.first().screenshot({ animations: 'disabled' }));
+  return visualHash(await readOriginalImage(visible.first()));
 }
 
 async function imageHashes(locator: Locator): Promise<string[]> {
@@ -273,7 +274,7 @@ async function imageHashes(locator: Locator): Promise<string[]> {
     const position = [box.x, box.y, box.width, box.height].map(value => Math.round(value * 10) / 10).join(':');
     if (positions.has(position)) continue;
     positions.add(position);
-    hashes.push(await detailHash(await image.screenshot({ animations: 'disabled' })));
+    hashes.push(await detailHash(await readOriginalImage(image)));
   }
   return hashes;
 }
