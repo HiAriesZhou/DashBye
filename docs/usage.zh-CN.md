@@ -125,6 +125,7 @@ DashBye 会在 Chrome 的标准安装位置查找。如果你装在别处，把 
 运行 `dashbye doctor` 可以检查配置和 Chrome 连接。
 
 - Chrome 打开后调试端口仍没有响应：可能已经有一个使用 DashBye Profile、但没开调试端口的窗口。退出那个 Chrome 后重试。
+- DashBye Chrome 仍在运行、但所有窗口都关了（macOS 上常见）：调试端口有响应，却无法使用。DashBye 会在其中打开一个 Dashboard 窗口；加了 `--no-launch` 时它会停下，提示你运行 `dashbye chrome` 或新建窗口（Cmd+N / Ctrl+N）。`doctor` 会显示为“running without an open window”。
 - 登录过期：在 DashBye 的 Chrome 窗口里重新登录。
 - 同一条目的重复编辑页可以保留；DashBye 会使用自己的工作标签页。不同发布者或浏览器账户上下文仍需明确。
 - 语言选择错误：使用完整的 Dashboard 语言标签。多语言操作尚未验证。

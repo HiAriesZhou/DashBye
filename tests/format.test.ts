@@ -65,6 +65,9 @@ test('summarizes doctor results with a next step when Chrome is not running', ()
   assert.match(down, /warning\s+screenshot is small/);
   const up = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: true, matchingEditTabs: 1, dashboardTabs: 2 } });
   assert.match(up, /Chrome: connected · 2 Dashboard tabs, 1 for this item/);
+  const windowless = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: false, matchingEditTabs: 0, dashboardTabs: 0, noWindow: true, error: 'running without an open window' } });
+  assert.match(windowless, /Chrome: running without an open window; run "dashbye chrome" to open one/);
+  assert.doesNotMatch(windowless, /not reachable/);
 });
 
 test('warns that a locked draft will not be written', () => {

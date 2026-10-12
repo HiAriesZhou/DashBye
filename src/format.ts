@@ -88,14 +88,16 @@ type DoctorView = {
   config: string;
   artifactVersion: string;
   issues: ValidationIssue[];
-  browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; error?: string };
+  browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; noWindow?: boolean; error?: string };
 };
 
 export function formatDoctor(result: DoctorView): string {
   const { browser } = result;
   const chrome = browser.connected
     ? `Chrome: connected · ${browser.dashboardTabs} Dashboard tab${browser.dashboardTabs === 1 ? '' : 's'}, ${browser.matchingEditTabs} for this item`
-    : `Chrome: not reachable (${browser.error ?? 'connection failed'}); run "dashbye chrome"`;
+    : browser.noWindow
+      ? 'Chrome: running without an open window; run "dashbye chrome" to open one'
+      : `Chrome: not reachable (${browser.error ?? 'connection failed'}); run "dashbye chrome"`;
   const lines = [`Config: ${result.config} · extension ${result.artifactVersion}`, chrome];
   for (const issue of result.issues) lines.push(`  ${issue.severity.padEnd(8)} ${issue.message}`);
   return lines.join('\n');

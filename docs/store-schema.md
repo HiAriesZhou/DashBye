@@ -110,6 +110,24 @@ or optional permission needs a matching justification; removed permissions must 
 leave stale entries. Host access requires a host justification. DashBye reports
 inconsistencies but never invents collection claims or legal certifications.
 
+`privacy.collectedData` lists the Dashboard data-usage categories the extension
+collects, using these exact identifiers (case-sensitive):
+
+| Identifier | Dashboard checkbox |
+| --- | --- |
+| `personallyIdentifiableInformation` | Personally identifiable information |
+| `healthInformation` | Health information |
+| `financialAndPaymentInformation` | Financial and payment information |
+| `authenticationInformation` | Authentication information |
+| `personalCommunications` | Personal communications |
+| `location` | Location |
+| `webHistory` | Web history |
+| `userActivity` | User activity |
+| `websiteContent` | Website content |
+
+`dashbye validate` (and `plan`, before any browser access) rejects any other value
+with `unknown_collected_data_category` and suggests the closest identifier.
+
 Image requirements:
 
 | Asset | Dimensions | Maximum |

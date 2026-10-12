@@ -4,7 +4,7 @@ import { basename, join, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
 import { renderAgentPrompt } from './agent-prompt.js';
 import { assertNoFirefoxPathOverrides, commandHelp, optional, parseCommandLine, type Args } from './args.js';
-import { ensureChrome } from './chrome.js';
+import { chromeStatus, countPageTargets, endpointReachable, ensureChrome, isNoWindowError } from './chrome.js';
 import { applyReconciliationPlan, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
 import { assertDraftEditable, assertPlanWritable } from './edit-lock.js';
 import { formatDoctor, formatSyncResult, formatValidation } from './format.js';
@@ -17,7 +17,7 @@ import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForR
 import { DEFAULT_ENDPOINT, loadProject } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
-import { normalizeLoopbackEndpoint } from './security.js';
+import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { loadAmoCredentials } from './credentials.js';
 import { AmoClient } from './stores/firefox/amo.js';
@@ -28,7 +28,7 @@ import { STORE_LABELS, type StoreId } from './stores/types.js';
 import { syncOutcome } from './sync-outcome.js';
 import { discoverConfig, loadWorkspace, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.1';
 const READ_BACK_ATTEMPTS = 6;
 const READ_BACK_DELAY_MS = 5_000;
 
@@ -88,21 +88,29 @@ async function validate(args: Args) {
   if (!valid) throw new Error('validation failed');
 }
 
+type DoctorBrowser = { connected: boolean; matchingEditTabs: number; dashboardTabs: number; noWindow?: boolean; error?: string };
+
+const NO_WINDOW: DoctorBrowser = { connected: false, matchingEditTabs: 0, dashboardTabs: 0, noWindow: true, error: 'running without an open window' };
+
+async function doctorBrowser(endpoint: string, itemId: string | undefined): Promise<DoctorBrowser> {
+  if (await chromeStatus(endpoint, { reachable: endpointReachable, pageTargets: countPageTargets }) === 'no-window') return NO_WINDOW;
+  try {
+    const connection = await chromium.connectOverCDP(endpoint, { timeout: 5_000 });
+    const pages = connection.contexts().flatMap(context => context.pages());
+    const tabs = itemId ? pages.filter(page => isExactItemEditUrl(page.url(), itemId)) : [];
+    return { connected: true, matchingEditTabs: tabs.length, dashboardTabs: pages.filter(page => isDashboardUrl(page.url())).length };
+  } catch (error) {
+    if (isNoWindowError(error)) return NO_WINDOW;
+    return { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: publicErrorMessage(error) };
+  }
+}
+
 async function doctor(args: Args) {
   const { configPath, setup } = await loadSetup(args);
   const workspace = setup.targets.chrome ? await loadWorkspace(configPath, workspaceValues(args)) : null;
   const issues = workspace ? validateWorkspace(workspace) : [];
   const endpoint = optional(args, 'endpoint') ? normalizeLoopbackEndpoint(optional(args, 'endpoint')!) : setup.endpoint;
-  let browser: { connected: boolean; matchingEditTabs: number; dashboardTabs: number; error?: string };
-  try {
-    const connection = await chromium.connectOverCDP(endpoint, { timeout: 5_000 });
-    const pages = connection.contexts().flatMap(context => context.pages());
-    const tabs = workspace ? pages.filter(page => isExactItemEditUrl(page.url(), workspace.config.target.itemId)) : [];
-    browser = { connected: true, matchingEditTabs: tabs.length, dashboardTabs: pages.filter(page => isDashboardUrl(page.url())).length };
-  } catch (error) {
-    const message = error instanceof Error ? (error.message.split('\n')[0] ?? 'connection failed') : 'connection failed';
-    browser = { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: message };
-  }
+  const browser = await doctorBrowser(endpoint, workspace?.config.target.itemId);
   const result = { config: basename(configPath), stores: setup.stores, artifactVersion: workspace?.artifact.manifest.version ?? null, issues, browser };
   await emit(args, result, () => formatDoctor({ ...result, artifactVersion: result.artifactVersion ?? 'n/a' }));
 }
@@ -118,9 +126,10 @@ async function chromeEndpoint(args: Args): Promise<string> {
 
 async function chrome(args: Args) {
   const endpoint = await chromeEndpoint(args);
-  const { launched } = await ensureChrome(endpoint, { launch: true });
-  const result = { endpoint, launched };
-  await emit(args, result, () => `${launched ? 'Opened' : 'Already running:'} the dedicated DashBye Chrome at ${endpoint}. Sign in to Google in that window if it asks.`);
+  const { launched, windowOpened } = await ensureChrome(endpoint, { launch: true });
+  const result = { endpoint, launched, windowOpened };
+  const state = launched ? 'Opened the dedicated DashBye Chrome' : windowOpened ? 'Opened a Dashboard window in the running DashBye Chrome' : 'Already running: the dedicated DashBye Chrome';
+  await emit(args, result, () => `${state} at ${endpoint}. Sign in to Google in that window if it asks.`);
 }
 
 async function dashboardPage(args: Args, workspace: LoadedWorkspace) {
@@ -267,14 +276,14 @@ async function syncDraft(args: Args) {
       chromeResult = await syncChrome(chrome);
       results.chrome = { result: chromeResult.result, releaseLock: chromeResult.releaseLock };
     } catch (error) {
-      results.chrome = { result: 'failed', error: error instanceof Error ? error.message : 'unknown error' };
+      results.chrome = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
   if (firefox && client) {
     try {
       results.firefox = await uploadFirefoxForValidation(setup.targets.firefox!, client, firefox);
     } catch (error) {
-      results.firefox = { result: 'failed', error: error instanceof Error ? error.message : 'unknown error' };
+      results.firefox = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
   const failed = Object.entries(results).filter(([, entry]) => entry?.result === 'failed' || entry?.result === 'validation_failed');
@@ -334,7 +343,7 @@ async function main() {
 main().then(
   () => process.stdout.write('', () => process.exit(0)),
   error => {
-    console.error(error instanceof Error ? error.message : 'unknown error');
+    console.error(publicErrorMessage(error));
     process.stderr.write('', () => process.exit(1));
   },
 );
