@@ -1,7 +1,9 @@
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
+import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
+import { connectChrome } from './chrome.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
 import type { LoadedWorkspace } from './workspace.js';
 
@@ -9,17 +11,7 @@ const sectionSelector = '.TVM7Wc';
 const dashboardEntry = 'https://chromewebstore.google.com/devconsole';
 const dashboardHosts = new Set(['chrome.google.com', 'chromewebstore.google.com']);
 
-const dataLabels = {
-  personallyIdentifiableInformation: 'Personally identifiable information',
-  healthInformation: 'Health information',
-  financialAndPaymentInformation: 'Financial and payment information',
-  authenticationInformation: 'Authentication information',
-  personalCommunications: 'Personal communications',
-  location: 'Location',
-  webHistory: 'Web history',
-  userActivity: 'User activity',
-  websiteContent: 'Website content',
-} as const;
+const dataLabels = COLLECTED_DATA_LABELS;
 
 const certificationLabels = {
   noSaleOrTransfer: 'I do not sell or transfer user data to third parties, outside of the approved use cases',
@@ -195,7 +187,7 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
 }
 
 export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
-  const browser = await chromium.connectOverCDP(endpoint, { timeout: 30_000 });
+  const browser = await connectChrome(endpoint, value => chromium.connectOverCDP(value, { timeout: 30_000 }));
   const page = await selectDashboardPage(browser, itemId);
   return { browser, page };
 }

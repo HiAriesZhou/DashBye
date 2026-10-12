@@ -27,7 +27,10 @@ DashBye separates local intent, remote observation, and approved writes.
    lock only when no operation remains.
 
 When the loopback endpoint is not answering, the CLI opens official Chrome with a
-dedicated DashBye profile (`chrome.ts`); it never authenticates. A person signs in,
+dedicated DashBye profile (`chrome.ts`); it never authenticates. When the endpoint
+answers but lists no page target (Chrome left running with every window closed, which
+Playwright cannot attach to), it re-runs Chrome with the same profile and the generic
+Dashboard URL so the running instance opens a window. A person signs in,
 and `session.ts` waits for that in a terminal before selecting the intended item.
 Plans and inspect results are saved in the platform state directory (`paths.ts`),
 outside every repository. Browser selectors are

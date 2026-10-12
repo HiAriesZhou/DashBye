@@ -1,6 +1,6 @@
 {
   "name": "dashbye",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Local-first CLI for versioning and synchronizing Chrome Web Store drafts.",
   "author": "AriesZhou <urchinzhou@gmail.com>",
   "repository": {
@@ -33,7 +33,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/mark-bin.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "prepare": "npm run build",
     "prepublishOnly": "npm test",
