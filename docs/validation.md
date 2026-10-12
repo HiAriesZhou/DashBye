@@ -21,13 +21,6 @@ official Chrome profile and loopback CDP connection.
 - Agent initialization as a multi-turn JSON protocol: `needs_input` questions for
   artifact, resource root, item ID, language, and endpoint; a `ready` preview with
   an argument-array write command; and `existing_config` detection after writing.
-- Faster Save draft completion (2026-10-12, Chrome 154, published item): Save draft
-  returns on a fresh `Item saved.` snackbar or after 800 ms disabled, and the
-  post-write read-back now reloads the page first. A reversible description write
-  (one appended character) planned exactly one operation, saved and reread with zero
-  remaining operations in about 20 s, and an independent `plan` also found zero. The
-  revert ran the same way and restored the original remote hash. Which of the two
-  completion signals ended each save was not recorded.
 
 ## Agent CLI behavior
 
@@ -104,15 +97,30 @@ flowchart TD
 
 - The post-write read-back only navigated inside the Dashboard, which keeps unsaved
   form values, so a save that never completed could still read back as zero
-  operations and write a lock. The read-back now reloads the page first. This
-  matters more with the 800 ms Save draft completion window, which can end before
-  a slow save finishes.
+  operations and write a lock. The read-back now reloads the page first.
+- A faster Save draft completion (return after 800 ms disabled) was tried on
+  2026-10-12 with a reversible description write and revert on a published item.
+  The write succeeded with a zero-operation read-back. The revert was saved on the
+  server, but `sync-draft` failed before writing a lock, and the next `plan` failed
+  too. The Dashboard registers leave-page (`beforeunload`) handlers. Playwright
+  dismisses unhandled dialogs, and a dismissed leave prompt cancels `page.reload()`
+  until it times out (reproduced on a local page). The likely cause is that Save
+  draft returned before the save finished, so the read-back reload was refused
+  while the page still had unsaved changes. The original error text was not kept,
+  so this is inferred rather than directly observed. Fixes: Save draft again waits
+  3 s disabled unless a fresh `Item saved.` snackbar appears; reloads of the
+  DashBye work page accept the leave prompt and discard its unsaved values; and
+  every post-write read, including the first, is retried. Unit-tested; the fixed
+  build has not yet run a real write because the item entered review.
 - Chrome 154 rejects `Browser.setDownloadBehavior` without a browser context, which
   playwright-core 1.63 sends while connecting over CDP; every command failed to
   connect. playwright-core 1.64 connects.
 
 ## Not yet validated
 
+- A real draft write and revert with the Save draft snackbar check, the
+  leave-prompt-accepting reload, and the retried first read-back. Needs a writable
+  item that is not in review.
 - Firefox: the AMO read and preview fingerprinting were checked read-only against a
   public add-on. The validation upload and a plan against an add-on the owner
   controls have not run; they need the owner's AMO API key. Store detection and

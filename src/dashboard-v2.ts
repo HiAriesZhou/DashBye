@@ -1,7 +1,7 @@
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
-import type { Browser, Locator, Page } from 'playwright-core';
+import type { Browser, Dialog, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
 import { connectChrome } from './chrome.js';
 import { assertDraftEditable, assertPlanWritable, UNLOCKED, type EditLock } from './edit-lock.js';
@@ -145,7 +145,7 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
   if (existing) {
     // Start from saved server state, including after an interrupted sync. Only
     // our work page is reloaded; other editors may contain unsaved user changes.
-    await existing.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await reloadDiscardingUnsaved(existing);
     await existing.evaluate(name => { window.name = name; }, workPageName(itemId));
     await waitForItemEditor(existing, itemId);
     return existing;
@@ -441,12 +441,13 @@ async function saveDraft(page: Page): Promise<void> {
   await page.getByText('Item saved.', { exact: true }).evaluateAll(nodes => nodes.forEach(node => node.remove())).catch(() => undefined);
   await button.evaluate(element => (element as HTMLElement).click());
   let disabledSince = 0;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     if (await page.getByText('Item saved.', { exact: true }).count()) return;
     if (!await button.isEnabled()) {
       if (!disabledSince) disabledSince = Date.now();
-      // CWS often re-enables Save draft in under 3s after a successful save.
-      if (Date.now() - disabledSince >= 800) return;
+      // An 800 ms window returned before a real save finished, leaving unsaved
+      // changes that blocked the read-back reload. Without the snackbar, wait 3 s.
+      if (Date.now() - disabledSince >= 3_000) return;
     } else {
       disabledSince = 0;
     }
@@ -610,13 +611,29 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   throw new Error('package upload did not reach the expected version');
 }
 
-export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
+// Callers read the saved draft back with readSavedDashboardState.
+export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
   assertPlanWritable(plan);
   if (plan.operations.length) await assertPageEditable(page, null);
   await applyPackage(page, workspace, plan);
   await applyListing(page, desired, plan);
   await applyPrivacy(page, desired, plan);
-  return readSavedDashboardState(page, workspace);
+}
+
+// Only DashBye's own work page is reloaded. Its unsaved values are discarded on
+// purpose: the Dashboard's leave-page prompt would otherwise cancel the reload
+// (Playwright dismisses unhandled dialogs), and the next read must reflect the
+// draft the server stored. Other dialogs are dismissed as Playwright would.
+async function reloadDiscardingUnsaved(page: Page): Promise<void> {
+  const handle = (dialog: Dialog) => {
+    (dialog.type() === 'beforeunload' ? dialog.accept() : dialog.dismiss()).catch(() => undefined);
+  };
+  page.on('dialog', handle);
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  } finally {
+    page.off('dialog', handle);
+  }
 }
 
 // saveDraft only observes UI signals, and in-page navigation keeps unsaved form
@@ -624,7 +641,7 @@ export async function applyReconciliationPlan(page: Page, workspace: LoadedWorks
 export async function readSavedDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
   const { itemId } = workspace.config.target;
   if (!isExactItemEditUrl(page.url(), itemId)) throw new Error('Dashboard item changed during read');
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await reloadDiscardingUnsaved(page);
   await waitForItemEditor(page, itemId);
   return readDashboardState(page, workspace);
 }

@@ -226,9 +226,8 @@ async function verifyChrome(run: ChromeRun): Promise<void> {
 }
 
 async function syncChrome(run: ChromeRun) {
-  const applied = await applyReconciliationPlan(run.page, run.workspace, run.desired, run.approved);
+  await applyReconciliationPlan(run.page, run.workspace, run.desired, run.approved);
   const { state: after, remaining } = await settleReadBack(
-    applied,
     () => readSavedDashboardState(run.page, run.workspace),
     state => createReconciliationPlan(run.workspace, run.desired, state).operations.length,
     { attempts: READ_BACK_ATTEMPTS, delayMs: READ_BACK_DELAY_MS },
