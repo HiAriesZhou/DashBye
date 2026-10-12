@@ -89,6 +89,8 @@ dashbye sync-draft
 
 `sync-draft` 会重新读取草稿，再列一遍计划，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。目标、构建产物、资源或线上草稿有变化时，DashBye 会拒绝执行旧计划。执行成功会保存草稿、回读确认剩余操作为零，并写入版本锁文件。
 
+商品处于审核中（Pending review）时，Dashboard 会把所有草稿字段设为只读。`plan` 仍会读取草稿并列出差异，同时提示 `Blocked: item is in review; drafts cannot be edited until review completes`，并在 JSON 计划的 `blocking` 中记录原因。`sync-draft` 会在打开 Chrome 之前拒绝这样的计划；如果写入前商品进入审核，也会拒绝写入。审核结束后重新运行 `plan` 即可。
+
 在终端里，各命令输出便于阅读的摘要；需要 JSON 时加 `--json`。脚本和 Agent 的输出不是终端，会得到 JSON，批准时必须使用 `--approve-plan <approvalHash>`。想看某个命令的参数，运行 `dashbye <命令> -h`；写错的参数会直接报错。
 
 ## 从源码安装

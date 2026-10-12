@@ -93,6 +93,8 @@ dashbye sync-draft
 
 `sync-draft` rereads the draft, shows the plan again, and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save or `n` to cancel. DashBye rejects the plan if the target, artifact, resources, or remote draft changed. A successful run saves the draft, reads it back with zero remaining operations, and writes the release lock.
 
+While the item is in review, the Dashboard makes every draft field read-only. `plan` still reads the draft and lists the differences, adds `Blocked: item is in review; drafts cannot be edited until review completes`, and records the reason under `blocking` in the JSON plan. `sync-draft` refuses such a plan before opening Chrome, and refuses any plan if the item enters review before writing. Run `plan` again once the review completes.
+
 In a terminal, commands print readable summaries; add `--json` for JSON. Scripts and agents, whose output is not a terminal, get JSON and must approve with `--approve-plan <approvalHash>`. Run `dashbye <command> -h` for the options of one command; unknown options are rejected.
 
 ## Install from source

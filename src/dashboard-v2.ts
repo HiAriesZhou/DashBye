@@ -4,6 +4,7 @@ import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
 import { connectChrome } from './chrome.js';
+import { assertDraftEditable, assertPlanWritable, UNLOCKED, type EditLock } from './edit-lock.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
 import type { LoadedWorkspace } from './workspace.js';
 
@@ -377,12 +378,48 @@ async function readPrivacy(page: Page): Promise<DashboardState['privacy']> {
   };
 }
 
+// The item header shows "Status: Pending review" while a submission is in review.
+// Only whether that status is shown is kept, not the header text.
+async function pendingReview(page: Page): Promise<boolean> {
+  const status = page.getByText(/^Status:\s/).filter({ visible: true });
+  if (await status.count() === 0) return false;
+  return /\bpending review\b/i.test(await status.first().innerText());
+}
+
+// In review, the Dashboard disables every listing and privacy text control.
+async function fieldsDisabled(page: Page): Promise<boolean> {
+  const fields = page.locator('textarea, input[type="text"]').filter({ visible: true });
+  for (let index = 0; index < await fields.count(); index += 1) {
+    if (await fields.nth(index).isDisabled()) return true;
+  }
+  return false;
+}
+
 export async function readDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
   if (!isExactItemEditUrl(page.url(), workspace.config.target.itemId)) throw new Error('Dashboard item changed during read');
   const packageVersion = await readPackageVersion(page);
   const listing = await readListing(page, workspace.config.target.language);
+  const listingFieldsDisabled = await fieldsDisabled(page);
   const privacy = await readPrivacy(page);
-  return { itemId: workspace.config.target.itemId, packageVersion, listing, privacy };
+  const editLock: EditLock = {
+    ...UNLOCKED,
+    pendingReview: await pendingReview(page),
+    listingFieldsDisabled,
+    privacyFieldsDisabled: await fieldsDisabled(page),
+  };
+  return { itemId: workspace.config.target.itemId, packageVersion, listing, privacy, editLock };
+}
+
+// The CLI refuses locked plans before writing; this repeats the check on the live
+// page because the item may enter review between confirmation and the first fill.
+async function assertPageEditable(page: Page, area: 'listing' | 'privacy' | null): Promise<void> {
+  const disabled = area ? await fieldsDisabled(page) : false;
+  assertDraftEditable({
+    ...UNLOCKED,
+    pendingReview: await pendingReview(page),
+    listingFieldsDisabled: area === 'listing' && disabled,
+    privacyFieldsDisabled: area === 'privacy' && disabled,
+  });
 }
 
 async function saveDraft(page: Page): Promise<void> {
@@ -462,6 +499,7 @@ async function applyListing(page: Page, desired: DesiredState, plan: Reconciliat
   if (!operations.length) return;
   await openPage(page, 'Store listing');
   await chooseLanguage(page, desired.listing.language);
+  await assertPageEditable(page, 'listing');
   const has = (field: string) => operations.some(operation => operation.field === field);
   if (has('description')) await page.locator('textarea').filter({ visible: true }).first().fill(desired.listingValues.description);
   if (has('category')) await selectCombo(page, 'Category', desired.listing.category);
@@ -503,6 +541,7 @@ async function applyPrivacy(page: Page, desired: DesiredState, plan: Reconciliat
   const operations = plan.operations.filter(operation => operation.area === 'privacy');
   if (!operations.length) return;
   await openPage(page, 'Privacy');
+  await assertPageEditable(page, 'privacy');
   const values = desired.privacyValues;
   const has = (field: string) => operations.some(operation => operation.field === field);
   if (has('singlePurpose')) {
@@ -568,6 +607,8 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
 }
 
 export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
+  assertPlanWritable(plan);
+  if (plan.operations.length) await assertPageEditable(page, null);
   await applyPackage(page, workspace, plan);
   await applyListing(page, desired, plan);
   await applyPrivacy(page, desired, plan);
