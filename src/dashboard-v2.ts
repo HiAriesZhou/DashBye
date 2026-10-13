@@ -1,3 +1,4 @@
+import { readOriginalImage } from './dashboard-image.js';
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
@@ -70,6 +71,25 @@ function loginRequired(value: string): boolean {
     return new URL(value).hostname === 'accounts.google.com';
   } catch {
     return false;
+  }
+}
+
+export type DashboardSection = 'Package' | 'Store listing' | 'Privacy';
+
+const sectionSuffixes: Record<DashboardSection, string> = { Package: '/package', 'Store listing': '/listing', Privacy: '/privacy' };
+
+// Section URL for the exact item only, built from the current edit URL on a
+// Dashboard host. Query and fragment are dropped.
+export function itemSectionUrl(value: string, itemId: string, name: DashboardSection): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || !dashboardHosts.has(url.hostname)) return null;
+    const segments = url.pathname.split('/').filter(Boolean);
+    const itemIndex = segments.indexOf(itemId);
+    if (!segments.includes('devconsole') || itemIndex < 0 || segments[itemIndex + 1] !== 'edit') return null;
+    return `${url.origin}/${segments.slice(0, itemIndex + 2).join('/')}${sectionSuffixes[name]}`;
+  } catch {
+    return null;
   }
 }
 
@@ -193,19 +213,31 @@ export async function connectDashboard(endpoint: string, itemId: string): Promis
   return { browser, page };
 }
 
-async function openPage(page: Page, name: 'Package' | 'Store listing' | 'Privacy'): Promise<void> {
-  const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
-  // A reload or previous section click may still be rendering the navigation.
-  await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
-    throw new Error(`${name} navigation was not found`);
-  });
-  await link.click();
+async function openPage(page: Page, itemId: string, name: DashboardSection): Promise<void> {
+  const pathSuffix = sectionSuffixes[name];
+  const titlePrefix = name.toLowerCase().split(' ')[0]!;
+  // The Dashboard updates the URL before it renders the new section, and its
+  // root title also contains "Store", so only path and title together are settled.
+  const waitSettled = (timeout: number) => page.waitForFunction(
+    ({ prefix, suffix }) => location.pathname.endsWith(suffix) && document.title.toLowerCase().startsWith(prefix),
+    { prefix: titlePrefix, suffix: pathSuffix },
+    { timeout },
+  ).then(() => true, () => false);
+  const settled = async () => new URL(page.url()).pathname.endsWith(pathSuffix)
+    && (await page.title()).toLowerCase().startsWith(titlePrefix);
+  if (!await settled()) {
+    const link = page.getByRole('link', { name, exact: true }).filter({ visible: true }).first();
+    await link.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
+      throw new Error(`${name} navigation was not found`);
+    });
+    await link.click();
+  }
   await page.waitForLoadState('domcontentloaded').catch(() => {});
-  await page.waitForFunction(
-    prefix => document.title.toLowerCase().includes(prefix),
-    name.toLowerCase().split(' ')[0]!,
-    { timeout: 30_000 },
-  ).catch(() => { throw new Error(`${name} page did not settle`); });
+  if (await waitSettled(20_000)) return;
+  const target = itemSectionUrl(page.url(), itemId, name);
+  if (!target) throw new Error(`${name} page did not settle`);
+  await page.goto(target, { waitUntil: 'domcontentloaded' });
+  if (!await waitSettled(30_000)) throw new Error(`${name} page did not settle`);
 }
 
 async function section(page: Page, text: string): Promise<Locator> {
@@ -252,7 +284,7 @@ export function languageOptionCandidates(language: string): string[] {
 async function imageHash(locator: Locator): Promise<string | null> {
   const visible = locator.filter({ visible: true });
   if (await visible.count() === 0) return null;
-  return visualHash(await visible.first().screenshot({ animations: 'disabled' }));
+  return visualHash(await readOriginalImage(visible.first()));
 }
 
 async function imageHashes(locator: Locator): Promise<string[]> {
@@ -266,13 +298,13 @@ async function imageHashes(locator: Locator): Promise<string[]> {
     const position = [box.x, box.y, box.width, box.height].map(value => Math.round(value * 10) / 10).join(':');
     if (positions.has(position)) continue;
     positions.add(position);
-    hashes.push(await detailHash(await image.screenshot({ animations: 'disabled' })));
+    hashes.push(await detailHash(await readOriginalImage(image)));
   }
   return hashes;
 }
 
-async function readPackageVersion(page: Page): Promise<string | null> {
-  await openPage(page, 'Package');
+async function readPackageVersion(page: Page, itemId: string): Promise<string | null> {
+  await openPage(page, itemId, 'Package');
   const cards = page.locator(sectionSelector).filter({ visible: true });
   for (let index = 0; index < await cards.count(); index += 1) {
     const text = await cards.nth(index).innerText();
@@ -300,8 +332,8 @@ async function chooseLanguage(page: Page, language: string): Promise<void> {
   throw new Error(`Language option not found: ${language}`);
 }
 
-async function readListing(page: Page, language: string): Promise<DashboardState['listing']> {
-  await openPage(page, 'Store listing');
+async function readListing(page: Page, itemId: string, language: string): Promise<DashboardState['listing']> {
+  await openPage(page, itemId, 'Store listing');
   await chooseLanguage(page, language);
   const description = await page.locator('textarea').filter({ visible: true }).first().inputValue();
   const screenshotsSection = await section(page, await page.getByText('Localized screenshots', { exact: true }).count() ? 'Localized screenshots' : 'Screenshots');
@@ -347,8 +379,8 @@ async function readPermissionJustifications(page: Page): Promise<Record<string, 
   return hashes;
 }
 
-async function readPrivacy(page: Page): Promise<DashboardState['privacy']> {
-  await openPage(page, 'Privacy');
+async function readPrivacy(page: Page, itemId: string): Promise<DashboardState['privacy']> {
+  await openPage(page, itemId, 'Privacy');
   const permissionJustificationHashes = await readPermissionJustifications(page);
   const hostSection = page.locator(sectionSelector).filter({ hasText: 'Host permission justification', visible: true }).first();
   const hostPermissionJustificationHash = await hostSection.count()
@@ -397,10 +429,10 @@ async function fieldsDisabled(page: Page): Promise<boolean> {
 
 export async function readDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
   if (!isExactItemEditUrl(page.url(), workspace.config.target.itemId)) throw new Error('Dashboard item changed during read');
-  const packageVersion = await readPackageVersion(page);
-  const listing = await readListing(page, workspace.config.target.language);
+  const packageVersion = await readPackageVersion(page, workspace.config.target.itemId);
+  const listing = await readListing(page, workspace.config.target.itemId, workspace.config.target.language);
   const listingFieldsDisabled = await fieldsDisabled(page);
-  const privacy = await readPrivacy(page);
+  const privacy = await readPrivacy(page, workspace.config.target.itemId);
   const editLock: EditLock = {
     ...UNLOCKED,
     pendingReview: await pendingReview(page),
@@ -499,10 +531,10 @@ async function uploadToSection(page: Page, heading: string, files: string[]): Pr
   }
 }
 
-async function applyListing(page: Page, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
+async function applyListing(page: Page, itemId: string, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
   const operations = plan.operations.filter(operation => operation.area === 'listing');
   if (!operations.length) return;
-  await openPage(page, 'Store listing');
+  await openPage(page, itemId, 'Store listing');
   await chooseLanguage(page, desired.listing.language);
   await assertPageEditable(page, 'listing');
   const has = (field: string) => operations.some(operation => operation.field === field);
@@ -542,10 +574,10 @@ async function setCheckbox(page: Page, label: string, checked: boolean): Promise
   if (await checkbox.isChecked() !== checked) await checkbox.setChecked(checked);
 }
 
-async function applyPrivacy(page: Page, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
+async function applyPrivacy(page: Page, itemId: string, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
   const operations = plan.operations.filter(operation => operation.area === 'privacy');
   if (!operations.length) return;
-  await openPage(page, 'Privacy');
+  await openPage(page, itemId, 'Privacy');
   await assertPageEditable(page, 'privacy');
   const values = desired.privacyValues;
   const has = (field: string) => operations.some(operation => operation.field === field);
@@ -582,7 +614,7 @@ async function applyPrivacy(page: Page, desired: DesiredState, plan: Reconciliat
 async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: ReconciliationPlan): Promise<void> {
   if (!plan.operations.some(operation => operation.area === 'package')) return;
   if (workspace.artifact.kind !== 'zip') throw new Error('package upload requires a ZIP artifact');
-  await openPage(page, 'Package');
+  await openPage(page, workspace.config.target.itemId, 'Package');
   const dialog = page.locator('[role="dialog"]').filter({ has: page.locator('input[type="file"][accept*=".zip"]') }).last();
   if (!await dialog.isVisible()) {
     await page.getByRole('button', { name: 'Upload new package', exact: true }).click();
@@ -604,7 +636,7 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   }
   if (await dialog.isVisible()) throw new Error('package upload did not finish');
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    const uploadedVersion = await readPackageVersion(page);
+    const uploadedVersion = await readPackageVersion(page, workspace.config.target.itemId);
     if (uploadedVersion === workspace.artifact.manifest.version) return;
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -616,8 +648,8 @@ export async function applyReconciliationPlan(page: Page, workspace: LoadedWorks
   assertPlanWritable(plan);
   if (plan.operations.length) await assertPageEditable(page, null);
   await applyPackage(page, workspace, plan);
-  await applyListing(page, desired, plan);
-  await applyPrivacy(page, desired, plan);
+  await applyListing(page, workspace.config.target.itemId, desired, plan);
+  await applyPrivacy(page, workspace.config.target.itemId, desired, plan);
 }
 
 // Only DashBye's own work page is reloaded. Its unsaved values are discarded on
