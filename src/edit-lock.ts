@@ -11,6 +11,12 @@ export const UNLOCKED: EditLock = { pendingReview: false, listingFieldsDisabled:
 
 export const IN_REVIEW_MESSAGE = 'item is in review; drafts cannot be edited until review completes';
 
+// Review disables every field; an editable draft can still disable one, such as
+// the remote-code justification while "No" is selected. Only all-disabled locks.
+export function fieldsLocked(disabled: boolean[]): boolean {
+  return disabled.length > 0 && disabled.every(Boolean);
+}
+
 export function isLocked(lock: EditLock): boolean {
   return lock.pendingReview || lock.listingFieldsDisabled || lock.privacyFieldsDisabled;
 }

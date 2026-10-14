@@ -5,7 +5,7 @@ import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
 import { connectChrome } from './chrome.js';
-import { assertDraftEditable, assertPlanWritable, UNLOCKED, type EditLock } from './edit-lock.js';
+import { assertDraftEditable, assertPlanWritable, fieldsLocked, UNLOCKED, type EditLock } from './edit-lock.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
 import type { LoadedWorkspace } from './workspace.js';
 
@@ -421,10 +421,9 @@ async function pendingReview(page: Page): Promise<boolean> {
 // In review, the Dashboard disables every listing and privacy text control.
 async function fieldsDisabled(page: Page): Promise<boolean> {
   const fields = page.locator('textarea, input[type="text"]').filter({ visible: true });
-  for (let index = 0; index < await fields.count(); index += 1) {
-    if (await fields.nth(index).isDisabled()) return true;
-  }
-  return false;
+  const disabled: boolean[] = [];
+  for (let index = 0; index < await fields.count(); index += 1) disabled.push(await fields.nth(index).isDisabled());
+  return fieldsLocked(disabled);
 }
 
 export async function readDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
