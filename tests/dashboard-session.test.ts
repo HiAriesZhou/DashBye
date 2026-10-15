@@ -25,7 +25,31 @@ class FakePage {
     if (new URL(destination).origin !== new URL(this.location).origin) this.window.name = '';
     this.location = destination;
   }
-  async reload() { this.reloads += 1; }
+  // Dialog types the next reload raises, as a Dashboard with unsaved changes would.
+  reloadDialogs: string[] = [];
+  dialogResponses: string[] = [];
+  private dialogListeners = new Set<(dialog: unknown) => void>();
+  on(event: string, listener: (dialog: unknown) => void) { if (event === 'dialog') this.dialogListeners.add(listener); }
+  off(event: string, listener: (dialog: unknown) => void) { if (event === 'dialog') this.dialogListeners.delete(listener); }
+  listenerCount() { return this.dialogListeners.size; }
+  async reload() {
+    for (const type of this.reloadDialogs.splice(0)) {
+      // Without a listener Playwright dismisses the dialog, and a dismissed
+      // leave-page prompt cancels the reload.
+      if (!this.dialogListeners.size) throw new Error('page.reload: Timeout 30000ms exceeded.');
+      const dialog = {
+        type: () => type,
+        accept: async () => { this.dialogResponses.push(`accept ${type}`); },
+        dismiss: async () => { this.dialogResponses.push(`dismiss ${type}`); },
+      };
+      for (const listener of this.dialogListeners) listener(dialog);
+      await Promise.resolve();
+      if (type === 'beforeunload' && !this.dialogResponses.includes('accept beforeunload')) {
+        throw new Error('page.reload: Timeout 30000ms exceeded.');
+      }
+    }
+    this.reloads += 1;
+  }
   getByRole() { return { count: async () => 1 }; }
   locator() { return { first: () => ({ count: async () => 0 }) }; }
   // No close method: the selector must never close an existing page.
@@ -43,6 +67,17 @@ class FakeContext {
   }
   browser() { return { contexts: () => [this] } as unknown as Browser; }
 }
+
+test('reloading the work page discards its unsaved changes instead of hanging on the leave prompt', async () => {
+  const context = new FakeContext();
+  context.add(editor);
+  const work = await selectDashboardPage(context.browser(), itemId) as unknown as FakePage;
+  work.reloadDialogs = ['alert', 'beforeunload'];
+  assert.equal(await selectDashboardPage(context.browser(), itemId), work as unknown as Page);
+  assert.deepEqual(work.dialogResponses, ['dismiss alert', 'accept beforeunload']);
+  assert.equal(work.reloads, 1);
+  assert.equal(work.listenerCount(), 0);
+});
 
 test('duplicate editors are preserved; sequential commands reuse one separate work page', async () => {
   const context = new FakeContext();

@@ -2,7 +2,7 @@ import { readOriginalImage } from './dashboard-image.js';
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
-import type { Browser, Locator, Page } from 'playwright-core';
+import type { Browser, Dialog, Locator, Page } from 'playwright-core';
 import { chromium } from 'playwright-core';
 import { connectChrome } from './chrome.js';
 import { assertDraftEditable, assertPlanWritable, fieldsLocked, UNLOCKED, type EditLock } from './edit-lock.js';
@@ -165,7 +165,7 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
   if (existing) {
     // Start from saved server state, including after an interrupted sync. Only
     // our work page is reloaded; other editors may contain unsaved user changes.
-    await existing.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await reloadDiscardingUnsaved(existing);
     await existing.evaluate(name => { window.name = name; }, workPageName(itemId));
     await waitForItemEditor(existing, itemId);
     return existing;
@@ -468,16 +468,21 @@ async function saveDraft(page: Page): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   if (!await button.isEnabled()) throw new Error('Save draft did not become enabled');
+  // Clear any previous snackbar so a fresh "Item saved." is meaningful.
+  await page.getByText('Item saved.', { exact: true }).evaluateAll(nodes => nodes.forEach(node => node.remove())).catch(() => undefined);
   await button.evaluate(element => (element as HTMLElement).click());
   let disabledSince = 0;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (await page.getByText('Item saved.', { exact: true }).count()) return;
     if (!await button.isEnabled()) {
       if (!disabledSince) disabledSince = Date.now();
+      // An 800 ms window returned before a real save finished, leaving unsaved
+      // changes that blocked the read-back reload. Without the snackbar, wait 3 s.
       if (Date.now() - disabledSince >= 3_000) return;
     } else {
       disabledSince = 0;
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 250));
   }
   throw new Error('Save draft did not settle');
 }
@@ -637,11 +642,37 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   throw new Error('package upload did not reach the expected version');
 }
 
-export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
+// Callers read the saved draft back with readSavedDashboardState.
+export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
   assertPlanWritable(plan);
   if (plan.operations.length) await assertPageEditable(page, null);
   await applyPackage(page, workspace, plan);
   await applyListing(page, workspace.config.target.itemId, desired, plan);
   await applyPrivacy(page, workspace.config.target.itemId, desired, plan);
+}
+
+// Only DashBye's own work page is reloaded. Its unsaved values are discarded on
+// purpose: the Dashboard's leave-page prompt would otherwise cancel the reload
+// (Playwright dismisses unhandled dialogs), and the next read must reflect the
+// draft the server stored. Other dialogs are dismissed as Playwright would.
+async function reloadDiscardingUnsaved(page: Page): Promise<void> {
+  const handle = (dialog: Dialog) => {
+    (dialog.type() === 'beforeunload' ? dialog.accept() : dialog.dismiss()).catch(() => undefined);
+  };
+  page.on('dialog', handle);
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  } finally {
+    page.off('dialog', handle);
+  }
+}
+
+// saveDraft only observes UI signals, and in-page navigation keeps unsaved form
+// values. Reloading makes the read-back reflect the draft the server stored.
+export async function readSavedDashboardState(page: Page, workspace: LoadedWorkspace): Promise<DashboardState> {
+  const { itemId } = workspace.config.target;
+  if (!isExactItemEditUrl(page.url(), itemId)) throw new Error('Dashboard item changed during read');
+  await reloadDiscardingUnsaved(page);
+  await waitForItemEditor(page, itemId);
   return readDashboardState(page, workspace);
 }

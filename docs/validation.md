@@ -129,8 +129,32 @@ flowchart TD
   Dashboard host; those runs settled after the click, so the fallback itself did not
   run.
 
+- The post-write read-back only navigated inside the Dashboard, which keeps unsaved
+  form values, so a save that never completed could still read back as zero
+  operations and write a lock. The read-back now reloads the page first.
+- A faster Save draft completion (return after 800 ms disabled) was tried on
+  2026-10-12 with a reversible description write and revert on a published item.
+  The write succeeded with a zero-operation read-back. The revert was saved on the
+  server, but `sync-draft` failed before writing a lock, and the next `plan` failed
+  too. The Dashboard registers leave-page (`beforeunload`) handlers. Playwright
+  dismisses unhandled dialogs, and a dismissed leave prompt cancels `page.reload()`
+  until it times out (reproduced on a local page). The likely cause is that Save
+  draft returned before the save finished, so the read-back reload was refused
+  while the page still had unsaved changes. The original error text was not kept,
+  so this is inferred rather than directly observed. Fixes: Save draft again waits
+  3 s disabled unless a fresh `Item saved.` snackbar appears; reloads of the
+  DashBye work page accept the leave prompt and discard its unsaved values; and
+  every post-write read, including the first, is retried. Unit-tested; the fixed
+  build has not yet run a real write because the item entered review.
+- Chrome 154 rejects `Browser.setDownloadBehavior` without a browser context, which
+  playwright-core 1.63 sends while connecting over CDP; every command failed to
+  connect. playwright-core 1.64 connects.
+
 ## Not yet validated
 
+- A real draft write and revert with the Save draft snackbar check, the
+  leave-prompt-accepting reload, and the retried first read-back. Needs a writable
+  item that is not in review.
 - Firefox: the AMO read and preview fingerprinting were checked read-only against a
   public add-on. The validation upload and a plan against an add-on the owner
   controls have not run; they need the owner's AMO API key. Store detection and

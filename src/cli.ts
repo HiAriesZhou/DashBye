@@ -5,7 +5,7 @@ import { chromium } from 'playwright-core';
 import { renderAgentPrompt } from './agent-prompt.js';
 import { assertNoFirefoxPathOverrides, commandHelp, optional, parseCommandLine, type Args } from './args.js';
 import { chromeStatus, countPageTargets, endpointReachable, ensureChrome, isNoWindowError } from './chrome.js';
-import { applyReconciliationPlan, isDashboardUrl, isExactItemEditUrl, readDashboardState } from './dashboard-v2.js';
+import { applyReconciliationPlan, isDashboardUrl, isExactItemEditUrl, readDashboardState, readSavedDashboardState } from './dashboard-v2.js';
 import { assertDraftEditable, assertPlanWritable } from './edit-lock.js';
 import { formatDoctor, formatSyncResult, formatValidation } from './format.js';
 import { sha256 } from './hash.js';
@@ -226,10 +226,9 @@ async function verifyChrome(run: ChromeRun): Promise<void> {
 }
 
 async function syncChrome(run: ChromeRun) {
-  const applied = await applyReconciliationPlan(run.page, run.workspace, run.desired, run.approved);
+  await applyReconciliationPlan(run.page, run.workspace, run.desired, run.approved);
   const { state: after, remaining } = await settleReadBack(
-    applied,
-    () => readDashboardState(run.page, run.workspace),
+    () => readSavedDashboardState(run.page, run.workspace),
     state => createReconciliationPlan(run.workspace, run.desired, state).operations.length,
     { attempts: READ_BACK_ATTEMPTS, delayMs: READ_BACK_DELAY_MS },
   );
