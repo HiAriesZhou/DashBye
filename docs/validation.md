@@ -103,9 +103,14 @@ flowchart TD
   pages, with Save draft disabled. The read now records `editLock` (the review
   status and whether each page has a disabled field) as booleans. On the same item,
   `plan` still listed its 3 differences and added the lock as `blocking`, and
-  `sync-draft` refused that plan before opening Chrome. The live-page guard that
-  runs again before the first fill, and the unlocked path of these selectors after
-  review, have not been exercised on a real Dashboard yet.
+  `sync-draft` refused that plan before opening Chrome. On 2026-10-14 the same item
+  was published (no review status), and the unlocked path still reported
+  `Privacy fields are read-only`: the item declares no remote code, and the
+  Dashboard disables that card's justification field (1 of 9 privacy fields). A page
+  now counts as locked only when every visible text field on it is disabled. With
+  that change, a read-only `plan` reported zero operations and no `blocking`. The
+  live-page guard that runs again before the first fill has not been exercised on a
+  real Dashboard yet.
 - After replacing a small promotional tile, the immediate read-back still differed
   and `sync-draft` failed without a lock; a later zero-operation sync succeeded.
   `sync-draft` now rereads the saved draft a bounded number of times (read-only,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertDraftEditable, assertPlanWritable, DraftLockedError, editLockReasons, isLocked, UNLOCKED } from '../src/edit-lock.js';
+import { assertDraftEditable, assertPlanWritable, DraftLockedError, editLockReasons, isLocked, UNLOCKED, fieldsLocked } from '../src/edit-lock.js';
 
 test('an editable draft has no lock reasons', () => {
   assert.equal(isLocked(UNLOCKED), false);
@@ -25,4 +25,12 @@ test('sync-draft refuses a plan made while the draft was locked', () => {
   assert.doesNotThrow(() => assertPlanWritable({}));
   assert.doesNotThrow(() => assertPlanWritable({ blocking: [] }));
   assert.throws(() => assertPlanWritable({ blocking: ['item is in review; drafts cannot be edited until review completes'] }), DraftLockedError);
+});
+
+test('a section is locked only when every visible text field is disabled', () => {
+  assert.equal(fieldsLocked([]), false);
+  assert.equal(fieldsLocked([false, false]), false);
+  // "No remote code" disables only that card's justification field.
+  assert.equal(fieldsLocked([false, false, false, false, false, false, false, true, false]), false);
+  assert.equal(fieldsLocked([true, true, true]), true);
 });
