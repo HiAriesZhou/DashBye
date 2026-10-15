@@ -28,7 +28,7 @@ import { STORE_LABELS, type StoreId } from './stores/types.js';
 import { syncOutcome } from './sync-outcome.js';
 import { discoverConfig, loadWorkspace, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
-const VERSION = '0.4.2';
+const VERSION = '0.4.3';
 const READ_BACK_ATTEMPTS = 6;
 const READ_BACK_DELAY_MS = 5_000;
 
