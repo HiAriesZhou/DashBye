@@ -18,6 +18,9 @@ import { DEFAULT_ENDPOINT, loadProject, type ProjectSetup } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, remainingWithinApproved, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
 import { applyLoopbackNoProxy } from './net.js';
+import { formatTextChanges, type TextChange } from './text-preview.js';
+import { loadFirefoxRelease } from './stores/firefox/release.js';
+import { amoText } from './stores/firefox/plan.js';
 import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { loadAmoCredentials, loadEdgeCredentials } from './credentials.js';
@@ -178,13 +181,37 @@ async function buildPlans(args: Args, configPath: string, setup: ProjectSetup, s
   return { combined, workspace, remote };
 }
 
+// Text the person is about to approve, for the terminal only. Chrome is read as
+// hashes, so it shows the new text; AMO is read as text, so it shows changed lines.
+async function textChanges(planned: Planned, setup: ProjectSetup): Promise<TextChange[]> {
+  const changes: TextChange[] = [];
+  const chromePlan = planned.combined.stores.chrome;
+  if (chromePlan && planned.workspace && chromePlan.operations.some(operation => operation.field === 'description')) {
+    const locale = planned.workspace.release.listing.locales[planned.workspace.config.target.language];
+    changes.push({ store: STORE_LABELS.chrome, field: 'description', local: locale?.descriptionText ?? null, remote: undefined });
+  }
+  const fields = (planned.combined.stores.firefox?.differences ?? []).map(difference => difference.field).filter(field => field === 'summary' || field === 'description');
+  if (fields.length) {
+    const [release, addon] = await Promise.all([loadFirefoxRelease(setup.resources), (await amoClient()).getAddon(setup.targets.firefox!.addon)]);
+    for (const field of fields) {
+      const [local, remote] = field === 'summary' ? [release.summary, addon.summary] : [release.description, addon.description];
+      changes.push({ store: STORE_LABELS.firefox, field, local: amoText(local), remote: amoText(remote) });
+    }
+  }
+  return changes;
+}
+
+const withPreview = (summary: string, changes: TextChange[]) => changes.length ? `${summary}\n\nText changes\n${formatTextChanges(changes)}` : summary;
+
 async function plan(args: Args) {
   const { configPath, setup, stores } = await loadSetup(args);
   assertNoFirefoxPathOverrides(stores, args);
-  const { combined, workspace, remote } = await buildPlans(args, configPath, setup, stores);
+  const planned = await buildPlans(args, configPath, setup, stores);
+  const { combined, workspace, remote } = planned;
   const showRemote = args.remote === true && remote !== null;
+  const changes = readable(args) ? await textChanges(planned, setup) : [];
   await emit(args, showRemote ? { ...combined, remote } : combined, () => [
-    formatMultiPlan(combined, chromeTargets(workspace)),
+    withPreview(formatMultiPlan(combined, chromeTargets(workspace)), changes),
     ...(showRemote ? ['', 'Chrome Web Store draft (hashes and counts):', JSON.stringify(remote, null, 2)] : []),
     '', `Plan saved: ${statePath(configPath, 'plan.json')}`, 'Next: dashbye sync-draft, or dashbye release for the whole release',
   ].join('\n'));
@@ -384,7 +411,8 @@ async function release(args: Args) {
     await emit(args, { stage: 'validate', issues: checked.issues }, () => formatValidation(checked));
     throw new Error('validation failed');
   }
-  const { combined, workspace } = await buildPlans(args, configPath, setup, stores);
+  const planned = await buildPlans(args, configPath, setup, stores);
+  const { combined, workspace } = planned;
   // A Firefox package AMO has not approved yet is submitted, not only validated.
   const pendingFirefox = combined.stores.firefox?.mode === 'validate';
   const amoCredentials = pendingFirefox ? await loadAmoCredentials() : null;
@@ -392,10 +420,10 @@ async function release(args: Args) {
   const submission = submitDeps ? await planSubmission(setup.targets.firefox!, setup.resources, submitDeps) : null;
   const run = (Object.keys(combined.stores) as StoreId[]).filter(store => !(store === 'firefox' && pendingFirefox));
   const shown = planForRun(combined, run, []);
-  const summary = [
+  const summary = withPreview([
     formatMultiPlan(shown, chromeTargets(workspace)),
     ...(submission ? ['', STORE_LABELS.firefox, formatSubmitPlan(submission).split('\n').map(line => `  ${line.trim()}`).join('\n')] : []),
-  ].join('\n');
+  ].join('\n'), interactive(args) || readable(args) ? await textChanges({ ...planned, combined: { ...combined, stores: shown.stores } as MultiPlan }, setup) : []);
   const submittable = submission !== null && !submission.blocking.length;
 
   const draftHash = optional(args, 'approve-plan');
