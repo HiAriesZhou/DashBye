@@ -6,8 +6,8 @@
 
 <p><strong>Less dashboard. More shipping.</strong></p>
 
-<p>Give your coding agent a versioned Chrome Web Store release workspace.<br>
-DashBye keeps the package, copy, screenshots, artwork, and privacy declarations in your extension repository, then prepares a draft you can review.</p>
+<p>Give your coding agent a versioned release workspace for browser extensions.<br>
+DashBye keeps the package, store copy, screenshots, artwork, and privacy declarations in your extension repository, compares them with Chrome Web Store, Firefox Add-ons, and Microsoft Edge Add-ons, and writes nothing until you approve the exact plan.</p>
 
 [![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
 
@@ -27,13 +27,21 @@ DashBye keeps the package, copy, screenshots, artwork, and privacy declarations 
 
 1. **Your extension repository** holds the build and the store resources.
 2. **The agent audits** the real build, manifest, copy, images, and privacy evidence.
-3. **DashBye compares** them with the store draft and builds a plan.
+3. **DashBye compares** them with each store you manage and builds one plan.
 4. **You approve** the exact plan.
-5. **DashBye saves and reads back** the draft.
+5. **DashBye writes** the approved changes and reads them back.
 
-DashBye runs locally and connects directly to Google through your dedicated Chrome session. It has no account, server, or telemetry.
+DashBye runs locally. It reaches Chrome Web Store through your dedicated Chrome session, and Firefox Add-ons and Edge Add-ons through their official APIs with keys you keep outside the repository. It has no account, server, or telemetry.
 
-> **Important:** For Chrome and Edge, DashBye stops at the saved draft; you submit for review and publish in the store dashboard. Firefox Add-ons has no draft, so a Firefox version is created only by `dashbye submit`, for the plan you approve.
+## Supported stores
+
+| Store | DashBye does | You still do |
+| --- | --- | --- |
+| **Chrome Web Store** | Saves the package, listing, images, and privacy declarations to the Dashboard draft, then reads them back | Sign in to Google; submit for review and publish |
+| **Firefox Add-ons** | Validates the package; `dashbye submit` creates a listed version from an approved plan; after AMO approves it, updates the summary, description, homepage, support email, and categories | Support URL and screenshots in AMO Developer Hub |
+| **Microsoft Edge Add-ons** | Uploads the package to the product’s draft submission | Store listing, review, and publishing in Partner Center |
+
+> **Important:** Firefox Add-ons has no draft. A version created by `dashbye submit` enters AMO review and cannot be taken back, and listing updates go live immediately. DashBye does both only for the plan you approve.
 
 ## Quick start with your agent
 
@@ -75,7 +83,7 @@ dashbye agent-prompt --project /path/to/extension
 
 ## Use the CLI manually
 
-Requires **Node.js 22+**, Git, official Chrome, and an existing Chrome Web Store item.
+Requires **Node.js 22+**, Git, and an existing item in each store you manage. Chrome Web Store also needs official Chrome; Firefox and Edge need an API key (see the [resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)).
 
 Install and initialize from the extension repository:
 
@@ -133,14 +141,20 @@ DashBye saves the draft and immediately reads it back. In this example, the firs
 
 - Missing product facts, privacy claims, and certifications
 - Manual Google sign-in
-- Approval for each Dashboard write plan
+- Approval for each store write plan
 - Final review submission and publication
 
 > **Warning:** Empty lists and `null` in the desired state can request removal, so the agent must show those operations explicitly. DashBye rejects stale plans and checks the saved result against the approved desired state.
 
 ## Current support
 
-This is an early technical release. Package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back have been exercised on a real Dashboard. Multiple locales, headless session reuse, collected-data/certification changes, and new permission confirmations remain unverified.
+This is an early technical release. Exercised on real store items:
+
+- **Chrome Web Store:** package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back.
+- **Firefox Add-ons:** one `dashbye submit` from validation upload to version read-back, and a listing update after AMO approved that version.
+- **Microsoft Edge Add-ons:** one package upload to a draft submission.
+
+Still unverified: multiple locales, headless session reuse, collected-data and certification changes, new permission confirmations, and Chrome install locations on Windows and Linux. Edge listing fields are not automated.
 
 ## Documentation
 

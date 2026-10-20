@@ -6,8 +6,8 @@
 
 <p><strong>少填表，多发版。</strong></p>
 
-<p>让编码 Agent 替你打理 Chrome Web Store 发布。<br>
-扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 据此备好一份草稿，由你逐项过目。</p>
+<p>让编码 Agent 替你打理浏览器扩展的商店发布。<br>
+扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与 Chrome Web Store、Firefox 附加组件商店和 Microsoft Edge 加载项商店逐项比对，你批准具体计划之前不写入任何内容。</p>
 
 [![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
 
@@ -27,13 +27,21 @@
 
 1. **扩展仓库**存放构建产物和商店素材。
 2. **Agent 审计**真实的构建、manifest、文案、图片和隐私依据。
-3. **DashBye 比对**它们与商店草稿，生成变更计划。
+3. **DashBye 比对**它们与你管理的每个商店，合成一份变更计划。
 4. **你批准**这份具体的计划。
-5. **DashBye 保存草稿**并回读核对。
+5. **DashBye 写入**批准的改动，并回读核对。
 
-DashBye 只在你的电脑上运行，通过专用 Chrome 会话直连 Google：不用注册账号，没有服务器，也不收集任何遥测数据。
+DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome Web Store，通过官方 API 访问 Firefox 和 Edge 的商店，所需密钥放在仓库之外。不用注册账号，没有服务器，也不收集任何遥测数据。
 
-> **重要**：对 Chrome 和 Edge，DashBye 的工作到保存草稿为止；提交审核和正式发布，仍由你在商店后台亲手完成。Firefox 附加组件商店没有草稿，因此只有 `dashbye submit` 会创建 Firefox 版本，而且只针对你批准的那份计划。
+## 支持的商店
+
+| 商店 | DashBye 负责 | 仍由你完成 |
+| --- | --- | --- |
+| **Chrome Web Store** | 把扩展包、商店文案、图片和隐私声明保存到 Dashboard 草稿，并回读核对 | 登录 Google；提交审核与发布 |
+| **Firefox 附加组件商店** | 校验扩展包；`dashbye submit` 按批准的计划创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类 | 在 AMO 开发者中心维护支持网址和截图 |
+| **Microsoft Edge 加载项商店** | 把扩展包上传到产品的草稿提交 | 在 Partner Center 编辑商店页、提交审核与发布 |
+
+> **重要**：Firefox 附加组件商店没有草稿。`dashbye submit` 创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。
 
 ## 交给 Agent 快速上手
 
@@ -72,7 +80,7 @@ dashbye agent-prompt --project /path/to/extension
 
 ## 手动使用命令行
 
-需要 **Node.js 22+**、Git、官方版 Chrome，以及一个已经存在的 Chrome Web Store 条目。
+需要 **Node.js 22+**、Git，以及你要管理的每个商店里已经存在的条目。Chrome Web Store 还需要官方版 Chrome；Firefox 和 Edge 需要 API 密钥（见[素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)）。
 
 全局安装，然后在扩展仓库里初始化：
 
@@ -130,14 +138,20 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 
 - 仓库里没有的产品事实、隐私声明和认证
 - 手动登录 Google
-- 每一次写入 Dashboard 前的计划审批
+- 每一次写入商店前的计划审批
 - 最终的提交审核与发布
 
 > **注意**：期望状态里的空列表或 `null` 可能意味着删除，Agent 必须把这类操作单独列出来。DashBye 会拒绝已过期的计划，并用你批准时的期望状态核对保存结果。
 
 ## 当前支持情况
 
-这还是早期技术版本。扩展包上传、图片替换、部分隐私文案修改、草稿保存与回读，都已在真实 Dashboard 上跑通。多语言、无头模式复用登录会话、数据类别与认证的变更、新增权限的确认，目前还没有验证过。
+这还是早期技术版本。已在真实商店条目上跑通的有：
+
+- **Chrome Web Store**：扩展包上传、图片替换、部分隐私文案修改、草稿保存与回读。
+- **Firefox 附加组件商店**：一次完整的 `dashbye submit`（从校验上传到版本回读），以及该版本通过 AMO 审核后的一次商店页更新。
+- **Microsoft Edge 加载项商店**：一次上传扩展包到草稿提交。
+
+尚未验证：多语言、无头模式复用登录会话、数据类别与认证的变更、新增权限的确认，以及 Windows 和 Linux 上的 Chrome 安装位置。Edge 的商店页字段尚未自动化。
 
 ## 文档
 
