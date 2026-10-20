@@ -1,32 +1,41 @@
-<img src="https://raw.githubusercontent.com/HiAriesZhou/DashBye/main/brand/dashbye-readme.png" alt="DashBye’s waving gecko" width="112">
+<div align="center">
 
-# DashBye
+<img src="https://raw.githubusercontent.com/HiAriesZhou/DashBye/main/brand/dashbye-readme.png" alt="DashBye’s waving gecko" width="128">
 
-*Less dashboard. More shipping.*
+<h1>DashBye</h1>
 
-Give your coding agent a versioned Chrome Web Store release workspace. DashBye keeps the package, copy, screenshots, artwork, and privacy declarations in your extension repository, then prepares a draft you can review.
+<p><strong>Less dashboard. More shipping.</strong></p>
 
-[English](README.md) · [简体中文](README.zh-CN.md) · [Manual CLI](#use-the-cli-manually) · [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md)
+<p>Give your coding agent a versioned Chrome Web Store release workspace.<br>
+DashBye keeps the package, copy, screenshots, artwork, and privacy declarations in your extension repository, then prepares a draft you can review.</p>
 
-## Example
+[![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
 
-Before starting: DashBye is configured in the extension repository, and you are signed in to Google in the dedicated Chrome profile.
+**English** · [简体中文](README.zh-CN.md) · [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Example](#example)
 
-### 1. Tell the agent what you need
+</div>
 
-Ask: “Set up DashBye for this extension repository and prepare its Chrome Web Store draft.” The agent checks the build and store resources, then compares them with the existing draft.
+---
 
-### 2. Review and approve the plan
+## What it solves
 
-The plan targets the extension’s **English listing** and contains **one change: replace the 440 × 280 small promotional tile**. The package, description, screenshots, and privacy declarations have no differences. The agent explains that replacement removes the old image and uploads the new one, then waits. The owner replied “Save”.
+- **New build, old screenshots?** Version store assets with the extension and compare them before the release.
+- **New permission, last version’s explanation?** Validate declarations against the built extension while there is still time to fix them.
+- **Copy, paste, upload, repeat?** Review one deterministic plan instead of reconstructing the listing by hand.
 
-### 3. Save the draft and verify it
+## How it works
 
-DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran inspect and plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published. [Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+1. **Your extension repository** holds the build and the store resources.
+2. **The agent audits** the real build, manifest, copy, images, and privacy evidence.
+3. **DashBye compares** them with the store draft and builds a plan.
+4. **You approve** the exact plan.
+5. **DashBye saves and reads back** the draft.
 
-Try the same workflow in your extension repository with the prompt below.
+DashBye runs locally and connects directly to Google through your dedicated Chrome session. It has no account, server, or telemetry.
 
-## Set up with your agent
+> **Important:** For Chrome and Edge, DashBye stops at the saved draft; you submit for review and publish in the store dashboard. Firefox Add-ons has no draft, so a Firefox version is created only by `dashbye submit`, for the plan you approve.
+
+## Quick start with your agent
 
 Open your extension repository in a coding agent with local file and terminal access. Paste this:
 
@@ -51,27 +60,18 @@ differences. Never submit for review or publish. Report files changed, checks
 performed, and anything still unresolved.
 ```
 
-The agent will install or locate the CLI, initialize the repository, organize the release resources, validate them, and prepare a concrete change plan.
-
-You provide product facts the repository cannot prove, sign in to Google in the Chrome window DashBye opens, and approve the exact plan before DashBye writes to the draft.
+| The agent | You |
+| --- | --- |
+| Installs or locates the CLI | Provide product facts the repository cannot prove |
+| Initializes the repository | Sign in to Google in the Chrome window DashBye opens |
+| Organizes and validates the release resources | Approve the exact plan before DashBye writes to the draft |
+| Prepares a concrete change plan | Submit for review and publish yourself |
 
 Want a prompt with known paths filled in? After installation:
 
 ```bash
 dashbye agent-prompt --project /path/to/extension
 ```
-
-## How it works
-
-Extension repository → Agent audits the real build and resources → DashBye compares them with the store draft → You approve the plan → DashBye saves and reads back the draft.
-
-DashBye runs locally and connects directly to Google through your dedicated Chrome session. It has no account, server, or telemetry. **For Chrome and Edge it stops at the saved draft; you submit for review and publish in the store dashboard.** Firefox Add-ons has no draft, so a Firefox version is created only by `dashbye submit`, for the plan you approve.
-
-## What it solves
-
-- **New build, old screenshots?** Version store assets with the extension and compare them before the release.
-- **New permission, last version’s explanation?** Validate declarations against the built extension while there is still time to fix them.
-- **Copy, paste, upload, repeat?** Review one deterministic plan instead of reconstructing the listing by hand.
 
 ## Use the CLI manually
 
@@ -93,17 +93,41 @@ dashbye plan
 dashbye sync-draft
 ```
 
-`plan` opens a dedicated DashBye Chrome window when needed. Sign in to Google there the first time; DashBye waits and then reads the draft. It lists every change and saves the plan outside the repository.
-
-`sync-draft` shows the plan again and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save, or `n` to cancel. Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock.
+- **`plan`** opens a dedicated DashBye Chrome window when needed. Sign in to Google there the first time; DashBye waits and then reads the draft. It lists every change and saves the plan outside the repository.
+- **`sync-draft`** shows the plan again and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save, or `n` to cancel. Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock.
 
 Run `dashbye <command> -h` to see the options of a command. The [usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) covers source installation, resource layout, Chrome setup, and failure cases.
 
-## Later releases
+### Later releases
 
 Update the extension build and files in `store/`, then repeat **validate → plan → sync-draft**. The dedicated Chrome profile keeps your sign-in between releases.
 
 DashBye discovers the nearest `dashbye.config.yml`. You only need to explain where the screenshots live once. If the build, resources, or remote draft changes after approval, generate and review a fresh plan.
+
+## Example
+
+A real run against one extension’s **English listing**. Before starting, DashBye was configured in the extension repository, and the owner was signed in to Google in the dedicated Chrome profile.
+
+<details>
+<summary><strong>Walk through the three steps</strong></summary>
+
+<br>
+
+**1. Tell the agent what you need**
+
+Ask: “Set up DashBye for this extension repository and prepare its Chrome Web Store draft.” The agent checks the build and store resources, then compares them with the existing draft.
+
+**2. Review and approve the plan**
+
+The plan targets the extension’s **English listing** and contains **one change: replace the 440 × 280 small promotional tile**. The package, description, screenshots, and privacy declarations have no differences. The agent explains that replacement removes the old image and uploads the new one, then waits. The owner replied “Save”.
+
+**3. Save the draft and verify it**
+
+DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran inspect and plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published.
+
+[Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+
+</details>
 
 ## What you are responsible for
 
@@ -112,13 +136,21 @@ DashBye discovers the nearest `dashbye.config.yml`. You only need to explain whe
 - Approval for each Dashboard write plan
 - Final review submission and publication
 
-Empty lists and `null` in the desired state can request removal, so the agent must show those operations explicitly. DashBye rejects stale plans and checks the saved result against the approved desired state.
+> **Warning:** Empty lists and `null` in the desired state can request removal, so the agent must show those operations explicitly. DashBye rejects stale plans and checks the saved result against the approved desired state.
 
 ## Current support
 
 This is an early technical release. Package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back have been exercised on a real Dashboard. Multiple locales, headless session reuse, collected-data/certification changes, and new permission confirmations remain unverified.
 
-[Usage & source install](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md) · [Validation record](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md) · [Security](https://github.com/HiAriesZhou/DashBye/blob/main/docs/security.md) · [Architecture](https://github.com/HiAriesZhou/DashBye/blob/main/docs/architecture.md)
+## Documentation
+
+| Document | Covers |
+| --- | --- |
+| [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) | Source installation, resource layout, Chrome setup, failure cases |
+| [Resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md) | `dashbye.config.yml` and the `store/` resource layout |
+| [Validation record](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md) | What has been verified on a real Dashboard |
+| [Security](https://github.com/HiAriesZhou/DashBye/blob/main/docs/security.md) | Local execution, loopback CDP, and write boundaries |
+| [Architecture](https://github.com/HiAriesZhou/DashBye/blob/main/docs/architecture.md) | How local intent becomes an approved write |
 
 For all commands and options, run `dashbye -h`.
 
