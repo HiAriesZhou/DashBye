@@ -142,11 +142,12 @@ flowchart TD
 - The same day, `sync-draft --store edge` uploaded a package to a product's draft
   submission through the Edge Add-ons API v1.1; the operation succeeded and nothing
   was published.
+- After AMO approved that version, `plan` switched the Firefox store to `listing`
+  mode and `sync-draft` updated the description through the add-on edit API; the
+  re-read matched and a fresh plan showed no differences.
 
 ## Not yet validated
 
-- Firefox listing update after approval: unit-tested only. A real `sync-draft` in
-  `listing` mode has not run yet.
 - Edge Partner Center listing fields are not automated.
 - Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
