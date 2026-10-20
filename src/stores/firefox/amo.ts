@@ -11,6 +11,7 @@ export type AmoAddon = {
   id: number;
   guid: string;
   slug: string;
+  defaultLocale: string;
   currentVersion: string | null;
   summary: string | null;
   description: string | null;
@@ -40,8 +41,8 @@ function localized(value: Localized, locale: string): string | null {
   return value[locale] ?? Object.values(value)[0] ?? null;
 }
 
-// Only reads and validation uploads exist here. Creating a version submits it for
-// review and editing add-on metadata publishes immediately, so neither is called.
+// Reads and validation uploads only. Creating a version submits it for review and
+// editing add-on metadata publishes immediately; both live in amo-write.ts.
 export class AmoClient {
   constructor(private readonly credentials: AmoCredentials | null, private readonly fetchImpl: typeof fetch = fetch) {}
 
@@ -64,6 +65,7 @@ export class AmoClient {
       id: raw.id as number,
       guid: raw.guid,
       slug: raw.slug as string,
+      defaultLocale: locale,
       currentVersion: (raw.current_version as { version?: string } | null)?.version ?? null,
       summary: localized(raw.summary as Localized, locale),
       description: localized(raw.description as Localized, locale),

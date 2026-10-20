@@ -58,7 +58,7 @@ test('reads an add-on and normalizes localized fields to its default locale', as
   }]]);
   const addon = await new AmoClient(credentials, impl).getAddon('x-toc');
   assert.deepEqual(addon, {
-    id: 9, guid: 'x@example.com', slug: 'x-toc', currentVersion: '1.1.0', summary: 'Summary', description: 'Body', homepageUrl: 'https://example.com',
+    id: 9, guid: 'x@example.com', slug: 'x-toc', defaultLocale: 'en-US', currentVersion: '1.1.0', summary: 'Summary', description: 'Body', homepageUrl: 'https://example.com',
     supportUrl: 'https://example.com/help', supportEmail: 'help@example.com', categories: ['other'],
     previewUrls: ['https://addons.mozilla.org/user-media/previews/full/1.png'],
   });

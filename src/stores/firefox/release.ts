@@ -13,11 +13,13 @@ export type FirefoxRelease = {
   supportEmail: string | null;
   categories: string[];
   screenshots: string[];
+  // Build steps and notes for AMO reviewers; sent only by `dashbye submit`.
+  reviewerNotes: string | null;
   hash: string;
 };
 
-async function readText(path: string): Promise<string> {
-  return (await readFile(path, 'utf8').catch(() => { throw new Error(`cannot read description: ${basename(path)}`); }))
+export async function readText(path: string, label = 'description'): Promise<string> {
+  return (await readFile(path, 'utf8').catch(() => { throw new Error(`cannot read ${label}: ${basename(path)}`); }))
     .replace(/\r\n/g, '\n').replace(/\n+$/, '');
 }
 
@@ -48,6 +50,8 @@ export async function loadFirefoxRelease(resources: string): Promise<FirefoxRele
     : [...stringList(locale.screenshots, `listing.locales.${language}.screenshots`), ...stringList(listing.globalScreenshots, 'listing.globalScreenshots')]
   ).map(file => pathFrom(resources, file));
   for (const file of screenshots) await checkImage(file);
+  const reviewerFile = nullableText(firefox.reviewerNotes, 'stores.firefox.reviewerNotes');
+  const reviewerPath = reviewerFile ? pathFrom(resources, reviewerFile) : null;
 
   const release = {
     summary,
@@ -57,7 +61,8 @@ export async function loadFirefoxRelease(resources: string): Promise<FirefoxRele
     supportEmail: nullableText(firefox.supportEmail, 'stores.firefox.supportEmail'),
     categories: stringList(firefox.categories, 'stores.firefox.categories'),
     screenshots,
+    reviewerNotes: reviewerPath ? await readText(reviewerPath, 'reviewer notes') : null,
   };
-  const files = await Promise.all([...(descriptionPath ? [descriptionPath] : []), ...screenshots].map(fileHash));
+  const files = await Promise.all([...(descriptionPath ? [descriptionPath] : []), ...(reviewerPath ? [reviewerPath] : []), ...screenshots].map(fileHash));
   return { ...release, hash: objectHash({ release, files }) };
 }

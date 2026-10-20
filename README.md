@@ -65,7 +65,7 @@ dashbye agent-prompt --project /path/to/extension
 
 Extension repository → Agent audits the real build and resources → DashBye compares them with the store draft → You approve the plan → DashBye saves and reads back the draft.
 
-DashBye runs locally and connects directly to Google through your dedicated Chrome session. It has no account, server, or telemetry. **It stops at the saved draft; you submit for review and publish in the Dashboard.**
+DashBye runs locally and connects directly to Google through your dedicated Chrome session. It has no account, server, or telemetry. **For Chrome and Edge it stops at the saved draft; you submit for review and publish in the store dashboard.** Firefox Add-ons has no draft, so a Firefox version is created only by `dashbye submit`, for the plan you approve.
 
 ## What it solves
 

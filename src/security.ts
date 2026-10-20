@@ -36,7 +36,7 @@ export function sanitizedPageLabel(page: Page): string {
 }
 
 const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
-const STORE_URL = /https?:\/\/(chrome\.google\.com|chromewebstore\.google\.com)\/\S*/g;
+const STORE_URL = /https?:\/\/(chrome\.google\.com|chromewebstore\.google\.com|addons\.mozilla\.org|api\.addons\.microsoftedge\.microsoft\.com|microsoftedge\.microsoft\.com|partner\.microsoft\.com)\/\S*/g;
 const MAX_ERROR_LENGTH = 300;
 
 // Playwright appends a call log that can quote filled field contents, and its

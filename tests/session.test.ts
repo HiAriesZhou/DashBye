@@ -111,3 +111,17 @@ test('explains a connection refused because Chrome has no open window', async ()
   );
   assert.equal(fake.attempts(), 0);
 });
+
+test('an irreversible question defaults to no and needs an explicit yes', async () => {
+  const ask = async (text: string) => {
+    const input = new PassThrough();
+    const output = new PassThrough();
+    let prompt = '';
+    output.on('data', chunk => { prompt += chunk.toString(); });
+    const pending = askYesNo('Submit to AMO?', { input, output }, { defaultYes: false });
+    input.end(text);
+    return { result: await pending, prompt };
+  };
+  assert.deepEqual(await ask('\n'), { result: false, prompt: 'Submit to AMO? [y/N] ' });
+  assert.equal((await ask('y\n')).result, true);
+});

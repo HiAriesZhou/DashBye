@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { basename, dirname, relative, resolve } from 'node:path';
 import YAML from 'yaml';
-import { pathFrom, record, text } from './parse.js';
+import { nullableText, pathFrom, record, text } from './parse.js';
 import { assertEdgeProductId, assertFirefoxAddon, assertItemId, normalizeLoopbackEndpoint } from './security.js';
 import { parseStoreList, STORE_IDS, type StoreId } from './stores/types.js';
 
@@ -9,7 +9,8 @@ export const DEFAULT_ENDPOINT = 'http://127.0.0.1:9333';
 
 export type ChromeTarget = { artifact: string; itemId: string; language: string };
 export type EdgeTarget = { artifact: string; productId: string; language: string };
-export type FirefoxTarget = { artifact: string; addon: string };
+// `source` is the archive AMO reviewers rebuild from; `dashbye submit` uploads it.
+export type FirefoxTarget = { artifact: string; addon: string; source?: string | null };
 export type Targets = { chrome?: ChromeTarget; edge?: EdgeTarget; firefox?: FirefoxTarget };
 
 export type ProjectSetup = {
@@ -39,7 +40,10 @@ function parseTargets(raw: Record<string, unknown>, project: string): Targets {
     const artifact = pathFrom(project, text(value.artifact, `targets.${store}.artifact`));
     if (store === 'chrome') targets.chrome = { artifact, itemId: assertItemId(text(value.itemId, 'targets.chrome.itemId')), language: text(value.language, 'targets.chrome.language') };
     if (store === 'edge') targets.edge = { artifact, productId: assertEdgeProductId(text(value.productId, 'targets.edge.productId')), language: text(value.language, 'targets.edge.language') };
-    if (store === 'firefox') targets.firefox = { artifact, addon: assertFirefoxAddon(text(value.addon, 'targets.firefox.addon')) };
+    if (store === 'firefox') {
+      const source = nullableText(value.source, 'targets.firefox.source');
+      targets.firefox = { artifact, addon: assertFirefoxAddon(text(value.addon, 'targets.firefox.addon')), ...(source ? { source: pathFrom(project, source) } : {}) };
+    }
   }
   return targets;
 }
@@ -79,7 +83,7 @@ export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources
   const out: Record<string, Record<string, string>> = {};
   if (targets.chrome) out.chrome = { artifact: relativeTo(project, targets.chrome.artifact), itemId: targets.chrome.itemId, language: targets.chrome.language };
   if (targets.edge) out.edge = { artifact: relativeTo(project, targets.edge.artifact), productId: targets.edge.productId, language: targets.edge.language };
-  if (targets.firefox) out.firefox = { artifact: relativeTo(project, targets.firefox.artifact), addon: targets.firefox.addon };
+  if (targets.firefox) out.firefox = { artifact: relativeTo(project, targets.firefox.artifact), addon: targets.firefox.addon, ...(targets.firefox.source ? { source: relativeTo(project, targets.firefox.source) } : {}) };
   return {
     schema: 'dashbye/config/v2',
     project: relativeTo(dirname(resolve(configPath)), project),

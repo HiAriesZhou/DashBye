@@ -3,15 +3,24 @@ import assert from 'node:assert/strict';
 import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForRun, selectStores, storesToRun } from '../src/multi-plan.js';
 import { chromeApprovalHash, type ReconciliationPlan } from '../src/reconcile.js';
 import { firefoxApprovalHash, type FirefoxPlan } from '../src/stores/firefox/plan.js';
+import { edgeApprovalHash, type EdgePlan } from '../src/stores/edge/index.js';
 
 function chrome(artifactSha256 = 'a', operations: ReconciliationPlan['operations'] = []): ReconciliationPlan {
   const base = { schema: 'dashbye/plan/v2' as const, itemIdHash: 'i', artifactSha256, releaseHash: 'r', remoteHash: 'h', operations };
   return { ...base, approvalHash: chromeApprovalHash(base) };
 }
 
-function firefox(differences: FirefoxPlan['differences'] = [], blocking: string[] = []): FirefoxPlan {
+function edge(): EdgePlan {
   const base = {
-    schema: 'dashbye/firefox-plan/v1' as const, addonHash: 'a', slug: 'x', artifactSha256: 'b', releaseHash: 'c', remoteHash: 'd',
+    schema: 'dashbye/edge-plan/v1' as const, productIdHash: 'p', artifactSha256: 'e', version: '1.2.0',
+    operations: [{ area: 'package' as const, action: 'upload' as const, field: 'draftPackage' as const, after: '1.2.0' }], blocking: [],
+  };
+  return { ...base, approvalHash: edgeApprovalHash(base) };
+}
+
+function firefox(differences: FirefoxPlan['differences'] = [], blocking: string[] = [], mode: FirefoxPlan['mode'] = 'validate'): FirefoxPlan {
+  const base = {
+    schema: 'dashbye/firefox-plan/v2' as const, mode, addonHash: 'a', slug: 'x', artifactSha256: 'b', releaseHash: 'c', remoteHash: 'd',
     version: { local: '1.2.0', remote: '1.1.0' }, differences, blocking,
   };
   return { ...base, approvalHash: firefoxApprovalHash(base) };
@@ -63,14 +72,33 @@ test('summarizes each store under its own heading', () => {
   assert.match(text, /Firefox Add-ons\n  Not supported in this DashBye version yet; nothing will be written\./);
 });
 
-test('explains that Firefox is validated only and lists changes to make in AMO', () => {
+test('before approval, Firefox is validated only and listing changes wait for AMO', () => {
   const firefoxPlan = firefox([{ field: 'summary', action: 'update' }, { field: 'screenshots', action: 'replace', before: 1, after: 2 }]);
   const text = formatMultiPlan(combinePlans({ firefox: firefoxPlan }, []), {});
   assert.match(text, /Firefox Add-ons\n  Package 1\.2\.0 \(AMO: 1\.1\.0\)/);
-  assert.match(text, /Update by hand in AMO Developer Hub:\n    summary\n    screenshots \(1 → 2\)/);
-  assert.match(text, /uploads the package to AMO for validation only/);
+  assert.match(text, /Listing changes wait until AMO approves 1\.2\.0:\n    summary\n    screenshots \(1 → 2\)/);
+  assert.match(text, /uploads the package to AMO for validation only; submit it with dashbye submit/);
   const blocked = formatMultiPlan(combinePlans({ firefox: firefox(firefoxPlan.differences, ['package version 1.1.0 is not newer than the AMO version 1.1.0']) }, []), {});
   assert.match(blocked, /Blocked: package version 1\.1\.0 is not newer/);
+});
+
+test('after approval, Firefox lists the fields sync-draft updates and those left to AMO Developer Hub', () => {
+  const text = formatMultiPlan(combinePlans({ firefox: firefox([{ field: 'description', action: 'update' }, { field: 'supportUrl', action: 'update' }], [], 'listing') }, []), {});
+  assert.match(text, /AMO approved 1\.2\.0\. sync-draft updates:\n    description/);
+  assert.match(text, /Update by hand in AMO Developer Hub:\n    supportUrl/);
+  assert.equal(confirmQuestion(combinePlans({ firefox: firefox([{ field: 'description', action: 'update' }], [], 'listing') }, [])), 'Update the AMO listing?');
+});
+
+test('Edge uploads the package to the draft and leaves the listing and publishing to Partner Center', () => {
+  const plan = combinePlans({ edge: edge() }, []);
+  assert.deepEqual(parsePlanFile(JSON.parse(JSON.stringify(plan))), plan);
+  const text = formatMultiPlan(plan, {});
+  assert.match(text, /Microsoft Edge Add-ons\n  Package 1\.2\.0 → draft submission/);
+  assert.match(text, /Store listing and publishing stay in Partner Center/);
+  assert.equal(confirmQuestion(plan), 'Upload the Edge package to its draft?');
+  const tampered = structuredClone(plan);
+  tampered.stores.edge!.version = '9.9.9';
+  assert.throws(() => parsePlanFile(tampered), /plan file was modified/);
 });
 
 test('asks one question that names what will happen in each store', () => {

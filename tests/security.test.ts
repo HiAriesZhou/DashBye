@@ -41,3 +41,10 @@ test('public error messages handle non-errors and overly long lines', () => {
   assert.equal(publicErrorMessage('boom'), 'unknown error');
   assert.equal(publicErrorMessage(new Error('x'.repeat(500))).length, 300);
 });
+
+test('public errors redact AMO and Microsoft store URLs too', () => {
+  const message = publicErrorMessage(new Error('failed at https://addons.mozilla.org/api/v5/addons/addon/x@example.com/ and https://api.addons.microsoftedge.microsoft.com/v1/products/1111/submissions/draft/package and https://partner.microsoft.com/dashboard/microsoftedge/1111'));
+  assert.doesNotMatch(message, /x@example\.com|1111/);
+  assert.match(message, /addons\.mozilla\.org\/…/);
+  assert.match(message, /partner\.microsoft\.com\/…/);
+});

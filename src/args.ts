@@ -50,6 +50,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   inspect: { summary: 'Read the current Dashboard draft without changing it', options: [...WORKSPACE, 'output', 'json', 'no-launch', 'non-interactive'] },
   plan: { summary: 'Compare local intent with each configured store draft and save the plan', options: [...WORKSPACE, 'store', 'output', 'json', 'no-launch', 'non-interactive'] },
   'sync-draft': { summary: 'Confirm and execute the plan, save each store draft, and read it back', options: [...WORKSPACE, 'store', 'plan', 'approve-plan', 'non-interactive', 'json', 'no-launch'] },
+  submit: { summary: 'Submit the Firefox package to AMO for review after you approve its plan', options: ['config', 'project', 'store', 'approve-plan', 'non-interactive', 'json', 'output'] },
 };
 
 function distance(left: string, right: string): number {
