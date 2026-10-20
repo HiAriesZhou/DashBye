@@ -12,11 +12,12 @@ import { sha256 } from './hash.js';
 import { manual } from './help.js';
 import { guideInitialization, initialize } from './init.js';
 import { projectStateDir, writePrivateFile } from './paths.js';
-import { settleReadBack } from './read-back.js';
+import { applyWithRetry, settleReadBack } from './read-back.js';
 import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForRun, selectStores, storesToRun, type MultiPlan, type StorePlans } from './multi-plan.js';
 import { DEFAULT_ENDPOINT, loadProject } from './project.js';
-import { createDesiredState, createReconciliationPlan, publicDashboardState, type ReconciliationPlan } from './reconcile.js';
+import { createDesiredState, createReconciliationPlan, publicDashboardState, remainingWithinApproved, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
+import { applyLoopbackNoProxy } from './net.js';
 import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { loadAmoCredentials, loadEdgeCredentials } from './credentials.js';
@@ -231,7 +232,20 @@ async function verifyChrome(run: ChromeRun): Promise<void> {
 }
 
 async function syncChrome(run: ChromeRun) {
-  const applied = await applyReconciliationPlan(run.page, run.workspace, run.desired, run.approved);
+  const plan = (state: Awaited<ReturnType<typeof readDashboardState>>) => createReconciliationPlan(run.workspace, run.desired, state);
+  const applied = await applyWithRetry({
+    approved: run.approved,
+    apply: approved => applyReconciliationPlan(run.page, run.workspace, run.desired, approved),
+    read: async () => {
+      notify('Save draft was not confirmed; reading the draft to retry only the remaining approved changes.');
+      const state = await readDashboardState(run.page, run.workspace);
+      assertDraftEditable(state.editLock);
+      return state;
+    },
+    remaining: state => plan(state).operations,
+    withinApproved: remaining => remainingWithinApproved(run.approved.operations, remaining),
+    retryPlan: plan,
+  });
   const { state: after, remaining } = await settleReadBack(
     applied,
     () => readDashboardState(run.page, run.workspace),
@@ -389,6 +403,7 @@ const handlers: Record<string, (args: Args) => Promise<void>> = {
 };
 
 async function main() {
+  applyLoopbackNoProxy();
   const { command, args, help, version } = parseCommandLine(process.argv.slice(2));
   if (version) { console.log(VERSION); return; }
   if (help) { console.log(command ? commandHelp(command) : manual()); return; }

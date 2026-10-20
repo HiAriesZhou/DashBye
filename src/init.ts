@@ -146,7 +146,7 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
     return ask('project', 'Which extension repository should DashBye configure?', { kind: 'path', error: 'The selected project directory does not exist.' });
   }
   const configPath = resolve(input.config ?? resolve(project, CONFIG_NAME));
-  const existing = !input.overwrite && await exists(configPath) ? await loadProject(configPath).catch(() => null) : null;
+  const existing = !input.overwrite && await exists(configPath) ? await loadProject(configPath, { resolveVersions: false }).catch(() => null) : null;
   if (!input.overwrite && await exists(configPath) && !input.stores) {
     return { kind: 'existing', configPath, configuredStores: existing?.stores ?? [] };
   }

@@ -141,6 +141,16 @@ DashBye looks for Chrome in the standard install locations. If yours is elsewher
 
 Run `dashbye doctor` to check the configuration and the Chrome connection.
 
+### Proxies
+
+DashBye works with and without a proxy. The connection to the dedicated Chrome is
+loopback, so DashBye always reaches it directly, even when `HTTP_PROXY` or
+`HTTPS_PROXY` is set. Chrome itself uses your system proxy settings to reach the
+store dashboards. Store API requests (AMO, Edge) use `HTTPS_PROXY`/`HTTP_PROXY`
+when set, fall back to a direct connection if the proxy cannot connect, and connect
+directly when no proxy is set or the host is listed in `NO_PROXY`. SOCKS-only
+proxies are not used.
+
 - If Chrome does not open the debugging endpoint, a window using the DashBye profile may already be open without it; quit that Chrome and retry.
 - If the DashBye Chrome is still running but every window is closed (common on macOS), the endpoint answers but cannot be used. DashBye opens a Dashboard window in it; with `--no-launch` it stops and asks you to run `dashbye chrome` or open a new window (Cmd+N / Ctrl+N). `doctor` reports this as "running without an open window".
 - If authentication expired, sign in again in the DashBye Chrome window.
@@ -173,7 +183,9 @@ Initialization is normally once per extension. Later commands discover the neare
 
 Keep screenshots of real listings and other diagnostics outside repositories; DashBye's own plans, inspect output, and Chrome profile already are. Release locks belong in the configured resource directory.
 
-For each release: rebuild the extension, update the resource files, then run validate, plan, and sync-draft. Regenerate the plan whenever the package, resources, or Dashboard draft changes. Never reuse an old approval hash.
+For each release: rebuild the extension, update the resource files, then run validate, plan, and sync-draft. Name artifacts with `{version}` in `dashbye.config.yml` to avoid editing paths for every release.
+
+If **Save draft** does not report completion, `sync-draft` reads the draft and retries once with only the remaining changes, provided every one of them is in the approved plan; otherwise it stops and asks you to plan again. Regenerate the plan whenever the package, resources, or Dashboard draft changes. Never reuse an old approval hash.
 
 DashBye has no backend or telemetry. An external agent’s treatment of files and conversation content depends separately on that agent’s permissions and policies.
 

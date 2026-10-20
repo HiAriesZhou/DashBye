@@ -58,3 +58,24 @@ test('validates store IDs', () => {
   for (const value of ['x-toc', '{8a5b2f4e-1c3d-4e5f-9a8b-7c6d5e4f3a2b}', 'fixture@example.com', '1234567']) assert.equal(assertFirefoxAddon(value), value);
   assert.throws(() => assertFirefoxAddon('has space'), /Firefox add-on/);
 });
+
+test('resolves {version} in artifact and source paths, and keeps templates for init', async () => {
+  const { mkdir } = await import('node:fs/promises');
+  const root = await mkdtemp(join(tmpdir(), 'dashbye-template-'));
+  await mkdir(join(root, 'release'));
+  for (const file of ['x-chrome-v1.1.0.zip', 'x-chrome-v1.2.0.zip', 'x-firefox-v1.2.0.zip', 'x-source-v1.2.0.zip']) await writeFile(join(root, 'release', file), '');
+  const configPath = join(root, 'dashbye.config.yml');
+  await writeFile(configPath, YAML.stringify({
+    schema: 'dashbye/config/v2', project: '.',
+    targets: {
+      chrome: { artifact: 'release/x-chrome-v{version}.zip', itemId: 'a'.repeat(32), language: 'English' },
+      firefox: { artifact: 'release/x-firefox-v{version}.zip', source: 'release/x-source-v{version}.zip', addon: 'x@example.com' },
+    },
+  }));
+  const resolved = await loadProject(configPath);
+  assert.equal(resolved.targets.chrome!.artifact, join(root, 'release/x-chrome-v1.2.0.zip'));
+  assert.equal(resolved.targets.firefox!.source, join(root, 'release/x-source-v1.2.0.zip'));
+  const raw = await loadProject(configPath, { resolveVersions: false });
+  assert.equal(serializeConfig(raw, configPath).targets.chrome!.artifact, 'release/x-chrome-v{version}.zip');
+  assert.equal(serializeConfig(raw, configPath).targets.firefox!.source, 'release/x-source-v{version}.zip');
+});

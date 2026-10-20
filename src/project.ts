@@ -4,6 +4,7 @@ import YAML from 'yaml';
 import { nullableText, pathFrom, record, text } from './parse.js';
 import { assertEdgeProductId, assertFirefoxAddon, assertItemId, normalizeLoopbackEndpoint } from './security.js';
 import { parseStoreList, STORE_IDS, type StoreId } from './stores/types.js';
+import { resolveVersionedPath } from './versioned-path.js';
 
 export const DEFAULT_ENDPOINT = 'http://127.0.0.1:9333';
 
@@ -48,8 +49,26 @@ function parseTargets(raw: Record<string, unknown>, project: string): Targets {
   return targets;
 }
 
+// Paths may name the build as `x-v{version}.zip`; the newest matching file is used.
+async function resolveTargets(targets: Targets): Promise<Targets> {
+  const resolved: Targets = {};
+  if (targets.chrome) resolved.chrome = { ...targets.chrome, artifact: await resolveVersionedPath(targets.chrome.artifact) };
+  if (targets.edge) resolved.edge = { ...targets.edge, artifact: await resolveVersionedPath(targets.edge.artifact) };
+  if (targets.firefox) {
+    const { source, ...firefox } = targets.firefox;
+    resolved.firefox = { ...firefox, artifact: await resolveVersionedPath(firefox.artifact), ...(source ? { source: await resolveVersionedPath(source) } : {}) };
+  }
+  return resolved;
+}
+
 // A v1 config is the original Chrome-only layout; v2 lists only the chosen stores.
-export async function loadProject(configPath: string): Promise<ProjectSetup> {
+// `init` loads with `resolveVersions: false` so it writes `{version}` templates back unchanged.
+export async function loadProject(configPath: string, options: { resolveVersions?: boolean } = {}): Promise<ProjectSetup> {
+  const setup = await readProject(configPath);
+  return options.resolveVersions === false ? setup : { ...setup, targets: await resolveTargets(setup.targets) };
+}
+
+async function readProject(configPath: string): Promise<ProjectSetup> {
   const absolute = resolve(configPath);
   const raw = await readConfig(absolute);
   const project = pathFrom(dirname(absolute), text(raw.project ?? '.', 'project'));

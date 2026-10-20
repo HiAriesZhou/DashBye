@@ -55,6 +55,11 @@ still read as a Chrome-only configuration.
 Paths in this file resolve from the configuration and project directories. CLI path
 overrides resolve from the current directory.
 
+An artifact or source path may contain `{version}` in its file name, such as
+`release/x-chrome-v{version}.zip`. DashBye uses the matching file with the highest
+version, so the configuration does not change between releases; `plan` shows the
+version it picked. `{version}` is not allowed in directory names.
+
 ## Marketing sources beside the release root
 
 Keep generators, HTML templates, fixtures, and unapproved candidate images outside
