@@ -195,7 +195,7 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
   const options: InitInput = {
     ...input, project, stores: stores.join(','), resources, ...(targets.chrome || targets.edge ? { endpoint } : {}), config: configPath,
   };
-  return { kind: 'ready', configPath, setup: { project, resources, endpoint, targets }, change, options };
+  return { kind: 'ready', configPath, setup: { project, resources, endpoint, display: existing?.display ?? null, targets }, change, options };
 }
 
 function writeCommand(options: InitInput): string[] {

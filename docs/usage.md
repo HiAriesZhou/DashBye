@@ -185,6 +185,10 @@ Keep screenshots of real listings and other diagnostics outside repositories; Da
 
 For each release: rebuild the extension, update the resource files, then run `dashbye release`. It validates, plans every store, asks once to save the drafts and once more (default no) to submit a new Firefox version, then reads back and lists what is left to do in the store dashboards. `validate`, `plan`, `sync-draft`, and `submit` run the same steps one at a time. Without a terminal, `release` prints the plan and the `--approve-plan` / `--approve-submit` hashes and writes nothing. Name artifacts with `{version}` in `dashbye.config.yml` to avoid editing paths for every release.
 
+### Working on another screen (optional)
+
+Set `browser.display` to a display name, such as a second monitor or a virtual display created by a tool like [yomado](https://github.com/chekusu/yomado), and DashBye moves only its own Chrome window there (macOS). Part of the name is enough when it matches exactly one display; otherwise the window stays where it is and DashBye says so. DashBye does not require yomado or any other tool.
+
 If **Save draft** does not report completion, `sync-draft` reads the draft and retries once with only the remaining changes, provided every one of them is in the approved plan; otherwise it stops and asks you to plan again. Regenerate the plan whenever the package, resources, or Dashboard draft changes. Never reuse an old approval hash.
 
 DashBye has no backend or telemetry. An external agent’s treatment of files and conversation content depends separately on that agent’s permissions and policies.

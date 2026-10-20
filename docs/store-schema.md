@@ -55,6 +55,9 @@ still read as a Chrome-only configuration.
 Paths in this file resolve from the configuration and project directories. CLI path
 overrides resolve from the current directory.
 
+`browser.display` (optional) names the display, such as a second monitor or a
+virtual display, where DashBye places its own Chrome window on macOS.
+
 An artifact or source path may contain `{version}` in its file name, such as
 `release/x-chrome-v{version}.zip`. DashBye uses the matching file with the highest
 version, so the configuration does not change between releases; `plan` shows the

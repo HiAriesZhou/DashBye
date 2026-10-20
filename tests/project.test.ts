@@ -79,3 +79,17 @@ test('resolves {version} in artifact and source paths, and keeps templates for i
   assert.equal(serializeConfig(raw, configPath).targets.chrome!.artifact, 'release/x-chrome-v{version}.zip');
   assert.equal(serializeConfig(raw, configPath).targets.firefox!.source, 'release/x-source-v{version}.zip');
 });
+
+test('reads an optional browser display and writes it back', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dashbye-display-'));
+  const configPath = join(root, 'dashbye.config.yml');
+  const base = { schema: 'dashbye/config/v2', project: '.', targets: { chrome: { artifact: 'x.zip', itemId: 'a'.repeat(32), language: 'English' } } };
+  await writeFile(configPath, YAML.stringify({ ...base, browser: { endpoint: 'http://127.0.0.1:9333', display: 'DashBye' } }));
+  const setup = await loadProject(configPath, { resolveVersions: false });
+  assert.equal(setup.display, 'DashBye');
+  assert.equal(serializeConfig(setup, configPath).browser.display, 'DashBye');
+  await writeFile(configPath, YAML.stringify(base));
+  const plain = await loadProject(configPath, { resolveVersions: false });
+  assert.equal(plain.display, null);
+  assert.equal('display' in serializeConfig(plain, configPath).browser, false);
+});

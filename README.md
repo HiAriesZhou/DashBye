@@ -85,38 +85,46 @@ cd /path/to/extension
 dashbye init
 ```
 
-Fill the generated `store/` templates with real copy, images, and privacy declarations. Then validate, plan, and sync:
+Fill the generated `store/` templates with real copy, images, and privacy declarations. Then run the release:
 
 ```bash
-dashbye validate
-dashbye plan
-dashbye sync-draft
+dashbye release
 ```
 
-`plan` opens a dedicated DashBye Chrome window when needed. Sign in to Google there the first time; DashBye waits and then reads the draft. It lists every change and saves the plan outside the repository.
+`release` validates the build and resources, opens a dedicated DashBye Chrome window when needed, and plans every configured store. Sign in to the store dashboards there the first time (`dashbye doctor --login` opens it ahead of time); DashBye waits and then reads the drafts. It lists every change, previews text changes, and asks `Save these changes to the Dashboard draft? [Y/n]`. For a new Firefox version it asks separately, `Submit Firefox … to AMO for review? [y/N]`, because AMO has no draft. Success means each draft was saved and read back with **zero remaining differences**, followed by a version lock and a list of what is left to do in the store dashboards.
 
-`sync-draft` shows the plan again and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save, or `n` to cancel. Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock.
+`validate`, `plan`, `sync-draft`, and `submit` run the same steps one at a time.
 
 Run `dashbye <command> -h` to see the options of a command. The [usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) covers source installation, resource layout, Chrome setup, and failure cases.
 
 ## Later releases
 
-Update the extension build and files in `store/`, then repeat **validate → plan → sync-draft**. The dedicated Chrome profile keeps your sign-in between releases.
+Update the extension build and files in `store/`, then run `dashbye release` again. Name packages like `release/x-chrome-v{version}.zip` in `dashbye.config.yml` and DashBye picks the newest build, so the configuration does not change between releases. The dedicated Chrome profile keeps your sign-ins.
 
 DashBye discovers the nearest `dashbye.config.yml`. You only need to explain where the screenshots live once. If the build, resources, or remote draft changes after approval, generate and review a fresh plan.
 
 ## What you are responsible for
 
 - Missing product facts, privacy claims, and certifications
-- Manual Google sign-in
-- Approval for each Dashboard write plan
-- Final review submission and publication
+- Manual sign-in to the store dashboards
+- Approval for each write plan, and a separate yes for each Firefox submission
+- Final review submission in the Chrome Web Store Dashboard and publication in Partner Center
 
 Empty lists and `null` in the desired state can request removal, so the agent must show those operations explicitly. DashBye rejects stale plans and checks the saved result against the approved desired state.
 
+## Working on another screen (optional)
+
+DashBye uses your normal screen by default. To keep its Chrome window off the screen you are working on, set `browser.display` in `dashbye.config.yml` to the name of another display, such as a second monitor; DashBye then moves only its own window there (macOS). One way to get a spare screen without extra hardware is a virtual display, for example [yomado](https://github.com/chekusu/yomado), which creates named virtual displays on macOS. DashBye does not require yomado or any other tool for this.
+
+```yaml
+browser:
+  endpoint: http://127.0.0.1:9333
+  display: DashBye   # a monitor or virtual display name; omit to stay on the current screen
+```
+
 ## Current support
 
-This is an early technical release. Package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back have been exercised on a real Dashboard. Multiple locales, headless session reuse, collected-data/certification changes, and new permission confirmations remain unverified.
+This is an early technical release. On the Chrome Web Store, package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back have been exercised on a real Dashboard. A Firefox submission, the post-approval AMO listing update, and an Edge draft package upload have each run once against real stores; Edge store-listing fields are not automated yet. Multiple locales, headless session reuse, collected-data/certification changes, and new permission confirmations remain unverified.
 
 [Usage & source install](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md) · [Validation record](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md) · [Security](https://github.com/HiAriesZhou/DashBye/blob/main/docs/security.md) · [Architecture](https://github.com/HiAriesZhou/DashBye/blob/main/docs/architecture.md)
 

@@ -30,7 +30,7 @@ DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重�
    初始化模板只是占位内容，不是可发布声明。
 5. 运行 plan 时加上 --json。需要访问 Dashboard 时，DashBye 会自己打开专用的
    Chrome；只让我在那个窗口里登录 Google，登录后再运行一次 plan。当前环境打不开
-   图形界面时，说明原因，并让我运行 "dashbye chrome"。把目标条目和全部改动列给
+   图形界面时，说明原因，并让我运行 "dashbye doctor --login"。把目标条目和全部改动列给
    我看，经我明确同意后，才能执行 sync-draft --approve-plan <approvalHash>。
 6. 保存后必须回读，确认剩余操作为零。不得提交审核或发布。
    汇报文件改动、验证结果和未解决问题。
@@ -39,7 +39,7 @@ DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重�
 安装 DashBye 后，可以生成带有已知参数的交接提示词：
 
 ```bash
-dashbye agent-prompt \
+dashbye init --prompt \
   --project /path/to/extension \
   --artifact dist/release.zip
 ```
@@ -112,11 +112,19 @@ node dist/src/cli.js -h
 
 以后想增减商店，可以直接改 `targets`，也可以运行 `dashbye init` 并选择 **change stores**：已配置的商店保持不变，只会询问新加的商店。`validate`、`plan`、`sync-draft` 加上 `--store chrome` 这样的参数，可以只处理其中一部分。`validate` 发现仓库里有某个商店的包、但这个商店没配置时，会给出提示。
 
-Chrome 应用商店：保存草稿并回读核对。Firefox 附加组件（AMO）没有草稿，DashBye 只上传扩展包让 AMO 验证，并列出需要你在 AMO 开发者中心手动修改的商店字段；它不会创建版本，也不会提交审核（见 [Firefox Add-ons](store-schema.md#firefox-add-ons)）。Edge 会参与校验，并在计划里标为“暂不支持”，不会写入任何内容。
+Chrome 应用商店：保存草稿并回读核对。Edge：通过 Edge Add-ons API 把扩展包上传到产品的草稿提交；商店信息和发布仍在 Partner Center 完成（见 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。Firefox 附加组件（AMO）没有草稿：在 AMO 审核通过这个版本之前，`sync-draft` 只上传扩展包供 AMO 验证；审核通过后，它会更新 AMO API 允许修改的商店字段（见 [Firefox Add-ons](store-schema.md#firefox-add-ons)）。
+
+## 一次完成发布
+
+日常发版只需运行 `dashbye release`。它会校验、为每个商店生成计划并预览文字变化，询问一次是否保存草稿；如果有新的 Firefox 版本，再单独询问一次是否提交（默认否，因为提交后无法撤回）。执行后会回读核对，并列出还需要你在商店后台完成的步骤。不在终端里运行时，它只输出计划和 `--approve-plan` / `--approve-submit` 两个审批哈希，不写入任何内容。`validate`、`plan`、`sync-draft` 和 `submit` 可以把同样的步骤拆开执行。
+
+## 提交 Firefox 版本
+
+AMO 没有草稿：创建 listed 版本就会进入审核队列，并且无法撤回。只有 `dashbye release`（新的 Firefox 版本）和 `dashbye submit` 会这样做。计划绑定了扩展包、源码包（`targets.firefox.source`）、版本说明（`store/releases/<版本>.notes.md`）、给审核员的说明（`stores.firefox.reviewerNotes`）以及 AMO 当前状态；AMO 已有这个版本、版本不够新、缺少版本说明或没有 AMO API 密钥时，计划会被拦下。提交后会读回核对；如果版本已经创建但后续步骤失败，结果为 `submitted_incomplete`，不会重试，请到 AMO 开发者中心补全，不要再次提交。AMO 审核通过后，再运行一次 `dashbye release` 即可同步商店信息。
 
 ## Chrome 与登录
 
-`inspect`、`plan` 和 `sync-draft` 发现调试端口没有响应时，会用 DashBye 专用的 Profile 和配置里的本机回环端口打开官方 Chrome。想提前登录，可以运行 `dashbye chrome` 手动打开。加上 `--no-launch` 则不自动打开，只使用已经在运行的会话。
+`plan`、`sync-draft` 和 `release` 发现调试端口没有响应时，会用 DashBye 专用的 Profile 和配置里的本机回环端口打开官方 Chrome。想提前登录，可以运行 `dashbye doctor --login` 手动打开。加上 `--no-launch` 则不自动打开，只使用已经在运行的会话。
 
 这个 Profile 只保存 Chrome 设置和登录状态，不是 DashBye 账号，也和你日常用的浏览器完全分开。Google 登录需要你在打开的窗口里自己完成。在终端里，DashBye 会等你登录（最长约十分钟），登录后自动继续；不在终端里运行时，它会停下来，提示你登录后重新运行。
 
@@ -125,7 +133,7 @@ DashBye 会在 Chrome 的标准安装位置查找。如果你装在别处，把 
 运行 `dashbye doctor` 可以检查配置和 Chrome 连接。
 
 - Chrome 打开后调试端口仍没有响应：可能已经有一个使用 DashBye Profile、但没开调试端口的窗口。退出那个 Chrome 后重试。
-- DashBye Chrome 仍在运行、但所有窗口都关了（macOS 上常见）：调试端口有响应，却无法使用。DashBye 会在其中打开一个 Dashboard 窗口；加了 `--no-launch` 时它会停下，提示你运行 `dashbye chrome` 或新建窗口（Cmd+N / Ctrl+N）。`doctor` 会显示为“running without an open window”。
+- DashBye Chrome 仍在运行、但所有窗口都关了（macOS 上常见）：调试端口有响应，却无法使用。DashBye 会在其中打开一个 Dashboard 窗口；加了 `--no-launch` 时它会停下，提示你运行 `dashbye doctor --login` 或新建窗口（Cmd+N / Ctrl+N）。`doctor` 会显示为“running without an open window”。
 - 登录过期：在 DashBye 的 Chrome 窗口里重新登录。
 - 同一条目的重复编辑页可以保留；DashBye 会使用自己的工作标签页。不同发布者或浏览器账户上下文仍需明确。
 - 语言选择错误：使用完整的 Dashboard 语言标签。多语言操作尚未验证。
@@ -142,7 +150,7 @@ DashBye 为配置的条目建立一个工作标签页，并在后续命令中复
 | Windows | `%LOCALAPPDATA%\DashBye` |
 | Linux 等 | `$XDG_STATE_HOME/dashbye`（默认 `~/.local/state/dashbye`） |
 
-Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.json` 和 `inspect.json` 在 `projects/<hash>/` 下，目录名是配置文件路径的哈希。需要另存一份时，用 `--output` 指定位置。
+Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.json`、`plan` 读到的 Chrome 草稿状态 `inspect.json` 在 `projects/<hash>/` 下，目录名是配置文件路径的哈希。需要另存一份时，用 `--output` 指定位置。
 
 ## 配置与后续版本
 
@@ -150,7 +158,17 @@ Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.jso
 
 真实条目的截图和其他诊断文件请放在仓库之外；DashBye 自己的计划、读取结果和 Chrome Profile 本来就不在仓库里。版本 lock 保存在配置的资源目录中。
 
-每次更新：重新构建扩展、更新资源，然后依次运行 validate、plan 和 sync-draft。构建包、资源或 Dashboard 草稿变化后，要重新生成计划，不得复用旧 approval hash。
+每次更新：重新构建扩展、更新资源，然后运行 `dashbye release`。在 `dashbye.config.yml` 里把安装包写成带 `{version}` 的文件名，就不用每次改配置。
+
+**Save draft** 没有返回完成状态时，DashBye 会读回草稿，只重试一次剩余的改动，前提是这些改动全部在已批准的计划内；否则会停下，请你重新生成计划。
+
+### 代理
+
+有没有代理都能使用。DashBye 连接专用 Chrome 走的是本机回环地址，因此即使设置了 `HTTP_PROXY` / `HTTPS_PROXY` 也始终直连；Chrome 自己按系统代理设置访问商店后台。访问商店 API（AMO、Edge）时：设置了 `HTTPS_PROXY` / `HTTP_PROXY` 就走代理，代理连不上时自动改为直连；没有代理或域名在 `NO_PROXY` 里时直连。仅支持 HTTP(S) 代理，不使用 SOCKS 代理。
+
+### 在另一块屏幕上运行（可选）
+
+在 `browser.display` 里填写显示器名字（例如第二台显示器，或 [yomado](https://github.com/chekusu/yomado) 这类工具创建的虚拟屏），DashBye 会把它自己的 Chrome 窗口移到那块屏上（仅限 macOS）；其他 Chrome 窗口不受影响。名字可以写一部分，但必须只匹配到一块显示器；找不到时窗口留在原处并给出提示。DashBye 不依赖 yomado 或其他任何工具。构建包、资源或 Dashboard 草稿变化后，要重新生成计划，不得复用旧 approval hash。
 
 DashBye 没有后端或遥测。外部 Agent 如何处理文件及对话内容，另由该 Agent 的权限和数据政策决定。
 

@@ -19,6 +19,8 @@ export type ProjectSetup = {
   project: string;
   resources: string;
   endpoint: string;
+  // Optional display name for DashBye's Chrome window (macOS), e.g. a virtual display.
+  display: string | null;
   targets: Targets;
   stores: StoreId[];
 };
@@ -78,6 +80,7 @@ async function readProject(configPath: string): Promise<ProjectSetup> {
     return {
       schema: 'dashbye/config/v1', project, resources,
       endpoint: normalizeLoopbackEndpoint(text(target.endpoint ?? DEFAULT_ENDPOINT, 'target.endpoint')),
+      display: null,
       targets: { chrome: { artifact: pathFrom(project, text(raw.artifact, 'artifact')), itemId: assertItemId(text(target.itemId, 'target.itemId')), language: text(target.language, 'target.language') } },
       stores: ['chrome'],
     };
@@ -90,6 +93,7 @@ async function readProject(configPath: string): Promise<ProjectSetup> {
   return {
     schema: 'dashbye/config/v2', project, resources,
     endpoint: normalizeLoopbackEndpoint(text(browser.endpoint ?? DEFAULT_ENDPOINT, 'browser.endpoint')),
+    display: nullableText(browser.display, 'browser.display'),
     targets,
     stores: STORE_IDS.filter(store => targets[store]),
   };
@@ -97,7 +101,7 @@ async function readProject(configPath: string): Promise<ProjectSetup> {
 
 const relativeTo = (base: string, path: string) => relative(base, path) || '.';
 
-export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources' | 'endpoint' | 'targets'>, configPath: string) {
+export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources' | 'endpoint' | 'targets'> & { display?: string | null }, configPath: string) {
   const { project, targets } = setup;
   const out: Record<string, Record<string, string>> = {};
   if (targets.chrome) out.chrome = { artifact: relativeTo(project, targets.chrome.artifact), itemId: targets.chrome.itemId, language: targets.chrome.language };
@@ -107,7 +111,7 @@ export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources
     schema: 'dashbye/config/v2',
     project: relativeTo(dirname(resolve(configPath)), project),
     resources: relativeTo(project, setup.resources),
-    browser: { endpoint: setup.endpoint },
+    browser: { endpoint: setup.endpoint, ...(setup.display ? { display: setup.display } : {}) },
     targets: out,
   };
 }

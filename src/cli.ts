@@ -18,6 +18,7 @@ import { DEFAULT_ENDPOINT, loadProject, type ProjectSetup } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, remainingWithinApproved, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
 import { applyLoopbackNoProxy } from './net.js';
+import { placeOnDisplay } from './displays.js';
 import { formatTextChanges, type TextChange } from './text-preview.js';
 import { loadFirefoxRelease } from './stores/firefox/release.js';
 import { amoText } from './stores/firefox/plan.js';
@@ -143,7 +144,15 @@ async function openForLogin(args: Args) {
 
 async function dashboardPage(args: Args, workspace: LoadedWorkspace) {
   const { endpoint, itemId } = workspace.config.target;
-  return (await openDashboard(endpoint, itemId, { launch: args['no-launch'] !== true, waitForLogin: interactive(args), notify })).page;
+  const page = (await openDashboard(endpoint, itemId, { launch: args['no-launch'] !== true, waitForLogin: interactive(args), notify })).page;
+  // Optional: keep DashBye's window on its own display (browser.display).
+  const { display } = await loadProject(workspace.configPath, { resolveVersions: false });
+  if (display) {
+    const session = await page.context().newCDPSession(page) as unknown as Parameters<typeof placeOnDisplay>[0];
+    const placed = await placeOnDisplay(session, display, { notify }).catch(error => notify(`could not move the DashBye window: ${publicErrorMessage(error)}`));
+    if (placed === 'moved') notify(`Moved the DashBye window to display "${display}".`);
+  }
+  return page;
 }
 
 async function chromeWorkspace(args: Args, configPath: string): Promise<LoadedWorkspace> {
