@@ -14,7 +14,7 @@ import { guideInitialization, initialize } from './init.js';
 import { projectStateDir, writePrivateFile } from './paths.js';
 import { applyWithRetry, settleReadBack } from './read-back.js';
 import { combinePlans, confirmQuestion, formatMultiPlan, parsePlanFile, planForRun, selectStores, storesToRun, type MultiPlan, type StorePlans } from './multi-plan.js';
-import { DEFAULT_ENDPOINT, loadProject } from './project.js';
+import { DEFAULT_ENDPOINT, loadProject, type ProjectSetup } from './project.js';
 import { createDesiredState, createReconciliationPlan, publicDashboardState, remainingWithinApproved, type ReconciliationPlan } from './reconcile.js';
 import { writeReleaseLock } from './release-lock.js';
 import { applyLoopbackNoProxy } from './net.js';
@@ -22,12 +22,12 @@ import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
 import { loadAmoCredentials, loadEdgeCredentials } from './credentials.js';
 import { EdgeClient } from './stores/edge/api.js';
-import { planEdge, uploadEdgeDraft, verifyEdge, type EdgePlan } from './stores/edge/index.js';
+import { planEdge, uploadEdgeDraft, verifyEdge, type EdgePlan, type EdgeUploadRecord } from './stores/edge/index.js';
 import { AmoClient } from './stores/firefox/amo.js';
 import { AmoWriter } from './stores/firefox/amo-write.js';
 import { applyFirefoxListing, planFirefox, uploadFirefoxForValidation, verifyFirefox } from './stores/firefox/index.js';
 import type { FirefoxPlan } from './stores/firefox/plan.js';
-import { describeSubmission, executeSubmission, formatSubmitPlan, planSubmission } from './stores/firefox/submit.js';
+import { describeSubmission, executeSubmission, formatSubmitPlan, planSubmission, type SubmitResult } from './stores/firefox/submit.js';
 import { validateStores } from './stores/validate.js';
 import { STORE_LABELS, type StoreId } from './stores/types.js';
 import { isFailedResult, syncOutcome } from './sync-outcome.js';
@@ -111,6 +111,7 @@ async function doctorBrowser(endpoint: string, itemId: string | undefined): Prom
 }
 
 async function doctor(args: Args) {
+  if (args.login === true) await openForLogin(args);
   const { configPath, setup } = await loadSetup(args);
   const workspace = setup.targets.chrome ? await loadWorkspace(configPath, workspaceValues(args)) : null;
   const issues = workspace ? validateWorkspace(workspace) : [];
@@ -129,12 +130,12 @@ async function chromeEndpoint(args: Args): Promise<string> {
   return config ? (await loadProject(config)).endpoint : DEFAULT_ENDPOINT;
 }
 
-async function chrome(args: Args) {
+// `doctor --login`: open the dedicated Chrome so the person can sign in to the stores.
+async function openForLogin(args: Args) {
   const endpoint = await chromeEndpoint(args);
   const { launched, windowOpened } = await ensureChrome(endpoint, { launch: true });
-  const result = { endpoint, launched, windowOpened };
   const state = launched ? 'Opened the dedicated DashBye Chrome' : windowOpened ? 'Opened a Dashboard window in the running DashBye Chrome' : 'Already running: the dedicated DashBye Chrome';
-  await emit(args, result, () => `${state} at ${endpoint}. Sign in to Google in that window if it asks.`);
+  notify(`${state} at ${endpoint}. Sign in to the store dashboards in that window.`);
 }
 
 async function dashboardPage(args: Args, workspace: LoadedWorkspace) {
@@ -148,37 +149,45 @@ async function chromeWorkspace(args: Args, configPath: string): Promise<LoadedWo
   return workspace;
 }
 
-async function inspect(args: Args) {
-  const { configPath, setup } = await loadSetup(args);
-  if (!setup.targets.chrome) throw new Error('inspect currently reads the Chrome Web Store draft, and Chrome is not configured');
-  const workspace = await chromeWorkspace(args, configPath);
-  const current = await readDashboardState(await dashboardPage(args, workspace), workspace);
-  const result = publicDashboardState(current);
-  const saved = statePath(configPath, 'inspect.json');
-  await writePrivateFile(saved, `${JSON.stringify(result, null, 2)}\n`);
-  await emit(args, result, () => `${JSON.stringify(result, null, 2)}\nSaved: ${saved}`);
-}
 
 const amoClient = async () => new AmoClient(await loadAmoCredentials());
 
 const chromeTargets = (workspace: LoadedWorkspace | null) => workspace ? { chrome: workspace.config.target } : {};
 
-async function plan(args: Args) {
-  const { configPath, setup, stores } = await loadSetup(args);
-  assertNoFirefoxPathOverrides(stores, args);
+const lastEdgeUpload = async (configPath: string): Promise<EdgeUploadRecord | null> =>
+  JSON.parse(await readFile(statePath(configPath, 'edge-upload.json'), 'utf8').catch(() => 'null')) as EdgeUploadRecord | null;
+
+type Planned = { combined: MultiPlan; workspace: LoadedWorkspace | null; remote: ReturnType<typeof publicDashboardState> | null };
+
+// Plans every selected store and saves the plan (and the Chrome draft state read).
+async function buildPlans(args: Args, configPath: string, setup: ProjectSetup, stores: StoreId[]): Promise<Planned> {
   const plans: StorePlans = {};
   let workspace: LoadedWorkspace | null = null;
+  let remote: Planned['remote'] = null;
   if (stores.includes('chrome')) {
     workspace = await chromeWorkspace(args, configPath);
     const current = await readDashboardState(await dashboardPage(args, workspace), workspace);
+    remote = publicDashboardState(current);
     plans.chrome = createReconciliationPlan(workspace, await createDesiredState(workspace), current);
   }
-  if (stores.includes('edge')) plans.edge = await planEdge(setup.targets.edge!, await loadEdgeCredentials() !== null);
+  if (stores.includes('edge')) plans.edge = await planEdge(setup.targets.edge!, await loadEdgeCredentials() !== null, await lastEdgeUpload(configPath));
   if (stores.includes('firefox')) plans.firefox = await planFirefox(setup.targets.firefox!, setup.resources, await amoClient());
   const combined = combinePlans(plans, []);
-  const saved = statePath(configPath, 'plan.json');
-  await writePrivateFile(saved, `${JSON.stringify(combined, null, 2)}\n`);
-  await emit(args, combined, () => [formatMultiPlan(combined, chromeTargets(workspace)), '', `Plan saved: ${saved}`, 'Next: dashbye sync-draft'].join('\n'));
+  await writePrivateFile(statePath(configPath, 'plan.json'), `${JSON.stringify(combined, null, 2)}\n`);
+  if (remote) await writePrivateFile(statePath(configPath, 'inspect.json'), `${JSON.stringify(remote, null, 2)}\n`);
+  return { combined, workspace, remote };
+}
+
+async function plan(args: Args) {
+  const { configPath, setup, stores } = await loadSetup(args);
+  assertNoFirefoxPathOverrides(stores, args);
+  const { combined, workspace, remote } = await buildPlans(args, configPath, setup, stores);
+  const showRemote = args.remote === true && remote !== null;
+  await emit(args, showRemote ? { ...combined, remote } : combined, () => [
+    formatMultiPlan(combined, chromeTargets(workspace)),
+    ...(showRemote ? ['', 'Chrome Web Store draft (hashes and counts):', JSON.stringify(remote, null, 2)] : []),
+    '', `Plan saved: ${statePath(configPath, 'plan.json')}`, 'Next: dashbye sync-draft, or dashbye release for the whole release',
+  ].join('\n'));
 }
 
 async function loadPlan(args: Args, configPath: string): Promise<MultiPlan> {
@@ -265,6 +274,7 @@ type StoreResult = {
 function describeResult(entry: StoreResult): string {
   if (entry.result === 'failed') return `failed: ${entry.error}`;
   if (entry.result === 'draft_uploaded') return `uploaded ${entry.version} to the draft submission. Review the listing and publish in Partner Center.`;
+  if (entry.result === 'unchanged') return `package ${entry.version} is already in the draft submission; nothing was uploaded.`;
   if (entry.result === 'upload_failed') return `Edge rejected the package (${entry.errorCode ?? 'no error code'}). Nothing was published.`;
   if (entry.result === 'saved_and_reread' && entry.manualChanges !== undefined) {
     const manual = entry.manualChanges.length ? ` Update by hand in AMO Developer Hub: ${entry.manualChanges.join(', ')}.` : '';
@@ -277,30 +287,32 @@ function describeResult(entry: StoreResult): string {
   return `validated by AMO (${counts}). Nothing was submitted. Next, upload this version${listing} in AMO Developer Hub: ${entry.developerHub}`;
 }
 
-async function syncDraft(args: Args) {
-  const { configPath } = await loadSetup({ ...args, store: false });
-  const approved = await loadPlan(args, configPath);
-  const { run, pending } = storesToRun(approved, optional(args, 'store'));
-  assertNoFirefoxPathOverrides(run, args);
+type Execution = {
+  result: ReturnType<typeof syncOutcome>;
+  stores: Partial<Record<StoreId, StoreResult>>;
+  pending: StoreId[];
+  snapshot?: ReturnType<typeof publicDashboardState>;
+  releaseLock?: string;
+};
+
+// Re-verifies each plan against the current drafts, asks `approve`, then writes and
+// reads back. Returns null when the person declines.
+async function executePlan(args: Args, configPath: string, approved: MultiPlan, run: StoreId[], pending: StoreId[],
+  approve: (shown: Pick<MultiPlan, 'stores' | 'pending'>, workspace: LoadedWorkspace | null) => Promise<boolean>): Promise<Execution | null> {
   // A plan read while the item was in review is refused before Chrome is opened.
   if (run.includes('chrome') && approved.stores.chrome) assertPlanWritable(approved.stores.chrome);
-  const mode = run.length ? approvalMode(args, approved) : null;
   const setup = await loadProject(configPath);
   const chrome = run.includes('chrome') && approved.stores.chrome ? await prepareChrome(args, configPath, approved.stores.chrome) : null;
   if (chrome) await verifyChrome(chrome);
   const edgeCredentials = run.includes('edge') && approved.stores.edge ? await loadEdgeCredentials() : null;
-  const edge: EdgePlan | null = run.includes('edge') && approved.stores.edge ? await verifyEdge(setup.targets.edge!, edgeCredentials !== null, approved.stores.edge) : null;
+  const edge: EdgePlan | null = run.includes('edge') && approved.stores.edge ? await verifyEdge(setup.targets.edge!, edgeCredentials !== null, approved.stores.edge, await lastEdgeUpload(configPath)) : null;
   const client = run.includes('firefox') && approved.stores.firefox ? await amoClient() : null;
   const firefox: FirefoxPlan | null = client ? await verifyFirefox(setup.targets.firefox!, setup.resources, client, approved.stores.firefox!) : null;
   const amoCredentials = firefox?.mode === 'listing' ? await loadAmoCredentials() : null;
   if (firefox?.mode === 'listing' && !amoCredentials) throw new Error('an AMO API key is required to update the listing; set DASHBYE_AMO_ISSUER and DASHBYE_AMO_SECRET');
   // Ask only after every plan is confirmed against the current drafts, so the person
   // approves exactly what will be written.
-  const shown = planForRun(approved, run, pending);
-  if (mode === 'prompt' && !await confirm(shown, chrome?.workspace ?? null)) {
-    console.log('Cancelled. Nothing was written to any store.');
-    return;
-  }
+  if (!await approve(planForRun(approved, run, pending), chrome?.workspace ?? null)) return null;
   const results: Partial<Record<StoreId, StoreResult>> = {};
   let chromeResult: Awaited<ReturnType<typeof syncChrome>> | null = null;
   if (chrome) {
@@ -311,9 +323,13 @@ async function syncDraft(args: Args) {
       results.chrome = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
-  if (edge && edgeCredentials) {
+  if (edge && !edge.operations.length) results.edge = { result: 'unchanged', version: edge.version };
+  else if (edge && edgeCredentials) {
     try {
       results.edge = await uploadEdgeDraft(setup.targets.edge!, new EdgeClient(edgeCredentials), edge);
+      if (results.edge.result === 'draft_uploaded') {
+        await writePrivateFile(statePath(configPath, 'edge-upload.json'), `${JSON.stringify({ productIdHash: edge.productIdHash, artifactSha256: edge.artifactSha256 })}\n`);
+      }
     } catch (error) {
       results.edge = { result: 'failed', error: publicErrorMessage(error) };
     }
@@ -327,17 +343,97 @@ async function syncDraft(args: Args) {
       results.firefox = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
-  const failed = Object.entries(results).filter(([, entry]) => isFailedResult(entry?.result));
-  const result = {
+  return {
     result: syncOutcome(results),
     stores: results,
     pending,
     ...(chromeResult ? { snapshot: chromeResult.snapshot, releaseLock: chromeResult.releaseLock } : {}),
   };
-  await emit(args, result, () => Object.entries(results).length
-    ? Object.entries(results).map(([store, entry]) => `${STORE_LABELS[store as StoreId]}: ${describeResult(entry!)}`).join('\n')
-    : 'Only pending stores were selected. Nothing was written.');
-  if (failed.length) throw new Error(`synchronization failed for ${failed.map(([store]) => store).join(', ')}`);
+}
+
+const failedStores = (execution: Execution | null) => Object.entries(execution?.stores ?? {}).filter(([, entry]) => isFailedResult(entry?.result)).map(([store]) => store);
+
+const describeStores = (stores: Execution['stores']) =>
+  Object.entries(stores).map(([store, entry]) => `${STORE_LABELS[store as StoreId]}: ${describeResult(entry!)}`).join('\n');
+
+async function syncDraft(args: Args) {
+  const { configPath } = await loadSetup({ ...args, store: false });
+  const approved = await loadPlan(args, configPath);
+  const { run, pending } = storesToRun(approved, optional(args, 'store'));
+  assertNoFirefoxPathOverrides(run, args);
+  if (run.includes('chrome') && approved.stores.chrome) assertPlanWritable(approved.stores.chrome);
+  const mode = run.length ? approvalMode(args, approved) : null;
+  const execution = await executePlan(args, configPath, approved, run, pending,
+    (shown, workspace) => mode === 'prompt' ? confirm(shown, workspace) : Promise.resolve(true));
+  if (!execution) {
+    console.log('Cancelled. Nothing was written to any store.');
+    return;
+  }
+  await emit(args, execution, () => Object.keys(execution.stores).length ? describeStores(execution.stores) : 'Only pending stores were selected. Nothing was written.');
+  const failed = failedStores(execution);
+  if (failed.length) throw new Error(`synchronization failed for ${failed.join(', ')}`);
+}
+
+// One command for a release: validate, plan every store, ask once for the drafts and
+// once more (default no) for the irreversible Firefox submission, then run both and
+// say what is left to do in the store dashboards.
+async function release(args: Args) {
+  const { configPath, setup, stores } = await loadSetup(args);
+  const checked = await validateStores(configPath, setup, stores, {});
+  if (checked.issues.some(issue => issue.severity === 'error')) {
+    await emit(args, { stage: 'validate', issues: checked.issues }, () => formatValidation(checked));
+    throw new Error('validation failed');
+  }
+  const { combined, workspace } = await buildPlans(args, configPath, setup, stores);
+  // A Firefox package AMO has not approved yet is submitted, not only validated.
+  const pendingFirefox = combined.stores.firefox?.mode === 'validate';
+  const amoCredentials = pendingFirefox ? await loadAmoCredentials() : null;
+  const submitDeps = pendingFirefox ? { reader: new AmoClient(amoCredentials), writer: amoCredentials ? new AmoWriter(amoCredentials) : null } : null;
+  const submission = submitDeps ? await planSubmission(setup.targets.firefox!, setup.resources, submitDeps) : null;
+  const run = (Object.keys(combined.stores) as StoreId[]).filter(store => !(store === 'firefox' && pendingFirefox));
+  const shown = planForRun(combined, run, []);
+  const summary = [
+    formatMultiPlan(shown, chromeTargets(workspace)),
+    ...(submission ? ['', STORE_LABELS.firefox, formatSubmitPlan(submission).split('\n').map(line => `  ${line.trim()}`).join('\n')] : []),
+  ].join('\n');
+  const submittable = submission !== null && !submission.blocking.length;
+
+  const draftHash = optional(args, 'approve-plan');
+  const submitHash = optional(args, 'approve-submit');
+  if (draftHash !== undefined && draftHash !== combined.approvalHash) throw new Error(`--approve-plan must equal ${combined.approvalHash}`);
+  if (submitHash !== undefined && submitHash !== submission?.approvalHash) throw new Error(submission ? `--approve-submit must equal ${submission.approvalHash}` : '--approve-submit was given, but there is no Firefox submission');
+  if (draftHash === undefined && submitHash === undefined && !interactive(args)) {
+    const approve = [`--approve-plan ${combined.approvalHash}`, ...(submittable ? [`--approve-submit ${submission!.approvalHash}`] : [])].join(' ');
+    await emit(args, { plan: combined, submission, approve: { plan: combined.approvalHash, submit: submittable ? submission!.approvalHash : null } },
+      () => `${summary}\n\nNothing was written. To run this release: dashbye release ${approve}`);
+    return;
+  }
+  if (draftHash === undefined && submitHash === undefined) console.log(summary);
+  const draftsApproved = run.length > 0 && (draftHash !== undefined
+    || (submitHash === undefined && await askYesNo(confirmQuestion(shown), { input: process.stdin, output: process.stdout })));
+  const submitApproved = submittable && (submitHash !== undefined
+    || (draftHash === undefined && await askYesNo(`Submit Firefox ${submission!.version.local} to AMO for review? This cannot be undone.`, { input: process.stdin, output: process.stdout }, { defaultYes: false })));
+
+  const drafts = draftsApproved ? await executePlan(args, configPath, combined, run, [], async () => true) : null;
+  let submitted: SubmitResult | { result: 'failed'; error: string } | null = null;
+  if (submitApproved) {
+    submitted = await executeSubmission(setup.targets.firefox!, setup.resources, submitDeps!, submission!)
+      .catch(error => ({ result: 'failed' as const, error: publicErrorMessage(error) }));
+  }
+  const next = [
+    ...(drafts?.stores.chrome?.result === 'saved_and_reread' ? ['Chrome Web Store: review the saved draft and submit it for review in the Developer Dashboard.'] : []),
+    ...(drafts?.stores.edge?.result === 'draft_uploaded' ? ['Microsoft Edge Add-ons: update the store listing if needed, then publish in Partner Center.'] : []),
+    ...(submitted?.result === 'submitted' ? ['Firefox Add-ons: after AMO approves the version, run dashbye release again to update the listing.'] : []),
+    ...(submission?.blocking.length ? [`Firefox Add-ons: not submitted (${submission.blocking.join('; ')}).`] : []),
+  ];
+  const outcome = { drafts, submission: submitted, next };
+  await emit(args, outcome, () => [
+    drafts ? describeStores(drafts.stores) : run.length ? 'Drafts: nothing was written.' : '',
+    submitted ? `${STORE_LABELS.firefox}: ${'error' in submitted && submitted.result === 'failed' ? `failed: ${submitted.error}` : describeSubmission(submitted as SubmitResult)}` : '',
+    ...(next.length ? ['', 'Next:', ...next.map(line => `  - ${line}`)] : []),
+  ].filter(Boolean).join('\n'));
+  const failed = [...failedStores(drafts), ...(submitted && submitted.result !== 'submitted' ? ['firefox'] : [])];
+  if (failed.length) throw new Error(`release failed for ${failed.join(', ')}`);
 }
 
 // AMO has no draft, so a Firefox version is created only here and only for the plan
@@ -376,6 +472,7 @@ async function submit(args: Args) {
 }
 
 async function init(args: Args) {
+  if (args.prompt === true) return agentPrompt(args);
   const storeFlags = Object.fromEntries(([
     ['stores', 'stores'], ['edge-artifact', 'edgeArtifact'], ['edge-product-id', 'edgeProductId'], ['edge-language', 'edgeLanguage'],
     ['firefox-artifact', 'firefoxArtifact'], ['firefox-addon', 'firefoxAddon'], ['config', 'config'],
@@ -392,11 +489,9 @@ async function init(args: Args) {
 
 const handlers: Record<string, (args: Args) => Promise<void>> = {
   init,
-  'agent-prompt': agentPrompt,
-  validate,
   doctor,
-  chrome,
-  inspect,
+  release,
+  validate,
   plan,
   'sync-draft': syncDraft,
   submit,

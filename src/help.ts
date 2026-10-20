@@ -28,20 +28,18 @@ First run
   --store chrome limits validate, plan, or sync-draft to some configured stores.
 
 Each release
-  dashbye validate     Check the build and store resources
-  dashbye plan         Open Chrome if needed, read the draft, show and save the plan
-  dashbye sync-draft   Show the plan, ask to save, then save and read back the draft
-  dashbye submit       Firefox only: show the AMO submission plan; with
-                       --approve-plan <hash>, submit that version for review
+  dashbye release      Validate, plan every store, ask once to save the drafts and
+                       once more (default no) to submit Firefox, then read back
+  Step by step: validate, plan, sync-draft, submit (Firefox)
 
 Chrome and sign-in
-  inspect, plan, and sync-draft open official Chrome with the dedicated DashBye
+  plan, sync-draft, and release open official Chrome with the dedicated DashBye
   profile when the endpoint is not running (disable with --no-launch). Sign in to
   Google in that window yourself; in a terminal DashBye waits and then continues.
   DashBye never automates login, reads profile data, or stores cookies.
 
 Saved files
-  Plans, inspect results, and the Chrome profile are kept outside repositories in
+  Plans, the last draft state read, and the Chrome profile are kept outside repositories in
   ${appStateDir()}
   --output saves an additional copy.
 

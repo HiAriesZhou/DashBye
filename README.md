@@ -22,7 +22,7 @@ The plan targets the extension’s **English listing** and contains **one change
 
 ### 3. Save the draft and verify it
 
-DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran inspect and plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published. [Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published. [Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
 
 Try the same workflow in your extension repository with the prompt below.
 
@@ -43,7 +43,7 @@ purposes, data-use declarations, or certifications.
 Keep diagnostic files outside repositories. Run validate and plan with --json;
 DashBye opens its dedicated Chrome when it needs the Dashboard. Ask me only to
 complete Google sign-in in that window. If your environment cannot open GUI apps,
-explain why and ask me to run "dashbye chrome". Show me the exact target and
+explain why and ask me to run "dashbye doctor --login". Show me the exact target and
 every proposed change, and wait for my explicit approval before sync-draft.
 
 After an approved sync, require a successful read-back with zero remaining
@@ -58,7 +58,7 @@ You provide product facts the repository cannot prove, sign in to Google in the 
 Want a prompt with known paths filled in? After installation:
 
 ```bash
-dashbye agent-prompt --project /path/to/extension
+dashbye init --prompt --project /path/to/extension
 ```
 
 ## How it works

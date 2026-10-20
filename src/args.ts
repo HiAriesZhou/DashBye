@@ -23,6 +23,10 @@ const OPTIONS: Record<string, OptionSpec> = {
   output: { value: 'file', description: 'Also save the result to this file' },
   plan: { value: 'file', description: 'Plan to execute (default: the latest saved plan)' },
   'approve-plan': { value: 'hash', description: 'Approve the plan without a prompt; must equal its approvalHash' },
+  'approve-submit': { value: 'hash', description: 'Approve the Firefox submission without a prompt; must equal its approvalHash' },
+  prompt: { description: 'Print a copy-paste prompt for an extension repository agent' },
+  login: { description: 'Open the dedicated Chrome to sign in to the store dashboards' },
+  remote: { description: 'Also show and save the Chrome Web Store draft state that was read' },
   'non-interactive': { description: 'Never prompt; missing input or approval is an error' },
   'no-launch': { description: 'Do not open the dedicated Chrome automatically' },
   agent: { description: 'Return the next init question or a ready preview as JSON' },
@@ -41,14 +45,14 @@ const WORKSPACE = ['config', 'project', 'artifact', 'resources', 'item-id', 'lan
 
 type CommandSpec = { summary: string; options: string[] };
 
+// Everyday use needs init, doctor and release; validate, plan, sync-draft and submit
+// are the steps release runs, kept for agents, CI and step-by-step work.
 export const COMMANDS: Record<string, CommandSpec> = {
-  init: { summary: 'Choose stores and create or change the project configuration', options: [...WORKSPACE, 'stores', 'edge-artifact', 'edge-product-id', 'edge-language', 'firefox-artifact', 'firefox-addon', 'agent', 'json', 'overwrite', 'non-interactive'] },
-  'agent-prompt': { summary: 'Print a copy-paste prompt for an extension repository agent', options: ['project', 'artifact', 'resources', 'item-id', 'language', 'endpoint', 'output'] },
+  init: { summary: 'Choose stores and create or change the project configuration (--prompt prints an agent prompt)', options: [...WORKSPACE, 'stores', 'edge-artifact', 'edge-product-id', 'edge-language', 'firefox-artifact', 'firefox-addon', 'agent', 'prompt', 'output', 'json', 'overwrite', 'non-interactive'] },
+  doctor: { summary: 'Check the configuration and the dedicated Chrome (--login opens it to sign in)', options: [...WORKSPACE, 'login', 'json'] },
+  release: { summary: 'Validate, plan every store, ask once, then save drafts, submit Firefox, and read back', options: ['config', 'project', 'store', 'approve-plan', 'approve-submit', 'non-interactive', 'json', 'no-launch'] },
   validate: { summary: 'Validate each configured store package, listing assets, and privacy declarations', options: [...WORKSPACE, 'store', 'output', 'json'] },
-  doctor: { summary: 'Check configuration paths and the dedicated Chrome connection', options: [...WORKSPACE, 'json'] },
-  chrome: { summary: 'Open the dedicated Chrome profile for Dashboard sign-in', options: [...WORKSPACE, 'json'] },
-  inspect: { summary: 'Read the current Dashboard draft without changing it', options: [...WORKSPACE, 'output', 'json', 'no-launch', 'non-interactive'] },
-  plan: { summary: 'Compare local intent with each configured store draft and save the plan', options: [...WORKSPACE, 'store', 'output', 'json', 'no-launch', 'non-interactive'] },
+  plan: { summary: 'Compare local intent with each configured store draft and save the plan', options: [...WORKSPACE, 'store', 'remote', 'output', 'json', 'no-launch', 'non-interactive'] },
   'sync-draft': { summary: 'Confirm and execute the plan, save each store draft, and read it back', options: [...WORKSPACE, 'store', 'plan', 'approve-plan', 'non-interactive', 'json', 'no-launch'] },
   submit: { summary: 'Submit the Firefox package to AMO for review after you approve its plan', options: ['config', 'project', 'store', 'approve-plan', 'non-interactive', 'json', 'output'] },
 };
@@ -101,6 +105,12 @@ function readOptions(values: string[]): { positionals: string[]; args: Args; hel
   return { positionals, args, help, version };
 }
 
+const REPLACED: Record<string, string> = {
+  'agent-prompt': 'dashbye init --prompt',
+  chrome: 'dashbye doctor --login',
+  inspect: 'dashbye plan --remote',
+};
+
 export function parseCommandLine(values: string[]): ParsedCommandLine {
   const { positionals, args, help, version } = readOptions(values);
   let command = positionals.shift() ?? '';
@@ -109,6 +119,7 @@ export function parseCommandLine(values: string[]): ParsedCommandLine {
     command = positionals.shift() ?? '';
     wantsHelp = true;
   }
+  if (REPLACED[command]) throw new Error(`"${command}" was replaced by "${REPLACED[command]}" in DashBye 0.6`);
   if (command && !COMMANDS[command]) throw new Error(`unknown command: ${command}; run dashbye -h`);
   const allowed = command ? COMMANDS[command]!.options : [];
   for (const name of Object.keys(args)) {

@@ -78,7 +78,7 @@ export function isNoWindowError(error: unknown): boolean {
 }
 
 export function noWindowMessage(endpoint: string): string {
-  return `the dedicated DashBye Chrome at ${endpoint} is running without an open window; run "dashbye chrome" or open a new window in it (Cmd+N / Ctrl+N), then retry`;
+  return `the dedicated DashBye Chrome at ${endpoint} is running without an open window; run "dashbye doctor --login" or open a new window in it (Cmd+N / Ctrl+N), then retry`;
 }
 
 // The window may close between the check and the connection; explain that case
@@ -139,7 +139,7 @@ export async function ensureChrome(endpoint: string, options: { launch: boolean 
   if (!options.launch) {
     throw new Error(status === 'no-window'
       ? noWindowMessage(endpoint)
-      : `dedicated Chrome is not running at ${endpoint}; run "dashbye chrome" or omit --no-launch`);
+      : `dedicated Chrome is not running at ${endpoint}; run "dashbye doctor --login" or omit --no-launch`);
   }
   const executable = await findChrome(deps);
   const profile = chromeProfileDir(deps.context);

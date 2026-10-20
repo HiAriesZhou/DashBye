@@ -22,7 +22,7 @@ Agent 列出变更计划：目标是扩展的**英文商店页**，只有**一�
 
 ### 3. 保存草稿并核对结果
 
-DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读仍有差异，Agent 没有直接报告完成，而是重新运行 inspect 和 plan，确认已没有待执行的操作，再执行一次零操作同步：结果为 `saved_and_reread`，写入版本锁，新计划为 `operations: []`，即**剩余差异为零**。草稿只做保存，不会提交审核，也不会发布。[案例说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读仍有差异，Agent 没有直接报告完成，而是重新运行 plan，确认已没有待执行的操作，再执行一次零操作同步：结果为 `saved_and_reread`，写入版本锁，新计划为 `operations: []`，即**剩余差异为零**。草稿只做保存，不会提交审核，也不会发布。[案例说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
 
 想在自己的扩展仓库中使用，把下面的提示词交给 Agent 即可。
 
@@ -41,7 +41,7 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 
 诊断文件都放在所有仓库之外。运行 validate 和 plan 时加上 --json；需要访问
 Dashboard 时，DashBye 会自己打开专用的 Chrome。我只负责在那个窗口里登录 Google。
-如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye chrome"。把目标条目和
+如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye doctor --login"。把目标条目和
 每一项改动都列给我看，等我明确同意后再执行 sync-draft。
 
 同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布。最后告诉我改了哪些
@@ -55,7 +55,7 @@ Agent 会安装（或找到已装好的）CLI，初始化仓库，整理发布�
 希望提示词里直接带上项目路径？安装后运行：
 
 ```bash
-dashbye agent-prompt --project /path/to/extension
+dashbye init --prompt --project /path/to/extension
 ```
 
 ## 工作流程
