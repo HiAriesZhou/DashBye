@@ -19,13 +19,17 @@ import { createDesiredState, createReconciliationPlan, publicDashboardState, typ
 import { writeReleaseLock } from './release-lock.js';
 import { normalizeLoopbackEndpoint, publicErrorMessage } from './security.js';
 import { askYesNo, openDashboard } from './session.js';
-import { loadAmoCredentials } from './credentials.js';
+import { loadAmoCredentials, loadEdgeCredentials } from './credentials.js';
+import { EdgeClient } from './stores/edge/api.js';
+import { planEdge, uploadEdgeDraft, verifyEdge, type EdgePlan } from './stores/edge/index.js';
 import { AmoClient } from './stores/firefox/amo.js';
-import { planFirefox, uploadFirefoxForValidation, verifyFirefox } from './stores/firefox/index.js';
+import { AmoWriter } from './stores/firefox/amo-write.js';
+import { applyFirefoxListing, planFirefox, uploadFirefoxForValidation, verifyFirefox } from './stores/firefox/index.js';
 import type { FirefoxPlan } from './stores/firefox/plan.js';
+import { describeSubmission, executeSubmission, formatSubmitPlan, planSubmission } from './stores/firefox/submit.js';
 import { validateStores } from './stores/validate.js';
 import { STORE_LABELS, type StoreId } from './stores/types.js';
-import { syncOutcome } from './sync-outcome.js';
+import { isFailedResult, syncOutcome } from './sync-outcome.js';
 import { discoverConfig, loadWorkspace, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
 const VERSION = '0.4.3';
@@ -168,8 +172,9 @@ async function plan(args: Args) {
     const current = await readDashboardState(await dashboardPage(args, workspace), workspace);
     plans.chrome = createReconciliationPlan(workspace, await createDesiredState(workspace), current);
   }
+  if (stores.includes('edge')) plans.edge = await planEdge(setup.targets.edge!, await loadEdgeCredentials() !== null);
   if (stores.includes('firefox')) plans.firefox = await planFirefox(setup.targets.firefox!, setup.resources, await amoClient());
-  const combined = combinePlans(plans, stores.filter(store => store === 'edge'));
+  const combined = combinePlans(plans, []);
   const saved = statePath(configPath, 'plan.json');
   await writePrivateFile(saved, `${JSON.stringify(combined, null, 2)}\n`);
   await emit(args, combined, () => [formatMultiPlan(combined, chromeTargets(workspace)), '', `Plan saved: ${saved}`, 'Next: dashbye sync-draft'].join('\n'));
@@ -238,10 +243,19 @@ async function syncChrome(run: ChromeRun) {
   return { result: 'saved_and_reread' as const, snapshot: publicDashboardState(after), releaseLock: basename(lockPath) };
 }
 
-type StoreResult = { result: string; releaseLock?: string; error?: string; errors?: number; warnings?: number; messages?: string[]; listingChanges?: number; developerHub?: string };
+type StoreResult = {
+  result: string; releaseLock?: string; error?: string; errors?: number; warnings?: number; messages?: string[];
+  listingChanges?: number; manualChanges?: string[]; developerHub?: string; version?: string; errorCode?: string | null;
+};
 
 function describeResult(entry: StoreResult): string {
   if (entry.result === 'failed') return `failed: ${entry.error}`;
+  if (entry.result === 'draft_uploaded') return `uploaded ${entry.version} to the draft submission. Review the listing and publish in Partner Center.`;
+  if (entry.result === 'upload_failed') return `Edge rejected the package (${entry.errorCode ?? 'no error code'}). Nothing was published.`;
+  if (entry.result === 'saved_and_reread' && entry.manualChanges !== undefined) {
+    const manual = entry.manualChanges.length ? ` Update by hand in AMO Developer Hub: ${entry.manualChanges.join(', ')}.` : '';
+    return `updated ${entry.listingChanges} listing field${entry.listingChanges === 1 ? '' : 's'} on AMO and re-read them.${manual}`;
+  }
   if (entry.result === 'saved_and_reread') return formatSyncResult({ releaseLock: entry.releaseLock ?? '' });
   const counts = `${entry.errors} errors, ${entry.warnings} warnings`;
   if (entry.result === 'validation_failed') return `AMO validation failed (${counts}). Fix the package and run dashbye plan again.`;
@@ -260,8 +274,12 @@ async function syncDraft(args: Args) {
   const setup = await loadProject(configPath);
   const chrome = run.includes('chrome') && approved.stores.chrome ? await prepareChrome(args, configPath, approved.stores.chrome) : null;
   if (chrome) await verifyChrome(chrome);
+  const edgeCredentials = run.includes('edge') && approved.stores.edge ? await loadEdgeCredentials() : null;
+  const edge: EdgePlan | null = run.includes('edge') && approved.stores.edge ? await verifyEdge(setup.targets.edge!, edgeCredentials !== null, approved.stores.edge) : null;
   const client = run.includes('firefox') && approved.stores.firefox ? await amoClient() : null;
   const firefox: FirefoxPlan | null = client ? await verifyFirefox(setup.targets.firefox!, setup.resources, client, approved.stores.firefox!) : null;
+  const amoCredentials = firefox?.mode === 'listing' ? await loadAmoCredentials() : null;
+  if (firefox?.mode === 'listing' && !amoCredentials) throw new Error('an AMO API key is required to update the listing; set DASHBYE_AMO_ISSUER and DASHBYE_AMO_SECRET');
   // Ask only after every plan is confirmed against the current drafts, so the person
   // approves exactly what will be written.
   const shown = planForRun(approved, run, pending);
@@ -279,14 +297,23 @@ async function syncDraft(args: Args) {
       results.chrome = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
+  if (edge && edgeCredentials) {
+    try {
+      results.edge = await uploadEdgeDraft(setup.targets.edge!, new EdgeClient(edgeCredentials), edge);
+    } catch (error) {
+      results.edge = { result: 'failed', error: publicErrorMessage(error) };
+    }
+  }
   if (firefox && client) {
     try {
-      results.firefox = await uploadFirefoxForValidation(setup.targets.firefox!, client, firefox);
+      results.firefox = firefox.mode === 'listing'
+        ? await applyFirefoxListing(setup.targets.firefox!, setup.resources, client, new AmoWriter(amoCredentials!), firefox)
+        : await uploadFirefoxForValidation(setup.targets.firefox!, client, firefox);
     } catch (error) {
       results.firefox = { result: 'failed', error: publicErrorMessage(error) };
     }
   }
-  const failed = Object.entries(results).filter(([, entry]) => entry?.result === 'failed' || entry?.result === 'validation_failed');
+  const failed = Object.entries(results).filter(([, entry]) => isFailedResult(entry?.result));
   const result = {
     result: syncOutcome(results),
     stores: results,
@@ -297,6 +324,41 @@ async function syncDraft(args: Args) {
     ? Object.entries(results).map(([store, entry]) => `${STORE_LABELS[store as StoreId]}: ${describeResult(entry!)}`).join('\n')
     : 'Only pending stores were selected. Nothing was written.');
   if (failed.length) throw new Error(`synchronization failed for ${failed.map(([store]) => store).join(', ')}`);
+}
+
+// AMO has no draft, so a Firefox version is created only here and only for the plan
+// the person approved: by its hash, or by answering the prompt in a terminal.
+async function submit(args: Args) {
+  const { configPath, setup } = await loadSetup({ ...args, store: false });
+  const store = optional(args, 'store');
+  if (store !== undefined && store !== 'firefox') throw new Error('submit applies only to Firefox; Chrome and Edge stop at a saved draft');
+  const target = setup.targets.firefox;
+  if (!target) throw new Error('Firefox is not configured; run dashbye init to add it');
+  const credentials = await loadAmoCredentials();
+  const deps = { reader: new AmoClient(credentials), writer: credentials ? new AmoWriter(credentials) : null };
+  const plan = await planSubmission(target, setup.resources, deps);
+  await writePrivateFile(statePath(configPath, 'submit-plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
+  const hash = optional(args, 'approve-plan');
+  if (plan.blocking.length) {
+    await emit(args, plan, () => formatSubmitPlan(plan));
+    throw new Error('submission is blocked');
+  }
+  if (hash === undefined && !interactive(args)) {
+    await emit(args, plan, () => `${formatSubmitPlan(plan)}\n\nNothing was submitted. To submit, run: dashbye submit --approve-plan ${plan.approvalHash}`);
+    return;
+  }
+  if (hash !== undefined && hash !== plan.approvalHash) throw new Error(`--approve-plan must equal ${plan.approvalHash}; the package, notes, or AMO state changed since it was shown`);
+  if (hash === undefined) {
+    console.log(formatSubmitPlan(plan));
+    const question = `Submit Firefox ${plan.version.local} to AMO for review? This cannot be undone.`;
+    if (!await askYesNo(question, { input: process.stdin, output: process.stdout }, { defaultYes: false })) {
+      console.log('Cancelled. Nothing was submitted.');
+      return;
+    }
+  }
+  const result = await executeSubmission(target, setup.resources, deps, plan);
+  await emit(args, result, () => describeSubmission(result));
+  if (result.result !== 'submitted') throw new Error(result.result === 'validation_failed' ? 'AMO validation failed' : 'submission is incomplete');
 }
 
 async function init(args: Args) {
@@ -323,6 +385,7 @@ const handlers: Record<string, (args: Args) => Promise<void>> = {
   inspect,
   plan,
   'sync-draft': syncDraft,
+  submit,
 };
 
 async function main() {

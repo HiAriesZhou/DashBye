@@ -1,7 +1,9 @@
 import { objectHash, sha256 } from '../../hash.js';
 
-// AMO has no draft, so DashBye never writes listing data there. Differences are
-// reported for the owner to make in AMO Developer Hub; the package is only validated.
+// AMO has no draft and a metadata edit is public at once. While AMO has not yet
+// approved the package version, the plan only validates the package ("validate").
+// Once AMO's current version equals the package version, sync-draft updates the
+// listing fields AMO's API accepts ("listing"); the rest stay manual.
 export type FirefoxDesired = {
   addon: string;
   version: string;
@@ -32,7 +34,8 @@ export type FirefoxRemote = {
 export type FirefoxDifference = { field: string; action: 'update' | 'remove' | 'replace'; before?: number; after?: number };
 
 export type FirefoxPlan = {
-  schema: 'dashbye/firefox-plan/v1';
+  schema: 'dashbye/firefox-plan/v2';
+  mode: 'validate' | 'listing';
   addonHash: string;
   slug: string;
   artifactSha256: string;
@@ -45,9 +48,15 @@ export type FirefoxPlan = {
 };
 
 export function firefoxApprovalHash(plan: Omit<FirefoxPlan, 'approvalHash'>): string {
-  const { schema, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking } = plan;
-  return objectHash({ schema, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking });
+  const { schema, mode, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking } = plan;
+  return objectHash({ schema, mode, addonHash, slug, artifactSha256, releaseHash, remoteHash, version, differences, blocking });
 }
+
+// Fields the AMO add-on edit API accepts. Support URL and previews stay manual.
+export const WRITABLE_FIELDS = ['summary', 'description', 'homepageUrl', 'supportEmail', 'categories'] as const;
+
+export const writableDifferences = (differences: FirefoxDifference[]) =>
+  differences.filter(difference => (WRITABLE_FIELDS as readonly string[]).includes(difference.field));
 
 export function compareVersions(left: string, right: string): number {
   const a = left.split('.').map(part => Number.parseInt(part, 10) || 0);
@@ -79,13 +88,14 @@ export function createFirefoxPlan(desired: FirefoxDesired, remote: FirefoxRemote
     && desired.screenshotHashes.every((hash, index) => visuallyEqual(hash, remote.screenshotHashes[index]!));
   if (!screenshotsEqual) differences.push({ field: 'screenshots', action: 'replace', before: remote.screenshotHashes.length, after: desired.screenshotHashes.length });
 
+  const order = remote.currentVersion ? compareVersions(desired.version, remote.currentVersion) : 1;
+  const mode = order === 0 ? 'listing' as const : 'validate' as const;
   const blocking: string[] = [];
-  if (desired.packageKind !== 'zip') blocking.push('the Firefox package must be a ZIP or XPI file to upload for validation');
-  if (remote.currentVersion && compareVersions(desired.version, remote.currentVersion) <= 0) {
-    blocking.push(`package version ${desired.version} is not newer than the AMO version ${remote.currentVersion}`);
-  }
+  if (mode === 'validate' && desired.packageKind !== 'zip') blocking.push('the Firefox package must be a ZIP or XPI file to upload for validation');
+  if (order < 0) blocking.push(`package version ${desired.version} is older than the AMO version ${remote.currentVersion}`);
   const base = {
-    schema: 'dashbye/firefox-plan/v1' as const,
+    schema: 'dashbye/firefox-plan/v2' as const,
+    mode,
     addonHash: sha256(desired.addon),
     slug: remote.slug,
     artifactSha256: desired.artifactSha256,

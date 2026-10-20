@@ -31,6 +31,8 @@ Each release
   dashbye validate     Check the build and store resources
   dashbye plan         Open Chrome if needed, read the draft, show and save the plan
   dashbye sync-draft   Show the plan, ask to save, then save and read back the draft
+  dashbye submit       Firefox only: show the AMO submission plan; with
+                       --approve-plan <hash>, submit that version for review
 
 Chrome and sign-in
   inspect, plan, and sync-draft open official Chrome with the dedicated DashBye
@@ -60,5 +62,8 @@ Default resources
   store/releases/<version>.lock.json   verified artifact and resource fingerprints
 
 Release boundary
-  DashBye may update a reviewed draft, but it never submits for review or publishes.`;
+  DashBye updates drafts and never publishes. Chrome stops at the saved draft and
+  Edge at the draft package. AMO has no draft, so only "dashbye submit" creates a
+  Firefox version, for the plan you approve; the AMO listing is updated after AMO
+  approves that version.`;
 }

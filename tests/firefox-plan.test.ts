@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compareVersions, createFirefoxPlan, type FirefoxDesired, type FirefoxRemote } from '../src/stores/firefox/plan.js';
+import { compareVersions, createFirefoxPlan, writableDifferences, type FirefoxDesired, type FirefoxRemote } from '../src/stores/firefox/plan.js';
 
 const desired: FirefoxDesired = {
   addon: 'x-toc', version: '1.2.0', packageKind: 'zip', artifactSha256: 'a', releaseHash: 'r',
@@ -20,7 +20,8 @@ test('compares dotted Firefox versions numerically', () => {
 
 test('an unchanged listing with a newer package only needs validation', () => {
   const plan = createFirefoxPlan(desired, remote, () => true);
-  assert.equal(plan.schema, 'dashbye/firefox-plan/v1');
+  assert.equal(plan.schema, 'dashbye/firefox-plan/v2');
+  assert.equal(plan.mode, 'validate');
   assert.deepEqual(plan.differences, []);
   assert.deepEqual(plan.blocking, []);
   assert.deepEqual(plan.version, { local: '1.2.0', remote: '1.1.0' });
@@ -41,9 +42,22 @@ test('empty desired categories report categories still present on AMO', () => {
   assert.deepEqual(plan.differences, [{ field: 'categories', action: 'update' }]);
 });
 
-test('blocks validation when the package is not newer or cannot be uploaded', () => {
-  assert.match(createFirefoxPlan({ ...desired, version: '1.1.0' }, remote, () => true).blocking[0]!, /1\.1\.0 is not newer than the AMO version 1\.1\.0/);
+test('blocks an older package or one that cannot be uploaded', () => {
+  assert.match(createFirefoxPlan({ ...desired, version: '1.0.0' }, remote, () => true).blocking[0]!, /1\.0\.0 is older than the AMO version 1\.1\.0/);
   assert.match(createFirefoxPlan({ ...desired, packageKind: 'directory' }, remote, () => true).blocking[0]!, /ZIP or XPI file/);
+});
+
+test('once AMO has approved the package version, the plan updates the listing instead', () => {
+  const plan = createFirefoxPlan({ ...desired, version: '1.1.0', summary: 'New', supportUrl: 'https://example.com/help' }, remote, () => true);
+  assert.equal(plan.mode, 'listing');
+  assert.deepEqual(plan.blocking, []);
+  assert.deepEqual(plan.differences, [{ field: 'summary', action: 'update' }, { field: 'supportUrl', action: 'update' }]);
+  // A directory build is fine here: nothing is uploaded in listing mode.
+  assert.deepEqual(createFirefoxPlan({ ...desired, version: '1.1.0', packageKind: 'directory' }, remote, () => true).blocking, []);
+});
+
+test('separates listing fields AMO can update from those that stay manual', () => {
+  assert.deepEqual(writableDifferences([{ field: 'summary', action: 'update' }, { field: 'supportUrl', action: 'update' }, { field: 'screenshots', action: 'replace', before: 1, after: 2 }]).map(d => d.field), ['summary']);
 });
 
 test('the approval hash changes with the package, listing, or AMO state', () => {

@@ -6,16 +6,19 @@ import { LoginRequiredError, selectDashboardPage } from './dashboard-v2.js';
 const LOGIN_POLL_MS = 3_000;
 const LOGIN_ATTEMPTS = 200; // about ten minutes
 
-// Enter means yes. A closed input declines, so an unattended run never writes.
-export function askYesNo(question: string, streams: { input: NodeJS.ReadableStream; output: NodeJS.WritableStream }): Promise<boolean> {
+// Enter means yes unless the action cannot be undone (`defaultYes: false`). A closed
+// input declines, so an unattended run never writes.
+export function askYesNo(question: string, streams: { input: NodeJS.ReadableStream; output: NodeJS.WritableStream }, options: { defaultYes?: boolean } = {}): Promise<boolean> {
+  const defaultYes = options.defaultYes ?? true;
   const lines = createInterface({ input: streams.input, terminal: false });
   const iterator = lines[Symbol.asyncIterator]();
   const ask = async (): Promise<boolean> => {
-    streams.output.write(`${question} [Y/n] `);
+    streams.output.write(`${question} ${defaultYes ? '[Y/n]' : '[y/N]'} `);
     const next = await iterator.next();
     if (next.done) return false;
     const reply = String(next.value).trim().toLowerCase();
-    if (reply === '' || reply === 'y' || reply === 'yes') return true;
+    if (reply === '') return defaultYes;
+    if (reply === 'y' || reply === 'yes') return true;
     if (reply === 'n' || reply === 'no') return false;
     return ask();
   };

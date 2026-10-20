@@ -3,20 +3,25 @@ import { loadArtifactWithRaw } from '../../artifact.js';
 import { sha256 } from '../../hash.js';
 import { detailHash, visuallyEqual } from '../../image-fingerprint.js';
 import type { FirefoxTarget } from '../../project.js';
-import type { AmoClient } from './amo.js';
-import { createFirefoxPlan, type FirefoxPlan } from './plan.js';
+import type { AmoAddon, AmoClient } from './amo.js';
+import type { AmoListing, AmoWriter } from './amo-write.js';
+import { createFirefoxPlan, writableDifferences, type FirefoxPlan } from './plan.js';
 import { loadFirefoxRelease } from './release.js';
 
 type Reader = Pick<AmoClient, 'getAddon' | 'fetchImage'>;
 
 export const developerHubUrl = (slug: string) => `https://addons.mozilla.org/developers/addon/${encodeURIComponent(slug)}/versions/submit/`;
 
-export async function planFirefox(target: FirefoxTarget, resources: string, client: Reader): Promise<FirefoxPlan> {
-  const [{ artifact, raw }, release, addon] = await Promise.all([loadArtifactWithRaw(target.artifact), loadFirefoxRelease(resources), client.getAddon(target.addon)]);
+export function assertPackageForAddon(raw: Record<string, unknown>, addon: Pick<AmoAddon, 'guid'>): void {
   const settings = raw.browser_specific_settings as { gecko?: { id?: unknown } } | undefined;
   const geckoId = settings?.gecko?.id;
   if (typeof geckoId !== 'string' || !geckoId.trim()) throw new Error('Firefox package manifest must set browser_specific_settings.gecko.id');
   if (geckoId !== addon.guid) throw new Error('Firefox package gecko.id does not match the configured AMO add-on');
+}
+
+export async function planFirefox(target: FirefoxTarget, resources: string, client: Reader): Promise<FirefoxPlan> {
+  const [{ artifact, raw }, release, addon] = await Promise.all([loadArtifactWithRaw(target.artifact), loadFirefoxRelease(resources), client.getAddon(target.addon)]);
+  assertPackageForAddon(raw, addon);
   const [localShots, remoteShots] = await Promise.all([
     Promise.all(release.screenshots.map(async file => detailHash(await readFile(file)))),
     Promise.all(addon.previewUrls.map(async url => detailHash(await client.fetchImage(url)))),
@@ -59,4 +64,21 @@ export async function uploadFirefoxForValidation(target: FirefoxTarget, client: 
     listingChanges: plan.differences.length,
     developerHub: developerHubUrl(plan.slug),
   };
+}
+
+// After AMO approved the package version: write the listing fields its API accepts,
+// then re-read AMO. Support URL and previews remain changes to make by hand.
+export async function applyFirefoxListing(target: FirefoxTarget, resources: string, client: Reader, writer: Pick<AmoWriter, 'updateListing'>, plan: FirefoxPlan) {
+  if (plan.mode !== 'listing') throw new Error(`Firefox listing is waiting for AMO to approve ${plan.version.local}; run dashbye plan after approval`);
+  const [release, addon] = await Promise.all([loadFirefoxRelease(resources), client.getAddon(target.addon)]);
+  const values: Required<AmoListing> = {
+    summary: release.summary, description: release.description ?? '', homepageUrl: release.homepageUrl,
+    supportEmail: release.supportEmail, categories: release.categories,
+  };
+  const fields = writableDifferences(plan.differences).map(difference => difference.field as keyof AmoListing);
+  if (fields.length) await writer.updateListing(target.addon, addon.defaultLocale, Object.fromEntries(fields.map(field => [field, values[field]])));
+  const after = await planFirefox(target, resources, client);
+  const remaining = writableDifferences(after.differences).map(difference => difference.field);
+  if (remaining.length) throw new Error(`AMO listing read-back still differs: ${remaining.join(', ')}`);
+  return { result: 'saved_and_reread' as const, listingChanges: fields.length, manualChanges: after.differences.map(difference => difference.field) };
 }
