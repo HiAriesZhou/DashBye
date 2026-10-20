@@ -159,13 +159,30 @@ stores:
     description: listing/firefox/description.txt   # optional
     supportEmail: null                       # optional
     screenshots: []                          # optional; replaces the shared screenshots
+    reviewerNotes: listing/firefox/reviewer-notes.txt   # optional; build steps for AMO reviewers
 ```
 
 AMO has no draft. Creating a version submits it for review, and listing edits go live
-immediately, so DashBye never does either. `plan` compares this block with the add-on
-on AMO and lists the fields to update by hand; `sync-draft` only uploads the package
-for AMO validation. The package version must be newer than the AMO version, and its
-manifest must set `browser_specific_settings.gecko.id`.
+immediately. `plan` compares this block with the add-on on AMO:
+
+- **Before AMO approves the package version**, `sync-draft` only uploads the package
+  for validation and shows the listing changes that wait for approval. Submit the
+  version with `dashbye submit` ([usage](usage.md#submitting-a-firefox-version)).
+- **Once AMO's current version equals the package version**, `sync-draft` updates
+  `summary`, `description`, `homepageUrl`, `supportEmail`, and `categories`, then
+  re-reads the add-on. Support URL and screenshots stay manual in AMO Developer Hub.
+
+The package manifest must set `browser_specific_settings.gecko.id`. `submit` also
+needs release notes at `store/releases/<version>.notes.md` and, when the code is
+bundled or minified, a source archive in `dashbye.config.yml`:
+
+```yaml
+targets:
+  firefox:
+    artifact: release/x-firefox-v1.2.0.zip
+    source: release/x-source-v1.2.0.zip
+    addon: x@example.com
+```
 
 Validation uploads need an AMO API key (Developer Hub → Tools → Manage API Keys).
 Provide it as `DASHBYE_AMO_ISSUER` and `DASHBYE_AMO_SECRET`, or in
@@ -176,3 +193,19 @@ Provide it as `DASHBYE_AMO_ISSUER` and `DASHBYE_AMO_SECRET`, or in
 ```
 
 Never put the key in the repository or in `dashbye.config.yml`.
+
+## Microsoft Edge Add-ons
+
+`sync-draft` uploads the Edge package to the product's draft submission with the
+Edge Add-ons API and waits for the upload operation to succeed. It never calls the
+publish endpoint: review the draft, update the store listing, and publish in
+Partner Center. The API has no listing fields and no read of the current draft, so
+the plan shows the upload only.
+
+Create an API key in Partner Center (Microsoft Edge → Publish API) and provide it as
+`DASHBYE_EDGE_CLIENT_ID` and `DASHBYE_EDGE_API_KEY`, or in the same private
+`credentials.json`:
+
+```json
+{ "edge": { "clientId": "…", "apiKey": "…" } }
+```

@@ -62,7 +62,7 @@ dashbye agent-prompt --project /path/to/extension
 
 扩展仓库 → Agent 审计真实的构建和素材 → DashBye 与商店草稿比对 → 你批准计划 → DashBye 保存草稿并回读核对。
 
-DashBye 只在你的电脑上运行，通过专用 Chrome 会话直连 Google：不用注册账号，没有服务器，也不收集任何遥测数据。**它的工作到保存草稿为止；提交审核和正式发布，仍由你在 Dashboard 里亲手完成。**
+DashBye 只在你的电脑上运行，通过专用 Chrome 会话直连 Google：不用注册账号，没有服务器，也不收集任何遥测数据。**对 Chrome 和 Edge，它的工作到保存草稿为止；提交审核和正式发布，仍由你在商店后台亲手完成。** Firefox 附加组件商店没有草稿，因此只有 `dashbye submit` 会创建 Firefox 版本，而且只针对你批准的那份计划。
 
 ## 解决的问题
 

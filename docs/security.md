@@ -70,6 +70,13 @@ owner approval as required. If the local inputs or remote draft change, executio
 stops as stale. A successful run must save and reread with zero remaining
 operations before writing a release lock.
 
-The codebase has no review submission, publication, archive, login, or account
-management action. Asset removal exists only as an operation in a bound,
-owner-approved full desired-state plan.
+The codebase has no publication, archive, login, or account management action. The
+only review submission is `dashbye submit` for AMO, which has no draft: it requires
+the hash of a plan bound to the package, source archive, notes, and AMO state, or an
+explicit `y` at a default-no prompt, and it refuses a version AMO already has. AMO
+listing edits run only after AMO approved the package version. Both are confined to
+`src/stores/firefox/amo-write.ts` by `scripts/check-release-boundary.mjs`, which
+fails the build for version creation, `PATCH`, previews, `PUT`, `DELETE`, or Edge
+publishing anywhere else. Edge uploads go only to the draft package endpoint. Asset
+removal exists only as an operation in a bound, owner-approved full desired-state
+plan.

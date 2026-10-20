@@ -19,17 +19,19 @@ pending. The two stores differ in what a "draft" can be:
   starts a store review, and only for AMO, because AMO offers nothing between
   validation and submission. The repository rule against review submission keeps
   applying everywhere else. `sync-draft` never submits.
-- **`submit` is bound like any write.** `dashbye plan --store firefox` records a
-  submission plan (`dashbye/firefox-submit/v1`): add-on, artifact and source
-  hashes, release-notes and reviewer-notes hashes, the remote version it expects,
-  and blocking reasons. `submit` requires `--approve-plan` (or the terminal prompt)
-  to equal that hash, re-reads AMO, refuses on any drift, then:
+- **`submit` is bound like any write.** `dashbye submit` without approval prints
+  and saves a submission plan (`dashbye/firefox-submit/v1`): add-on, artifact and
+  source hashes, release-notes and reviewer-notes hashes, the AMO version, and
+  blocking reasons, including a version AMO already has. With `--approve-plan`
+  equal to that hash, or an explicit `y` at a default-no prompt, it re-reads AMO,
+  refuses on any drift, then:
   1. uploads the package (channel `listed`) and waits for validation; any error stops;
   2. creates the version with the upload, the source archive and the inherited
      license (one multipart request);
   3. sets release notes and reviewer notes on that version (one JSON request);
-  4. reads the version back (version string, status awaiting review, source present,
-     notes hashes) and writes the release lock only when everything matches.
+  4. reads the version back (version string, source present, notes) and reports
+     `submitted` only when everything matches. AMO itself is the record: a version
+     it already has blocks the next plan, so no Firefox lock file is written.
   A failure after step 2 reports the created version instead of retrying, since a
   repeated upload would fail or duplicate.
 - **Firefox listing waits for approval.** `sync-draft` updates AMO metadata
@@ -37,11 +39,12 @@ pending. The two stores differ in what a "draft" can be:
   current version equals the local version. Earlier, the plan blocks with "waiting
   for AMO to approve <version>", so the public listing never describes a version
   users cannot install yet. Previews stay out of scope.
-- **Edge package goes to the draft through the API.** New `stores.edge` resources
-  and Edge credentials (client ID and API key) enable an upload to
-  `/v1/products/{id}/submissions/draft/package`, followed by polling its operation
-  until it succeeds. The publish endpoint is never called; the boundary check keeps
-  rejecting it.
+- **Edge package goes to the draft through the API.** Edge credentials (client ID
+  and API key) enable an upload to `/v1/products/{id}/submissions/draft/package`,
+  followed by polling its operation until it succeeds or fails. The API cannot read
+  the current draft, so the plan binds the local package only and the operation
+  outcome is the read-back. The publish endpoint is never called; the boundary
+  check keeps rejecting it.
 - **Edge listing goes to the draft through Partner Center.** A Partner Center module
   mirrors the Chrome Dashboard module: dedicated profile, loopback CDP, an owned work
   tab for the exact product, guarded page and heading checks, hash-only reads, Save
@@ -68,9 +71,9 @@ targets:
 stores:
   firefox:
     reviewerNotes: listing/firefox/reviewer-notes.txt   # build steps for AMO reviewers
-  edge:
-    description: listing/edge/description.txt           # falls back to the shared listing
 ```
+
+`stores.edge` listing resources arrive with the Partner Center module.
 
 Release notes live at `store/releases/<version>.notes.md`; `submit` blocks when the
 file for the package version is missing.
@@ -83,7 +86,7 @@ and any Edge `/submissions` path outside `/draft`, still fails `npm test`.
 
 ## Order of work
 
-1. Firefox `submit` with plan, approval, read-back and lock; Firefox listing writes
+1. Firefox `submit` with plan, approval and read-back; Firefox listing writes
    gated on approval.
 2. Edge credentials, `stores.edge` resources, and the draft package upload.
 3. Edge Partner Center listing module, enabled after a recorded real-draft check.

@@ -116,7 +116,20 @@ The prepare script builds the CLI during `npm ci`. Run subsequent commands from 
 
 To add or remove a store later, edit `targets` or run `dashbye init` and choose **change stores**; existing targets are kept and only new stores are asked about. `--store chrome` limits `validate`, `plan`, or `sync-draft` to some of the configured stores. `validate` mentions packages it finds for stores you have not configured.
 
-Chrome Web Store drafts are saved and read back. Firefox Add-ons has no draft, so DashBye only uploads the package for AMO validation and lists listing fields to update by hand in AMO Developer Hub; it never creates a version or submits for review (see [Firefox Add-ons](store-schema.md#firefox-add-ons)). Edge targets are validated and appear in the plan as not yet supported; nothing is written to them.
+Chrome Web Store drafts are saved and read back. Edge packages are uploaded to the product's draft submission through the Edge Add-ons API; the store listing and publishing stay in Partner Center (see [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)). Firefox Add-ons has no draft, so `sync-draft` only uploads the package for AMO validation until AMO has approved that version, and then updates the listing fields AMO's API accepts (see [Firefox Add-ons](store-schema.md#firefox-add-ons)).
+
+## Submitting a Firefox version
+
+AMO has no draft: creating a listed version puts it in the review queue, and it cannot be taken back. `dashbye submit` is the only command that does this.
+
+```bash
+dashbye submit                               # show the plan; nothing is submitted
+dashbye submit --approve-plan <approvalHash> # submit exactly that plan
+```
+
+The plan binds the package, the source archive (`targets.firefox.source`), the release notes (`store/releases/<version>.notes.md`), the reviewer notes (`stores.firefox.reviewerNotes`), and AMO's current state. It is blocked when AMO already has the version, the version is not newer, the release notes are missing, or no AMO API key is set. In a terminal without `--approve-plan`, it asks `[y/N]` and Enter declines.
+
+`submit` uploads the package for validation, creates the version with the source archive, sets the notes, and reads the version back. If anything fails after the version exists, it reports `submitted_incomplete` and does not retry; finish the notes in AMO Developer Hub instead of running `submit` again. After AMO approves the version, run `dashbye plan` and `dashbye sync-draft` to update the listing.
 
 ## Chrome and sign-in
 
