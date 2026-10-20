@@ -32,7 +32,7 @@ import { STORE_LABELS, type StoreId } from './stores/types.js';
 import { isFailedResult, syncOutcome } from './sync-outcome.js';
 import { discoverConfig, loadWorkspace, validateWorkspace, type LoadedWorkspace, type WorkspaceOverrides } from './workspace.js';
 
-const VERSION = '0.4.3';
+const VERSION = '0.5.0';
 const READ_BACK_ATTEMPTS = 6;
 const READ_BACK_DELAY_MS = 5_000;
 
