@@ -157,3 +157,10 @@ test('describes each submission outcome in one line', () => {
   assert.match(describeSubmission({ result: 'submitted_incomplete', version: '1.2.0', error: 'AMO setVersionNotes failed (500)' }), /1\.2\.0 was created and is in review, but .*setVersionNotes failed \(500\).*Do not run submit again/);
   assert.match(describeSubmission({ result: 'validation_failed', errors: 1, warnings: 0, messages: [] }), /AMO validation failed \(1 errors, 0 warnings\)\. Nothing was submitted/);
 });
+
+test('release notes AMO returns as an HTML list match the Markdown list that was sent', async () => {
+  const { target, resources } = await workspace();
+  const { deps: d } = deps({ readBack: { releaseNotes: '<ul><li>New import menu</li></ul>' } });
+  const result = await executeSubmission(target, resources, d, await planSubmission(target, resources, d));
+  assert.equal(result.result, 'submitted');
+});

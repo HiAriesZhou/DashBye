@@ -68,7 +68,27 @@ export function compareVersions(left: string, right: string): number {
   return 0;
 }
 
-const normalize = (value: string | null) => value === null ? null : value.replace(/\r\n/g, '\n').trim();
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+
+const decode = (entity: string) => entity.startsWith('#x') ? String.fromCodePoint(Number.parseInt(entity.slice(2), 16))
+  : entity.startsWith('#') ? String.fromCodePoint(Number.parseInt(entity.slice(1), 10)) : ENTITIES[entity.toLowerCase()] ?? `&${entity};`;
+
+// AMO stores Markdown-like text and returns it rendered: lists become <ul><li>, line
+// breaks <br>, and URLs links. Compare what a reader sees, not the markup.
+export function amoText(value: string | null): string | null {
+  if (value === null) return null;
+  return value
+    .replace(/<br\s*\/?>|<\/(?:li|p|ul|ol|h\d)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (_, entity: string) => decode(entity))
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.replace(/^\s*[-*•]\s+/, '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+const normalize = amoText;
 
 export function createFirefoxPlan(desired: FirefoxDesired, remote: FirefoxRemote, visuallyEqual: (left: string, right: string) => boolean): FirefoxPlan {
   const differences: FirefoxDifference[] = [];

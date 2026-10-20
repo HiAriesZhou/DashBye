@@ -129,15 +129,25 @@ flowchart TD
   Dashboard host; those runs settled after the click, so the fallback itself did not
   run.
 
+## Firefox submission and Edge draft upload
+
+- On 2026-10-20, `dashbye submit` created a listed version for an add-on the owner
+  controls, from an approved plan: validation upload, version with source archive,
+  release and reviewer notes. The version, source archive, and reviewer notes read
+  back as sent. The release notes read back as rendered HTML (`<ul><li>…`), which
+  the first run reported as `submitted_incomplete`; text comparison now normalizes
+  AMO's rendering (`amoText`), and the same notes compare equal. AMO approved the
+  version within minutes; a second `submit` was then blocked because AMO already
+  had the version.
+- The same day, `sync-draft --store edge` uploaded a package to a product's draft
+  submission through the Edge Add-ons API v1.1; the operation succeeded and nothing
+  was published.
+
 ## Not yet validated
 
-- Firefox: on 2026-10-20 a plan and a validation upload ran against an add-on the
-  owner controls (AMO accepted the package with 0 errors). `dashbye submit` and the
-  post-approval listing update are unit-tested only; no real version has been
-  created with them yet.
-- Edge: the draft package upload is unit-tested against the documented Edge
-  Add-ons API v1.1 only. No real upload has run, and Partner Center listing fields
-  are not automated.
+- Firefox listing update after approval: unit-tested only. A real `sync-draft` in
+  `listing` mode has not run yet.
+- Edge Partner Center listing fields are not automated.
 - Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
   with injected dependencies; `dashbye chrome` was checked against an already

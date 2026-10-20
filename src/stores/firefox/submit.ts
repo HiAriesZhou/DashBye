@@ -6,7 +6,7 @@ import type { FirefoxTarget } from '../../project.js';
 import type { AmoClient } from './amo.js';
 import type { AmoWriter } from './amo-write.js';
 import { assertPackageForAddon } from './index.js';
-import { compareVersions } from './plan.js';
+import { amoText, compareVersions } from './plan.js';
 import { loadFirefoxRelease, readText } from './release.js';
 
 // AMO has no draft: creating a listed version submits it for review. `dashbye submit`
@@ -78,7 +78,7 @@ export async function planSubmission(target: FirefoxTarget, resources: string, d
   return (await gather(target, resources, deps)).plan;
 }
 
-const same = (left: string | null, right: string | null) => (left ?? '').trim() === (right ?? '').trim();
+const same = (left: string | null, right: string | null) => (amoText(left) ?? '') === (amoText(right) ?? '');
 
 // Re-reads everything after approval and uses the bytes it hashed, so a file
 // replaced in between cannot be submitted.

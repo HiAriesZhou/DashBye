@@ -66,3 +66,11 @@ test('the approval hash changes with the package, listing, or AMO state', () => 
   assert.notEqual(createFirefoxPlan(desired, { ...remote, currentVersion: '1.1.5' }, () => true).approvalHash, base);
   assert.equal(createFirefoxPlan(desired, remote, () => true).approvalHash, base);
 });
+
+test('AMO renders text as HTML; equal text is not reported as a listing difference', () => {
+  const rendered = { ...remote, description: 'Read<br>• Jump to <a href="https://outgoing.prod.mozaws.net/v1/x">https://example.com</a> &amp; save &quot;clips&quot;' };
+  const plan = createFirefoxPlan({ ...desired, description: 'Read\n• Jump to https://example.com & save "clips"' }, rendered, () => true);
+  assert.deepEqual(plan.differences, []);
+  const changed = createFirefoxPlan({ ...desired, description: 'Read\n• Jump elsewhere' }, rendered, () => true);
+  assert.deepEqual(changed.differences, [{ field: 'description', action: 'update' }]);
+});
