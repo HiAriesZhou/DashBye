@@ -4,6 +4,7 @@ import YAML from 'yaml';
 import { nullableText, pathFrom, record, text } from './parse.js';
 import { assertEdgeProductId, assertFirefoxAddon, assertItemId, normalizeLoopbackEndpoint } from './security.js';
 import { parseStoreList, STORE_IDS, type StoreId } from './stores/types.js';
+import { resolveVersionedPath } from './versioned-path.js';
 
 export const DEFAULT_ENDPOINT = 'http://127.0.0.1:9333';
 
@@ -18,6 +19,8 @@ export type ProjectSetup = {
   project: string;
   resources: string;
   endpoint: string;
+  // Optional display name for DashBye's Chrome window (macOS), e.g. a virtual display.
+  display: string | null;
   targets: Targets;
   stores: StoreId[];
 };
@@ -48,8 +51,26 @@ function parseTargets(raw: Record<string, unknown>, project: string): Targets {
   return targets;
 }
 
+// Paths may name the build as `x-v{version}.zip`; the newest matching file is used.
+async function resolveTargets(targets: Targets): Promise<Targets> {
+  const resolved: Targets = {};
+  if (targets.chrome) resolved.chrome = { ...targets.chrome, artifact: await resolveVersionedPath(targets.chrome.artifact) };
+  if (targets.edge) resolved.edge = { ...targets.edge, artifact: await resolveVersionedPath(targets.edge.artifact) };
+  if (targets.firefox) {
+    const { source, ...firefox } = targets.firefox;
+    resolved.firefox = { ...firefox, artifact: await resolveVersionedPath(firefox.artifact), ...(source ? { source: await resolveVersionedPath(source) } : {}) };
+  }
+  return resolved;
+}
+
 // A v1 config is the original Chrome-only layout; v2 lists only the chosen stores.
-export async function loadProject(configPath: string): Promise<ProjectSetup> {
+// `init` loads with `resolveVersions: false` so it writes `{version}` templates back unchanged.
+export async function loadProject(configPath: string, options: { resolveVersions?: boolean } = {}): Promise<ProjectSetup> {
+  const setup = await readProject(configPath);
+  return options.resolveVersions === false ? setup : { ...setup, targets: await resolveTargets(setup.targets) };
+}
+
+async function readProject(configPath: string): Promise<ProjectSetup> {
   const absolute = resolve(configPath);
   const raw = await readConfig(absolute);
   const project = pathFrom(dirname(absolute), text(raw.project ?? '.', 'project'));
@@ -59,6 +80,7 @@ export async function loadProject(configPath: string): Promise<ProjectSetup> {
     return {
       schema: 'dashbye/config/v1', project, resources,
       endpoint: normalizeLoopbackEndpoint(text(target.endpoint ?? DEFAULT_ENDPOINT, 'target.endpoint')),
+      display: null,
       targets: { chrome: { artifact: pathFrom(project, text(raw.artifact, 'artifact')), itemId: assertItemId(text(target.itemId, 'target.itemId')), language: text(target.language, 'target.language') } },
       stores: ['chrome'],
     };
@@ -71,6 +93,7 @@ export async function loadProject(configPath: string): Promise<ProjectSetup> {
   return {
     schema: 'dashbye/config/v2', project, resources,
     endpoint: normalizeLoopbackEndpoint(text(browser.endpoint ?? DEFAULT_ENDPOINT, 'browser.endpoint')),
+    display: nullableText(browser.display, 'browser.display'),
     targets,
     stores: STORE_IDS.filter(store => targets[store]),
   };
@@ -78,7 +101,7 @@ export async function loadProject(configPath: string): Promise<ProjectSetup> {
 
 const relativeTo = (base: string, path: string) => relative(base, path) || '.';
 
-export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources' | 'endpoint' | 'targets'>, configPath: string) {
+export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources' | 'endpoint' | 'targets'> & { display?: string | null }, configPath: string) {
   const { project, targets } = setup;
   const out: Record<string, Record<string, string>> = {};
   if (targets.chrome) out.chrome = { artifact: relativeTo(project, targets.chrome.artifact), itemId: targets.chrome.itemId, language: targets.chrome.language };
@@ -88,7 +111,7 @@ export function serializeConfig(setup: Pick<ProjectSetup, 'project' | 'resources
     schema: 'dashbye/config/v2',
     project: relativeTo(dirname(resolve(configPath)), project),
     resources: relativeTo(project, setup.resources),
-    browser: { endpoint: setup.endpoint },
+    browser: { endpoint: setup.endpoint, ...(setup.display ? { display: setup.display } : {}) },
     targets: out,
   };
 }

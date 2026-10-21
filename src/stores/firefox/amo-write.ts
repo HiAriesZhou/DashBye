@@ -1,4 +1,5 @@
 import type { AmoCredentials } from '../../credentials.js';
+import { storeFetch } from '../../net.js';
 import { amoJwt } from './amo.js';
 
 // The only module allowed to create AMO versions or edit add-on metadata (see
@@ -26,7 +27,7 @@ const localized = (value: Localized, locale: string): string | null =>
 const versionsPath = (addon: string) => `/addons/addon/${encodeURIComponent(addon)}/versions/`;
 
 export class AmoWriter {
-  constructor(private readonly credentials: AmoCredentials, private readonly fetchImpl: typeof fetch = fetch) {
+  constructor(private readonly credentials: AmoCredentials, private readonly fetchImpl: typeof fetch = storeFetch) {
     if (!credentials) throw new Error('an AMO API key is required; set DASHBYE_AMO_ISSUER and DASHBYE_AMO_SECRET');
   }
 

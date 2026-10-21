@@ -60,7 +60,7 @@ purposes, data-use declarations, or certifications.
 Keep diagnostic files outside repositories. Run validate and plan with --json;
 DashBye opens its dedicated Chrome when it needs the Dashboard. Ask me only to
 complete Google sign-in in that window. If your environment cannot open GUI apps,
-explain why and ask me to run "dashbye chrome". Show me the exact target and
+explain why and ask me to run "dashbye doctor --login". Show me the exact target and
 every proposed change, and wait for my explicit approval before sync-draft.
 
 After an approved sync, require a successful read-back with zero remaining
@@ -78,7 +78,7 @@ performed, and anything still unresolved.
 Want a prompt with known paths filled in? After installation:
 
 ```bash
-dashbye agent-prompt --project /path/to/extension
+dashbye init --prompt --project /path/to/extension
 ```
 
 ## Use the CLI manually
@@ -93,22 +93,25 @@ cd /path/to/extension
 dashbye init
 ```
 
-Fill the generated `store/` templates with real copy, images, and privacy declarations. Then validate, plan, and sync:
+Fill the generated `store/` templates with real copy, images, and privacy declarations. Then run the release:
 
 ```bash
-dashbye validate
-dashbye plan
-dashbye sync-draft
+dashbye release
 ```
 
-- **`plan`** opens a dedicated DashBye Chrome window when needed. Sign in to Google there the first time; DashBye waits and then reads the draft. It lists every change and saves the plan outside the repository.
-- **`sync-draft`** shows the plan again and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save, or `n` to cancel. Success means the draft was saved and read back with **zero remaining differences**, followed by a version lock.
+`release` validates the build and resources, opens a dedicated DashBye Chrome window when needed, and plans every configured store. Sign in to the store dashboards there the first time (`dashbye doctor --login` opens it ahead of time); DashBye waits and then reads the drafts.
+
+- **Save:** it lists every change, previews text changes, and asks `Save these changes to the Dashboard draft? [Y/n]`.
+- **Submit to Firefox:** for a new Firefox version it asks separately, `Submit Firefox … to AMO for review? [y/N]`, because AMO has no draft.
+- **Done:** each draft was saved and read back with **zero remaining differences**, followed by a version lock and a list of what is left to do in the store dashboards.
+
+`validate`, `plan`, `sync-draft`, and `submit` run the same steps one at a time.
 
 Run `dashbye <command> -h` to see the options of a command. The [usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) covers source installation, resource layout, Chrome setup, and failure cases.
 
 ### Later releases
 
-Update the extension build and files in `store/`, then repeat **validate → plan → sync-draft**. The dedicated Chrome profile keeps your sign-in between releases.
+Update the extension build and files in `store/`, then run `dashbye release` again. Name packages like `release/x-chrome-v{version}.zip` in `dashbye.config.yml` and DashBye picks the newest build, so the configuration does not change between releases. The dedicated Chrome profile keeps your sign-ins.
 
 DashBye discovers the nearest `dashbye.config.yml`. You only need to explain where the screenshots live once. If the build, resources, or remote draft changes after approval, generate and review a fresh plan.
 
@@ -131,7 +134,7 @@ The plan targets the extension’s **English listing** and contains **one change
 
 **3. Save the draft and verify it**
 
-DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran inspect and plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published.
+DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published.
 
 [Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
 
@@ -140,11 +143,21 @@ DashBye saves the draft and immediately reads it back. In this example, the firs
 ## What you are responsible for
 
 - Missing product facts, privacy claims, and certifications
-- Manual Google sign-in
-- Approval for each store write plan
-- Final review submission and publication
+- Manual sign-in to the store dashboards
+- Approval for each write plan, and a separate yes for each Firefox submission
+- Final review submission in the Chrome Web Store Dashboard and publication in Partner Center
 
 > **Warning:** Empty lists and `null` in the desired state can request removal, so the agent must show those operations explicitly. DashBye rejects stale plans and checks the saved result against the approved desired state.
+
+## Working on another screen (optional)
+
+DashBye uses your normal screen by default. To keep its Chrome window off the screen you are working on, set `browser.display` in `dashbye.config.yml` to the name of another display, such as a second monitor; DashBye then moves only its own window there (macOS). One way to get a spare screen without extra hardware is a virtual display, for example [yomado](https://github.com/chekusu/yomado), which creates named virtual displays on macOS. DashBye does not require yomado or any other tool for this.
+
+```yaml
+browser:
+  endpoint: http://127.0.0.1:9333
+  display: DashBye   # a monitor or virtual display name; omit to stay on the current screen
+```
 
 ## Current support
 

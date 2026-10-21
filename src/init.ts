@@ -146,7 +146,7 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
     return ask('project', 'Which extension repository should DashBye configure?', { kind: 'path', error: 'The selected project directory does not exist.' });
   }
   const configPath = resolve(input.config ?? resolve(project, CONFIG_NAME));
-  const existing = !input.overwrite && await exists(configPath) ? await loadProject(configPath).catch(() => null) : null;
+  const existing = !input.overwrite && await exists(configPath) ? await loadProject(configPath, { resolveVersions: false }).catch(() => null) : null;
   if (!input.overwrite && await exists(configPath) && !input.stores) {
     return { kind: 'existing', configPath, configuredStores: existing?.stores ?? [] };
   }
@@ -195,7 +195,7 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
   const options: InitInput = {
     ...input, project, stores: stores.join(','), resources, ...(targets.chrome || targets.edge ? { endpoint } : {}), config: configPath,
   };
-  return { kind: 'ready', configPath, setup: { project, resources, endpoint, targets }, change, options };
+  return { kind: 'ready', configPath, setup: { project, resources, endpoint, display: existing?.display ?? null, targets }, change, options };
 }
 
 function writeCommand(options: InitInput): string[] {

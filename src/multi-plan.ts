@@ -113,7 +113,7 @@ export function formatMultiPlan(plan: Pick<MultiPlan, 'stores' | 'pending'>, tar
 }
 
 function formatEdge(plan: EdgePlan): string {
-  const lines = [`Package ${plan.version} → draft submission`];
+  const lines = [plan.operations.length ? `Package ${plan.version} → draft submission` : `Package ${plan.version} is already in the draft submission`];
   for (const reason of plan.blocking) lines.push(`Blocked: ${reason}`);
   lines.push('Store listing and publishing stay in Partner Center.');
   return lines.join('\n');
@@ -141,7 +141,7 @@ export function confirmQuestion(plan: Pick<MultiPlan, 'stores'>): string {
   const { chrome, edge, firefox } = plan.stores;
   const parts = [
     ...(chrome ? [chrome.operations.length ? 'save these changes to the Dashboard draft' : 'verify the draft and record the release lock'] : []),
-    ...(edge ? ['upload the Edge package to its draft'] : []),
+    ...(edge?.operations.length ? ['upload the Edge package to its draft'] : []),
     ...(firefox ? [firefox.mode === 'listing' ? 'update the AMO listing' : chrome ? 'validate the Firefox package on AMO' : 'upload the Firefox package to AMO for validation'] : []),
   ];
   const sentence = parts.join(' and ') || 'continue';

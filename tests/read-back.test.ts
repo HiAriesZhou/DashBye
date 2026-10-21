@@ -51,3 +51,29 @@ test('rejects invalid retry options', async () => {
     /delayMs/,
   );
 });
+
+test('an unconfirmed save retries only the remaining approved work, once', async () => {
+  const { applyWithRetry } = await import('../src/read-back.js');
+  const applied: string[][] = [];
+  const result = await applyWithRetry({
+    approved: ['package', 'description', 'privacy'],
+    apply: async plan => { applied.push(plan); if (applied.length === 1) throw new Error('Save draft did not settle'); return 'saved'; },
+    read: async () => 'partly saved',
+    remaining: () => ['description'],
+    withinApproved: remaining => remaining.every(op => ['package', 'description', 'privacy'].includes(op)),
+    retryPlan: () => ['description'],
+  });
+  assert.equal(result, 'saved');
+  assert.deepEqual(applied, [['package', 'description', 'privacy'], ['description']]);
+});
+
+test('no retry when nothing remains, when work falls outside the approval, or for other errors', async () => {
+  const { applyWithRetry } = await import('../src/read-back.js');
+  const settle = async () => { throw new Error('Save draft did not settle'); };
+  assert.equal(await applyWithRetry({ approved: ['a'], apply: settle, read: async () => 'done', remaining: () => [], withinApproved: () => true, retryPlan: () => [] }), 'done');
+  await assert.rejects(applyWithRetry({ approved: ['a'], apply: settle, read: async () => 'x', remaining: () => ['b'], withinApproved: () => false, retryPlan: () => ['b'] }), /differs from the approved plan/);
+  await assert.rejects(applyWithRetry({ approved: ['a'], apply: async () => { throw new Error('selector missing'); }, read: async () => 'x', remaining: () => ['a'], withinApproved: () => true, retryPlan: () => ['a'] }), /selector missing/);
+  let calls = 0;
+  await assert.rejects(applyWithRetry({ approved: ['a'], apply: async () => { calls += 1; throw new Error('Save draft did not settle'); }, read: async () => 'x', remaining: () => ['a'], withinApproved: () => true, retryPlan: () => ['a'] }), /did not settle/);
+  assert.equal(calls, 2);
+});

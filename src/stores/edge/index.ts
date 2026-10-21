@@ -22,24 +22,31 @@ export function edgeApprovalHash(plan: Omit<EdgePlan, 'approvalHash'> & { approv
   return objectHash(rest);
 }
 
-export async function planEdge(target: EdgeTarget, hasCredentials: boolean): Promise<EdgePlan> {
+// The last package uploaded by DashBye, kept in the project state directory. The API
+// cannot read the draft, so this is how a re-run avoids uploading the same package
+// again (Edge refuses an upload while a submission is in review).
+export type EdgeUploadRecord = { productIdHash: string; artifactSha256: string };
+
+export async function planEdge(target: EdgeTarget, hasCredentials: boolean, lastUpload: EdgeUploadRecord | null = null): Promise<EdgePlan> {
   const artifact = await loadArtifact(target.artifact);
+  const productIdHash = sha256(target.productId);
+  const uploaded = lastUpload?.productIdHash === productIdHash && lastUpload.artifactSha256 === artifact.sha256;
   const blocking: string[] = [];
   if (!hasCredentials) blocking.push('Edge API credentials are required; set DASHBYE_EDGE_CLIENT_ID and DASHBYE_EDGE_API_KEY or add "edge" to credentials.json');
   if (artifact.kind !== 'zip') blocking.push('the Edge package must be a ZIP file to upload');
   const base = {
     schema: 'dashbye/edge-plan/v1' as const,
-    productIdHash: sha256(target.productId),
+    productIdHash,
     artifactSha256: artifact.sha256,
     version: artifact.manifest.version,
-    operations: [{ area: 'package' as const, action: 'upload' as const, field: 'draftPackage' as const, after: artifact.manifest.version }],
+    operations: uploaded ? [] : [{ area: 'package' as const, action: 'upload' as const, field: 'draftPackage' as const, after: artifact.manifest.version }],
     blocking,
   };
   return { ...base, approvalHash: edgeApprovalHash(base) };
 }
 
-export async function verifyEdge(target: EdgeTarget, hasCredentials: boolean, approved: EdgePlan): Promise<EdgePlan> {
-  const fresh = await planEdge(target, hasCredentials);
+export async function verifyEdge(target: EdgeTarget, hasCredentials: boolean, approved: EdgePlan, lastUpload: EdgeUploadRecord | null = null): Promise<EdgePlan> {
+  const fresh = await planEdge(target, hasCredentials, lastUpload);
   if (fresh.approvalHash !== approved.approvalHash) throw new Error('plan is stale because the Edge package or product changed; run dashbye plan again');
   if (fresh.blocking.length) throw new Error(`Edge: ${fresh.blocking.join('; ')}`);
   return fresh;

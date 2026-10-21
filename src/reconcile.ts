@@ -235,3 +235,11 @@ export function publicDashboardState(state: DashboardState) {
     itemIdMatched: true,
   };
 }
+
+// After an unconfirmed save, the remaining work may be retried only when every
+// remaining operation writes exactly what the person approved.
+export function remainingWithinApproved(approved: ReconcileOperation[], remaining: ReconcileOperation[]): boolean {
+  const key = (operation: ReconcileOperation) => `${operation.area}|${operation.action}|${operation.field}|${JSON.stringify(operation.after)}`;
+  const allowed = new Set(approved.map(key));
+  return remaining.every(operation => allowed.has(key(operation)));
+}

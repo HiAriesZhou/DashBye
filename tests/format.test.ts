@@ -61,12 +61,12 @@ test('summarizes doctor results with a next step when Chrome is not running', ()
   const issues = [{ severity: 'warning' as const, code: 'w', message: 'screenshot is small' }];
   const down = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues, browser: { connected: false, matchingEditTabs: 0, dashboardTabs: 0, error: 'connect ECONNREFUSED' } });
   assert.match(down, /Config: dashbye\.config\.yml · extension 1\.4\.2/);
-  assert.match(down, /Chrome: not reachable \(connect ECONNREFUSED\); run "dashbye chrome"/);
+  assert.match(down, /Chrome: not reachable \(connect ECONNREFUSED\); run "dashbye doctor --login"/);
   assert.match(down, /warning\s+screenshot is small/);
   const up = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: true, matchingEditTabs: 1, dashboardTabs: 2 } });
   assert.match(up, /Chrome: connected · 2 Dashboard tabs, 1 for this item/);
   const windowless = formatDoctor({ config: 'dashbye.config.yml', artifactVersion: '1.4.2', issues: [], browser: { connected: false, matchingEditTabs: 0, dashboardTabs: 0, noWindow: true, error: 'running without an open window' } });
-  assert.match(windowless, /Chrome: running without an open window; run "dashbye chrome" to open one/);
+  assert.match(windowless, /Chrome: running without an open window; run "dashbye doctor --login" to open one/);
   assert.doesNotMatch(windowless, /not reachable/);
 });
 
