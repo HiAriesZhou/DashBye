@@ -2,7 +2,7 @@
 
 [返回 README](../README.zh-CN.md) · [English](usage.md)
 
-DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重复的 CLI 操作；你负责补充产品事实、人工登录，并批准确切的草稿计划。
+DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重复的 CLI 操作；你负责补充产品事实、人工登录、提供商店 API 密钥，并批准确切的计划。
 
 ## Agent 配置
 
@@ -30,9 +30,12 @@ DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重�
    初始化模板只是占位内容，不是可发布声明。
 5. 运行 plan 时加上 --json。需要访问 Dashboard 时，DashBye 会自己打开专用的
    Chrome；只让我在那个窗口里登录 Google，登录后再运行一次 plan。当前环境打不开
-   图形界面时，说明原因，并让我运行 "dashbye doctor --login"。把目标条目和全部改动列给
-   我看，经我明确同意后，才能执行 sync-draft --approve-plan <approvalHash>。
-6. 保存后必须回读，确认剩余操作为零。不得提交审核或发布。
+   图形界面时，说明原因，并让我运行 "dashbye doctor --login"。Firefox 和 Edge
+   用 API 密钥：请我来配置，不得读取、打印、复制或提交密钥。把目标条目和全部
+   改动列给我看，提醒 Firefox 商店页的修改保存后立即生效，经我明确同意后，
+   才能执行 sync-draft --approve-plan <approvalHash>。
+6. 保存后必须回读，确认剩余操作为零。不得提交审核或发布，也不得运行
+   dashbye submit：Firefox 版本一旦进入 AMO 审核就无法撤回。
    汇报文件改动、验证结果和未解决问题。
 ```
 
@@ -54,11 +57,11 @@ dashbye init --prompt \
 
 这是文本协议，不依赖图形控件。无法访问本地文件和终端的聊天只能提供指导。
 
-Agent 可以从 manifest 获取事实并整理文件；如果仓库证据无法确认产品行为、数据用途、法律认证或权限用途，就必须询问。专用 Chrome 由 DashBye 打开，你只需在那个窗口里登录 Google。每次 Dashboard 写入都绑定到你批准的确切计划。
+Agent 可以从 manifest 获取事实并整理文件；如果仓库证据无法确认产品行为、数据用途、法律认证或权限用途，就必须询问。专用 Chrome 由 DashBye 打开，你只需在那个窗口里登录 Google。Firefox 和 Edge 使用你在仓库之外配置的 API 密钥。每次商店写入都绑定到你批准的确切计划。
 
 ## 手动 CLI 流程
 
-需要 Node.js 22+、Git、官方 Chrome，以及已有的 Chrome Web Store 条目。
+需要 Node.js 22+、Git，以及你要管理的每个商店里已有的条目。Chrome Web Store 还需要官方 Chrome；Firefox 附加组件商店和 Edge 加载项商店需要 API 密钥（见 [Firefox Add-ons](store-schema.md#firefox-add-ons) 和 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。
 
 安装后，在扩展仓库中初始化：
 

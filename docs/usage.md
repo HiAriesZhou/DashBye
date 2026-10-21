@@ -2,7 +2,7 @@
 
 [Back to README](../README.md) · [简体中文](usage.zh-CN.md)
 
-DashBye is designed to be operated with a coding agent. The agent handles repository inspection and repeatable CLI work; you supply product facts, sign in, and approve the exact draft plan.
+DashBye is designed to be operated with a coding agent. The agent handles repository inspection and repeatable CLI work; you supply product facts, sign in, provide store API keys, and approve the exact plan.
 
 ## Agent setup
 
@@ -34,10 +34,15 @@ Source: https://github.com/HiAriesZhou/DashBye
 5. Run plan with --json. DashBye opens its dedicated Chrome when it needs the
    Dashboard; ask me only to sign in to Google in that window, then run plan
    again. If your environment cannot open GUI apps, explain the limitation and
-   ask me to run "dashbye doctor --login". Show the target and all proposed changes and
-   wait for my explicit approval before sync-draft --approve-plan <approvalHash>.
+   ask me to run "dashbye doctor --login". Firefox and Edge use API keys: ask me
+   to set them up, and never read, print, copy, or commit them. Show the target
+   and all proposed changes, note that Firefox listing changes go live once
+   saved, and wait for my explicit approval before
+   sync-draft --approve-plan <approvalHash>.
 6. Require a successful read-back with no remaining operations. Never submit for
-   review or publish. Report changes, validation and unresolved issues.
+   review or publish, and never run dashbye submit: a Firefox version cannot be
+   taken back once it enters AMO review. Report changes, validation and
+   unresolved issues.
 ```
 
 Once DashBye is installed, generate a handoff with known values included:
@@ -58,11 +63,11 @@ dashbye init --prompt \
 
 This is a text protocol and needs no graphical control. A chat without local file and terminal access can only guide you.
 
-The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. DashBye opens the dedicated Chrome session; you complete Google sign-in in that window. Every Dashboard write remains bound to the exact plan you approve.
+The agent may derive manifest facts and organize files, but it must ask when repository evidence cannot establish product behavior, data use, legal certifications, or permission purposes. DashBye opens the dedicated Chrome session; you complete Google sign-in in that window. Firefox and Edge use API keys that you set up outside the repository. Every store write remains bound to the exact plan you approve.
 
 ## Manual CLI workflow
 
-Requires Node.js 22+, Git, official Chrome, and an existing Chrome Web Store item.
+Requires Node.js 22+, Git, and an existing item in each store you manage. The Chrome Web Store also needs official Chrome; Firefox Add-ons and Edge Add-ons need an API key (see [Firefox Add-ons](store-schema.md#firefox-add-ons) and [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)).
 
 Install and initialize from the extension repository:
 

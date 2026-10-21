@@ -30,6 +30,17 @@ test('renders a product-neutral repository handoff prompt', () => {
   assert.match(prompt, /Never submit for review or publish/);
 });
 
+test('covers Firefox and Edge without granting submission or handling keys', () => {
+  const prompt = renderAgentPrompt();
+  assert.match(prompt, /stores\.firefox/);
+  assert.match(prompt, /browser_specific_settings\.gecko\.id/);
+  assert.match(prompt, /Firefox and Edge use API keys/);
+  assert.match(prompt, /never read, print, copy, or commit them/);
+  assert.match(prompt, /Never run dashbye submit/);
+  assert.match(prompt, /cannot be taken back/);
+  assert.match(prompt, /Firefox listing changes go live/);
+});
+
 test('uses explicit placeholders instead of inventing target details', () => {
   const prompt = renderAgentPrompt();
   assert.match(prompt, /<extension repository path>/);
