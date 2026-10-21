@@ -23,11 +23,9 @@
 - Bump `package.json`, `package-lock.json` (via `npm version <x.y.z> --no-git-tag-version`)
   and `VERSION` in `src/cli.ts` in one `release: <x.y.z>` commit on `main`.
 - Tag that commit `v<x.y.z>` and push the tag. `.github/workflows/release.yml` checks
-  that the tag matches `package.json`, runs the tests, and stages the version on npm
-  through trusted publishing (OIDC, with provenance); no npm token is stored anywhere.
-- The trusted publisher may only stage. The owner approves the staged version on
-  npmjs.com (Staged Packages) or with `npm stage approve` and 2FA; only then is it live.
-  If a tag-triggered run fails, fix the workflow and run it by hand for that tag.
+  that the tag matches `package.json`, runs the tests, and publishes to npm through
+  trusted publishing (OIDC, with provenance); no npm token is stored anywhere.
+- If a tag-triggered run fails, fix the workflow and run it by hand for that tag.
 - Then create the GitHub Release for the tag. Never publish from a local machine
   unless the workflow is unavailable, and never move an existing tag.
 - One-time setup: on npmjs.com, add this repository and `release.yml` as the
