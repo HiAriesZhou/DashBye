@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import type { AmoCredentials } from '../../credentials.js';
+import { storeFetch } from '../../net.js';
 
 const API = 'https://addons.mozilla.org/api/v5';
 const UPLOAD_POLLS = 60;
@@ -44,7 +45,7 @@ function localized(value: Localized, locale: string): string | null {
 // Reads and validation uploads only. Creating a version submits it for review and
 // editing add-on metadata publishes immediately; both live in amo-write.ts.
 export class AmoClient {
-  constructor(private readonly credentials: AmoCredentials | null, private readonly fetchImpl: typeof fetch = fetch) {}
+  constructor(private readonly credentials: AmoCredentials | null, private readonly fetchImpl: typeof fetch = storeFetch) {}
 
   private headers(): Record<string, string> {
     return this.credentials ? { Authorization: `JWT ${amoJwt(this.credentials)}` } : {};

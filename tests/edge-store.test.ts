@@ -60,3 +60,14 @@ test('refuses a package replaced after approval', async () => {
   await assert.rejects(uploadEdgeDraft(target, { uploadDraftPackage: async () => { uploaded = true; return { status: 'Succeeded', errorCode: null }; } }, plan), /changed after approval/);
   assert.equal(uploaded, false);
 });
+
+test('a package already uploaded to the draft is not uploaded again until it changes', async () => {
+  const { target } = await edgeZip();
+  const first = await planEdge(target, true);
+  const uploaded = { productIdHash: first.productIdHash, artifactSha256: first.artifactSha256 };
+  const again = await planEdge(target, true, uploaded);
+  assert.deepEqual(again.operations, []);
+  assert.notEqual(again.approvalHash, first.approvalHash);
+  assert.deepEqual((await planEdge(target, true, { ...uploaded, artifactSha256: 'other' })).operations.length, 1);
+  assert.deepEqual((await planEdge(target, true, { ...uploaded, productIdHash: 'other' })).operations.length, 1);
+});

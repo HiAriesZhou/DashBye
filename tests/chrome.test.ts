@@ -62,7 +62,7 @@ test('launches Chrome and waits for the endpoint', async () => {
 
 test('refuses to launch when launching is disabled', async () => {
   const { spawned, deps } = fakes(Infinity);
-  await assert.rejects(ensureChrome('http://127.0.0.1:9333', { launch: false }, deps), /dedicated Chrome is not running.*dashbye chrome/);
+  await assert.rejects(ensureChrome('http://127.0.0.1:9333', { launch: false }, deps), /dedicated Chrome is not running.*dashbye doctor --login/);
   assert.equal(spawned.length, 0);
 });
 
@@ -98,7 +98,7 @@ test('opens a Dashboard window in a running Chrome that has none', async () => {
 
 test('explains a windowless Chrome when launching is disabled', async () => {
   const { spawned, deps } = fakes(0, [0]);
-  await assert.rejects(ensureChrome('http://127.0.0.1:9333', { launch: false }, deps), /running without an open window.*dashbye chrome.*Cmd\+N/);
+  await assert.rejects(ensureChrome('http://127.0.0.1:9333', { launch: false }, deps), /running without an open window.*dashbye doctor --login.*Cmd\+N/);
   assert.equal(spawned.length, 0);
 });
 

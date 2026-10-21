@@ -1,4 +1,5 @@
 import type { EdgeCredentials } from '../../credentials.js';
+import { storeFetch } from '../../net.js';
 
 // Edge Add-ons API v1.1. Only the draft package endpoint is used: the upload
 // replaces the package in the product's draft submission, and publishing that
@@ -10,7 +11,7 @@ const POLL_MS = 5_000;
 export type EdgePackageResult = { status: 'Succeeded' | 'Failed'; errorCode: string | null };
 
 export class EdgeClient {
-  constructor(private readonly credentials: EdgeCredentials, private readonly fetchImpl: typeof fetch = fetch) {}
+  constructor(private readonly credentials: EdgeCredentials, private readonly fetchImpl: typeof fetch = storeFetch) {}
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
     return { Authorization: `ApiKey ${this.credentials.apiKey}`, 'X-ClientID': this.credentials.clientId, ...extra };

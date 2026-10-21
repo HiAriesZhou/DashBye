@@ -107,7 +107,7 @@ test('explains a connection refused because Chrome has no open window', async ()
       ...fake.value,
       connect: async () => { throw new Error('Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.'); },
     }),
-    /running without an open window; run "dashbye chrome" or open a new window/,
+    /running without an open window; run "dashbye doctor --login" or open a new window/,
   );
   assert.equal(fake.attempts(), 0);
 });

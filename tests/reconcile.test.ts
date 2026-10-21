@@ -97,3 +97,13 @@ test('reports disabled fields as a lock even without a review status', () => {
   const plan = createReconciliationPlan(workspace, desired(), { ...current(), editLock: { ...UNLOCKED, privacyFieldsDisabled: true } });
   assert.deepEqual(plan.blocking, ['Privacy fields are read-only on the Dashboard']);
 });
+
+test('a retry after an unconfirmed save may only repeat operations that were approved', async () => {
+  const { remainingWithinApproved } = await import('../src/reconcile.js');
+  const op = (field: string, after: string | number | null) => ({ area: 'listing' as const, action: 'update' as const, field, before: 'x', after, destructive: false, ownerApprovalRequired: false });
+  const approved = [op('description', 'a'), op('category', 'Tools')];
+  assert.equal(remainingWithinApproved(approved, [op('description', 'a')]), true);
+  assert.equal(remainingWithinApproved(approved, []), true);
+  assert.equal(remainingWithinApproved(approved, [op('description', 'b')]), false);
+  assert.equal(remainingWithinApproved(approved, [op('summary', 'a')]), false);
+});

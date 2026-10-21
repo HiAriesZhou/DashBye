@@ -22,7 +22,7 @@ Agent 列出变更计划：目标是扩展的**英文商店页**，只有**一�
 
 ### 3. 保存草稿并核对结果
 
-DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读仍有差异，Agent 没有直接报告完成，而是重新运行 inspect 和 plan，确认已没有待执行的操作，再执行一次零操作同步：结果为 `saved_and_reread`，写入版本锁，新计划为 `operations: []`，即**剩余差异为零**。草稿只做保存，不会提交审核，也不会发布。[案例说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读仍有差异，Agent 没有直接报告完成，而是重新运行 plan，确认已没有待执行的操作，再执行一次零操作同步：结果为 `saved_and_reread`，写入版本锁，新计划为 `operations: []`，即**剩余差异为零**。草稿只做保存，不会提交审核，也不会发布。[案例说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
 
 想在自己的扩展仓库中使用，把下面的提示词交给 Agent 即可。
 
@@ -41,7 +41,7 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 
 诊断文件都放在所有仓库之外。运行 validate 和 plan 时加上 --json；需要访问
 Dashboard 时，DashBye 会自己打开专用的 Chrome。我只负责在那个窗口里登录 Google。
-如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye chrome"。把目标条目和
+如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye doctor --login"。把目标条目和
 每一项改动都列给我看，等我明确同意后再执行 sync-draft。
 
 同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布。最后告诉我改了哪些
@@ -55,7 +55,7 @@ Agent 会安装（或找到已装好的）CLI，初始化仓库，整理发布�
 希望提示词里直接带上项目路径？安装后运行：
 
 ```bash
-dashbye agent-prompt --project /path/to/extension
+dashbye init --prompt --project /path/to/extension
 ```
 
 ## 工作流程
@@ -82,38 +82,46 @@ cd /path/to/extension
 dashbye init
 ```
 
-用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后依次校验、生成计划、同步：
+用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后运行发布：
 
 ```bash
-dashbye validate
-dashbye plan
-dashbye sync-draft
+dashbye release
 ```
 
-`plan` 需要时会自动打开 DashBye 专用的 Chrome 窗口。第一次使用时在窗口里登录 Google，DashBye 会等你登录完再读取草稿，列出每一项改动，并把计划保存在仓库之外。
+`release` 会校验构建产物和素材，需要时自动打开 DashBye 专用的 Chrome 窗口，并为每个已配置的商店生成计划。第一次使用时在窗口里登录各商店后台（也可以提前运行 `dashbye doctor --login` 打开窗口），DashBye 会等你登录完再读取草稿。它会列出每一项改动、预览文字变化，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。如果有新的 Firefox 版本，因为 AMO 没有草稿，会再单独询问 `Submit Firefox … to AMO for review? [y/N]`。执行成功，意味着各草稿已保存、回读后**剩余差异为零**，写入版本锁文件，并列出还需要你在商店后台完成的步骤。
 
-`sync-draft` 会再列一遍改动，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。执行成功，意味着草稿已保存、回读后**剩余差异为零**，并写入了版本锁文件。
+`validate`、`plan`、`sync-draft` 和 `submit` 可以把同样的步骤拆开逐个执行。
 
 想看某个命令有哪些参数，运行 `dashbye <命令> -h`。源码安装、素材目录结构、Chrome 设置和各种失败情况，见[使用指南](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md)。
 
 ## 后续发版
 
-更新构建产物和 `store/` 里的文件，再走一遍 **validate → plan → sync-draft**。专用 Chrome 会记住登录状态，下次发版不用重新登录。
+更新构建产物和 `store/` 里的文件，再运行一次 `dashbye release`。在 `dashbye.config.yml` 里把安装包写成 `release/x-chrome-v{version}.zip` 这样的格式，DashBye 会自动选用最新的构建，发版时不用再改配置。专用 Chrome 会记住登录状态。
 
 DashBye 会自动找到最近的 `dashbye.config.yml`，截图放在哪儿，说一次就够了。批准之后，只要构建产物、素材或线上草稿有任何变化，都要重新生成计划、重新审阅。
 
 ## 需要你负责的事项
 
 - 仓库里没有的产品事实、隐私声明和认证
-- 手动登录 Google
-- 每一次写入 Dashboard 前的计划审批
-- 最终的提交审核与发布
+- 手动登录各商店后台
+- 每一次写入前的计划审批，以及每次 Firefox 提交前的单独确认
+- 在 Chrome Web Store 后台提交审核、在 Partner Center 发布
 
 注意：期望状态里的空列表或 `null` 可能意味着删除，Agent 必须把这类操作单独列出来。DashBye 会拒绝已过期的计划，并用你批准时的期望状态核对保存结果。
 
+## 在另一块屏幕上运行（可选）
+
+DashBye 默认在你当前的屏幕上工作。如果不想让它的 Chrome 窗口占用你正在用的屏幕，可以在 `dashbye.config.yml` 里把 `browser.display` 设为另一块显示器的名字（例如第二台显示器），DashBye 只会把它自己的窗口移过去（仅限 macOS）。没有多余的显示器时，可以用虚拟屏，例如 [yomado](https://github.com/chekusu/yomado)，它能在 macOS 上创建带名字的虚拟显示器。DashBye 本身不依赖 yomado 或其他任何工具。
+
+```yaml
+browser:
+  endpoint: http://127.0.0.1:9333
+  display: DashBye   # 显示器或虚拟屏的名字；不填则留在当前屏幕
+```
+
 ## 当前支持情况
 
-这还是早期技术版本。扩展包上传、图片替换、部分隐私文案修改、草稿保存与回读，都已在真实 Dashboard 上跑通。多语言、无头模式复用登录会话、数据类别与认证的变更、新增权限的确认，目前还没有验证过。
+这还是早期技术版本。在 Chrome Web Store，扩展包上传、图片替换、部分隐私文案修改、草稿保存与回读，都已在真实 Dashboard 上跑通。Firefox 版本提交、审核通过后的 AMO 商店信息更新、Edge 草稿安装包上传，各在真实商店上跑过一次；Edge 的商店信息字段还没有自动化。多语言、无头模式复用登录会话、数据类别与认证的变更、新增权限的确认，目前还没有验证过。
 
 [使用与源码安装](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md) · [素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md) · [验证记录](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md) · [安全边界](https://github.com/HiAriesZhou/DashBye/blob/main/docs/security.md) · [架构](https://github.com/HiAriesZhou/DashBye/blob/main/docs/architecture.md)
 

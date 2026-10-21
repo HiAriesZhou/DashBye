@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertNoFirefoxPathOverrides, commandHelp, parseCommandLine } from '../src/args.js';
+import { assertNoFirefoxPathOverrides, COMMANDS, commandHelp, parseCommandLine } from '../src/args.js';
 
 test('parses a command with string and boolean options', () => {
   const parsed = parseCommandLine(['plan', '--output', 'plan.json', '--json']);
@@ -56,4 +56,19 @@ test('path overrides are rejected when Firefox is selected for plan, sync, or va
       assert.doesNotThrow(() => assertNoFirefoxPathOverrides(['chrome'], args));
     }
   }
+});
+
+test('merged commands point to their replacements', () => {
+  assert.throws(() => parseCommandLine(['agent-prompt']), /"agent-prompt" was replaced by "dashbye init --prompt"/);
+  assert.throws(() => parseCommandLine(['chrome']), /"chrome" was replaced by "dashbye doctor --login"/);
+  assert.throws(() => parseCommandLine(['inspect']), /"inspect" was replaced by "dashbye plan --remote"/);
+});
+
+test('the release commands and the merged flags are available', () => {
+  assert.deepEqual(Object.keys(COMMANDS), ['init', 'doctor', 'release', 'validate', 'plan', 'sync-draft', 'submit']);
+  assert.equal(parseCommandLine(['init', '--prompt']).args.prompt, true);
+  assert.equal(parseCommandLine(['doctor', '--login']).args.login, true);
+  assert.equal(parseCommandLine(['plan', '--remote']).args.remote, true);
+  const release = parseCommandLine(['release', '--approve-plan', 'h1', '--approve-submit', 'h2', '--non-interactive']);
+  assert.deepEqual([release.args['approve-plan'], release.args['approve-submit']], ['h1', 'h2']);
 });

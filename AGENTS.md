@@ -17,3 +17,15 @@
   HAR files, and traces must stay outside the repository.
 - Every write must be preceded by a plan and followed by a reload/read-back check.
 - Examples and tests must use fictional item IDs and synthetic assets only.
+
+## Releasing DashBye
+
+- Bump `package.json`, `package-lock.json` (via `npm version <x.y.z> --no-git-tag-version`)
+  and `VERSION` in `src/cli.ts` in one `release: <x.y.z>` commit on `main`.
+- Tag that commit `v<x.y.z>` and push the tag. `.github/workflows/release.yml` checks
+  that the tag matches `package.json`, runs the tests, and publishes to npm through
+  trusted publishing (OIDC, with provenance); no npm token is stored anywhere.
+- Then create the GitHub Release for the tag. Never publish from a local machine
+  unless the workflow is unavailable, and never move an existing tag.
+- One-time setup: on npmjs.com, add this repository and `release.yml` as the
+  package's trusted publisher.

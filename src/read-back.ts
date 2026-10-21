@@ -28,3 +28,28 @@ export async function settleReadBack<T>(
   }
   return result;
 }
+
+const UNSETTLED = /did not settle/;
+
+// A Save draft that never reports completion may still have saved part of the work.
+// Read the draft, and retry once with only what remains, provided all of it was
+// approved. Anything else, or a second failure, is reported as is.
+export async function applyWithRetry<State, Plan, Operation>(steps: {
+  approved: Plan;
+  apply: (plan: Plan) => Promise<State>;
+  read: () => Promise<State>;
+  remaining: (state: State) => Operation[];
+  withinApproved: (remaining: Operation[]) => boolean;
+  retryPlan: (state: State) => Plan;
+}): Promise<State> {
+  try {
+    return await steps.apply(steps.approved);
+  } catch (error) {
+    if (!(error instanceof Error) || !UNSETTLED.test(error.message)) throw error;
+    const state = await steps.read();
+    const remaining = steps.remaining(state);
+    if (!remaining.length) return state;
+    if (!steps.withinApproved(remaining)) throw new Error('after an unconfirmed save, the draft differs from the approved plan; run dashbye plan again');
+    return steps.apply(steps.retryPlan(state));
+  }
+}
