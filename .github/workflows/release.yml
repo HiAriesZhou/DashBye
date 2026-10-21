@@ -1,11 +1,20 @@
 name: Release
 
-# Publishes to npm when a version tag is pushed, through npm trusted publishing
-# (OIDC): no npm token is stored in the repository. The tag must equal the
-# package.json version, and the full test suite runs before publishing.
+# Stages an npm release when a version tag is pushed, through npm trusted
+# publishing (OIDC): no npm token is stored in the repository. The trusted
+# publisher may only stage, so a maintainer approves the staged version on
+# npmjs.com (or `npm stage approve`) with 2FA before it goes live. The tag must
+# equal the package.json version, and the full test suite runs first.
+# Run it by hand with an existing tag if a tag-triggered run failed; tags are
+# never moved.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to stage, e.g. v0.6.0
+        required: true
 
 permissions:
   contents: read
@@ -16,19 +25,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - name: Use an npm that supports trusted publishing
-        run: npm install --global npm@^11.5.1
+      - name: Use an npm that supports staged publishing
+        run: npm install --global npm@^11.15.0
       - name: Tag must match package.json
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           version="v$(node -p 'require("./package.json").version')"
           if [ "$TAG" != "$version" ]; then echo "tag $TAG does not match package.json $version"; exit 1; fi
       - run: npm ci
       - run: npm run check
       - run: npm test
-      - run: npm publish --provenance --access public
+      - run: npm stage publish --provenance --access public
