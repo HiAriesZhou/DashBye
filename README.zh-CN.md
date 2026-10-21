@@ -48,7 +48,8 @@ DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome We
 打开扩展仓库，在能读写本地文件、能执行终端命令的编码 Agent 里粘贴：
 
 ```text
-为这个扩展仓库配置 DashBye，并准备好 Chrome Web Store 草稿。
+为这个扩展仓库配置 DashBye，并准备好商店发布（Chrome Web Store、Firefox
+附加组件商店、Edge 加载项商店，只限我选择的商店）。
 源码：https://github.com/HiAriesZhou/DashBye
 
 安装 DashBye（不要用 sudo），先读 dashbye -h，再用 dashbye init --agent --json
@@ -58,10 +59,13 @@ DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome We
 
 诊断文件都放在所有仓库之外。运行 validate 和 plan 时加上 --json；需要访问
 Dashboard 时，DashBye 会自己打开专用的 Chrome。我只负责在那个窗口里登录 Google。
-如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye doctor --login"。把目标条目和
-每一项改动都列给我看，等我明确同意后再执行 sync-draft。
+如果当前环境打不开图形界面，说明原因，并让我运行 "dashbye doctor --login"。
+Firefox 和 Edge 用 API 密钥：请我来配置，你不要读取、打印、复制或提交密钥。
+把目标条目和每一项改动都列给我看，并提醒 Firefox 商店页的修改保存后立即生效，
+等我明确同意后再执行 sync-draft。
 
-同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布。最后告诉我改了哪些
+同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布；不要运行
+"dashbye submit"：Firefox 版本一旦进入 AMO 审核就无法撤回。最后告诉我改了哪些
 文件、做了哪些检查、还有哪些问题没解决。
 ```
 

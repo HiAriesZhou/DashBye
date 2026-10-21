@@ -48,8 +48,9 @@ DashBye runs locally. It reaches Chrome Web Store through your dedicated Chrome 
 Open your extension repository in a coding agent with local file and terminal access. Paste this:
 
 ```text
-Set up DashBye for this extension repository and prepare its Chrome Web Store
-draft. Source: https://github.com/HiAriesZhou/DashBye
+Set up DashBye for this extension repository and prepare its store release
+(Chrome Web Store, Firefox Add-ons, Edge Add-ons: only the stores I choose).
+Source: https://github.com/HiAriesZhou/DashBye
 
 Install DashBye without sudo, read "dashbye -h", and use
 "dashbye init --agent --json" to configure this repository. Inspect the actual
@@ -60,12 +61,15 @@ purposes, data-use declarations, or certifications.
 Keep diagnostic files outside repositories. Run validate and plan with --json;
 DashBye opens its dedicated Chrome when it needs the Dashboard. Ask me only to
 complete Google sign-in in that window. If your environment cannot open GUI apps,
-explain why and ask me to run "dashbye doctor --login". Show me the exact target and
-every proposed change, and wait for my explicit approval before sync-draft.
+explain why and ask me to run "dashbye doctor --login". Firefox and Edge use
+API keys: ask me to set them up, and never read, print, copy, or commit them.
+Show me the exact target and every proposed change, note that Firefox listing
+changes go live once saved, and wait for my explicit approval before sync-draft.
 
 After an approved sync, require a successful read-back with zero remaining
-differences. Never submit for review or publish. Report files changed, checks
-performed, and anything still unresolved.
+differences. Never submit for review or publish, and never run "dashbye submit":
+a Firefox version cannot be taken back once it enters AMO review. Report files
+changed, checks performed, and anything still unresolved.
 ```
 
 | The agent | You |
