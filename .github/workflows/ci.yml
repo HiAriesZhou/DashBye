@@ -19,3 +19,26 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+
+  # Chrome install locations on Windows and Linux are not exercised on a real
+  # Dashboard; check that DashBye finds and opens the runner's official Chrome.
+  chrome-location:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Find and open Chrome (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum node scripts/check-chrome-location.mjs
+      - name: Find and open Chrome (Windows)
+        if: runner.os == 'Windows'
+        run: node scripts/check-chrome-location.mjs

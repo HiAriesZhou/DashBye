@@ -168,7 +168,7 @@ Existing editor tabs remain untouched. A work-tab marker survives same-origin
 navigation and reloads; after a cross-origin login clears that marker, DashBye may
 open a replacement work tab. While Dashboard sign-in is pending, repeated commands
 do not open additional tabs. DashBye never automates login, reads profile data, or
-exports cookies. Headless session reuse remains unverified.
+exports cookies. Headless Chrome is not supported; use the visible dedicated Chrome.
 
 ## Saved files
 
