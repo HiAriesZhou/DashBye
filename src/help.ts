@@ -7,7 +7,8 @@ export function manual(): string {
 Less dashboard. More shipping.
 少填表，多发版。
 
-Version and synchronize Chrome Web Store listing assets, copy, and privacy drafts.
+Version and synchronize browser extension store listings, packages, and privacy drafts
+for Chrome Web Store, Firefox Add-ons, and Microsoft Edge Add-ons.
 
 Usage
   dashbye [command] [options]
