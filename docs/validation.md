@@ -149,9 +149,9 @@ flowchart TD
 ## Not yet validated
 
 - Edge Partner Center listing fields are not automated.
-- Opening the dedicated Chrome from `plan`, `inspect`, or `sync-draft`, waiting for
+- Opening the dedicated Chrome from `plan`, `release`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
-  with injected dependencies; `dashbye chrome` was checked against an already
+  with injected dependencies; `dashbye chrome` (now `dashbye doctor --login`) was checked against an already
   running dedicated session, and on 2026-10-12 against one with every window closed
   (it opened a Dashboard window and `doctor` then connected). Windows and Linux Chrome locations are untested.
 - Fingerprinting images from the stored original during read-back after a real
