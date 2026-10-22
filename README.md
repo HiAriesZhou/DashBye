@@ -171,7 +171,9 @@ This is an early technical release. Exercised on real store items:
 - **Firefox Add-ons:** one `dashbye submit` from validation upload to version read-back, and a listing update after AMO approved that version.
 - **Microsoft Edge Add-ons:** one package upload to a draft submission.
 
-Still unverified: multiple locales, headless session reuse, collected-data and certification changes, new permission confirmations, and Chrome install locations on Windows and Linux. Edge listing fields are not automated.
+Still unverified: multiple locales, collected-data and certification changes, and new permission confirmations. On Windows and Linux, CI checks only that DashBye finds and opens Chrome; sign-in and Dashboard use there are unverified.
+
+Not supported by design: headless Chrome, Edge store-listing fields (the Edge API has none), and review submission or publication for Chrome and Edge.
 
 ## Documentation
 

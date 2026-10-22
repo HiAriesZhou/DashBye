@@ -148,19 +148,30 @@ flowchart TD
 
 ## Not yet validated
 
-- Edge Partner Center listing fields are not automated.
 - Opening the dedicated Chrome from `plan`, `release`, or `sync-draft`, waiting for
   manual sign-in, and the `[Y/n]` confirmation in `sync-draft`. These are unit-tested
   with injected dependencies; `dashbye chrome` (now `dashbye doctor --login`) was checked against an already
   running dedicated session, and on 2026-10-12 against one with every window closed
-  (it opened a Dashboard window and `doctor` then connected). Windows and Linux Chrome locations are untested.
+  (it opened a Dashboard window and `doctor` then connected). On Windows and Linux,
+  the CI `chrome-location` job checks that DashBye finds the runner's official Chrome
+  in its standard location, opens it with the dedicated profile, and reaches the
+  loopback endpoint; sign-in and Dashboard use on those systems remain unvalidated.
 - Fingerprinting images from the stored original during read-back after a real
   image replacement. Only the read path on unchanged images has run; blob: and data:
   upload previews are accepted but have not been observed on a real Dashboard.
-- Reusing a manually authenticated profile in a newly launched headless process.
-  The supported path remains a visible dedicated Chrome connected over loopback CDP.
 - A collected-data change, certification change, or new permission confirmation.
   These remain plan-bound and owner-approved operations.
 - Multiple locales and Dashboard languages other than English.
 - The section-URL fallback when a section link click does not settle.
-- Review submission and publication. They are intentionally outside DashBye.
+
+## Not supported
+
+These are outside DashBye by design, so they are not validation targets.
+
+- Headless Chrome. A signed-in profile is used only in the visible dedicated Chrome
+  connected over loopback CDP; reusing it in a newly launched headless process is not
+  a supported path.
+- Edge store-listing fields. The Edge Add-ons API has none, so the listing stays in
+  Partner Center.
+- Chrome Web Store and Edge review submission and publication. The one AMO
+  submission path is `dashbye submit`, for a separately approved plan.

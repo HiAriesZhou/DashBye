@@ -168,7 +168,9 @@ browser:
 - **Firefox 附加组件商店**：一次完整的 `dashbye submit`（从校验上传到版本回读），以及该版本通过 AMO 审核后的一次商店页更新。
 - **Microsoft Edge 加载项商店**：一次上传扩展包到草稿提交。
 
-尚未验证：多语言、无头模式复用登录会话、数据类别与认证的变更、新增权限的确认，以及 Windows 和 Linux 上的 Chrome 安装位置。Edge 的商店页字段尚未自动化。
+尚未验证：多语言、数据类别与认证的变更、新增权限的确认。在 Windows 和 Linux 上，CI 只检查 DashBye 能找到并打开 Chrome，登录和 Dashboard 操作还没有验证。
+
+按设计不支持：无头模式的 Chrome、Edge 的商店页字段（Edge 的 API 不提供），以及 Chrome 和 Edge 的提交审核与发布。
 
 ## 文档
 
