@@ -52,6 +52,8 @@ cd website && npm ci && npm test && npm run build   # same as CI's website job
 npm run dev                                          # http://localhost:4321
 ```
 
+`/apple-touch-icon.png` is generated from `brand/dashbye-icon.png` at a fixed, unhashed path (`src/pages/apple-touch-icon.png.ts`); other sites load it to check whether dashbye.lol is reachable, so keep the path.
+
 Vercel project `dashbye` builds it with Root Directory `website` (`website/vercel.json`); `dashbye.lol` is primary and `dashbye.arieszhou.com` serves the same build with canonical URLs on dashbye.lol. Merges to `main` deploy production.
 
 ## Docs
