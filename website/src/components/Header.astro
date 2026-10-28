@@ -1,0 +1,52 @@
+---
+import { copy, paths, type Lang } from '../lib/copy';
+import { links } from '../lib/repo';
+
+interface Props { lang: Lang; alternate: string }
+const { lang, alternate } = Astro.props;
+const t = copy[lang];
+const other = lang === 'en' ? 'zh-CN' : 'en';
+---
+<header class="wrap bar">
+  <a class="mark" href={paths[lang].home} aria-label={t.nav.home}>
+    <span>Dash</span><span class="bye">Bye</span>
+  </a>
+  <nav aria-label="Primary">
+    <a href={paths[lang].docs}>{t.nav.guide}</a>
+    <a href={links.github}>{t.nav.github}</a>
+    <a href={alternate} hreflang={other} lang={other} title={t.nav.switchName}>{t.nav.switchLabel}</a>
+  </nav>
+</header>
+
+<style>
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .mark {
+    font: 700 22px/1 var(--font-display);
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    padding: 8px 0;
+  }
+  .bye { color: var(--green); }
+  nav { display: flex; gap: 4px; }
+  nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 10px;
+    border-radius: var(--radius-s);
+    color: var(--ink-soft);
+    font-size: 15px;
+    text-decoration: none;
+  }
+  nav a:last-child { font-family: var(--font-display); font-weight: 600; color: var(--ink); }
+  @media (hover: hover) {
+    nav a:hover { color: var(--ink); background: var(--paper-step); }
+  }
+</style>

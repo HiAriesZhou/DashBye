@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+import { copy, paths } from '../lib/copy';
+
+const en = copy.en.notFound;
+const zh = copy.zh.notFound;
+---
+<Base lang="en" title={`404 · DashBye`} description={en.text} alternate={paths.zh.home}>
+  <section class="wrap lost">
+    <p class="code">404</p>
+    <h1>{en.title}</h1>
+    <p>{en.text} <a href={paths.en.home}>{en.home}</a> · <a href={paths.en.docs}>{en.guide}</a></p>
+    <p lang="zh-CN">{zh.title}{zh.text} <a href={paths.zh.home}>{zh.home}</a> · <a href={paths.zh.docs}>{zh.guide}</a></p>
+  </section>
+</Base>
+
+<style>
+  .lost { padding-top: 12vh; padding-bottom: 18vh; }
+  .code { margin: 0 0 12px; font: 500 15px var(--font-mono); color: var(--ink-faint); }
+  h1 { font-size: clamp(32px, 5vw, 52px); max-width: 18ch; }
+  p { color: var(--ink-soft); }
+  a { color: var(--green-ink); font-weight: 600; }
+</style>

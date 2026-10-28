@@ -1,0 +1,22 @@
+{
+  "name": "dashbye-website",
+  "private": true,
+  "type": "module",
+  "description": "dashbye.lol: the DashBye product site and usage guide, built from this repository's README and docs.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "node --test src/lib/*.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.4",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/sora": "^5.3.0",
+    "astro": "^7.4.2",
+    "sharp": "^0.35.5"
+  }
+}

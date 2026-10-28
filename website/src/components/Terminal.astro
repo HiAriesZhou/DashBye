@@ -1,0 +1,81 @@
+---
+import { releaseTranscript } from '../lib/copy';
+---
+<figure class="term" aria-label="Example output of dashbye release">
+  <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span>~/extension</span></div>
+  <pre><code>{releaseTranscript.map((line, index) => (
+    <span class:list={['line', line.kind]} style={`--i:${index}`}>{
+      line.kind === 'cmd' ? <><span class="prompt" aria-hidden="true">$ </span>{line.text}</>
+      : line.kind === 'ask' ? <>{line.text}<b>{line.answer}</b></>
+      : line.text
+    }{'note' in line && line.note ? <span class="pin" aria-hidden="true">{line.note}</span> : null}</span>
+  ))}</code></pre>
+</figure>
+
+<style>
+  .term {
+    margin: 0;
+    border-radius: var(--radius-m);
+    background: var(--term-bg);
+    color: var(--term-ink);
+    box-shadow: 0 1px 2px rgba(29, 48, 67, 0.12), 0 18px 40px -18px rgba(29, 48, 67, 0.45);
+    overflow: hidden;
+  }
+  .chrome {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    font: 12px var(--font-mono);
+    color: var(--term-dim);
+  }
+  .chrome i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
+  .chrome span { margin-left: 8px; }
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: 18px 20px 22px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  code { font-size: inherit; }
+  .line { display: block; min-height: 1.7em; padding-left: 2ch; text-indent: -2ch; }
+  .prompt { color: var(--term-dim); }
+  .cmd { color: #fff; font-weight: 600; }
+  .head { color: #fff; font-weight: 600; }
+  .warn { color: var(--term-amber); }
+  .ask b { color: #fff; }
+  .ok { color: var(--term-green); }
+  .pin {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 10px;
+    border-radius: 50%;
+    background: var(--term-green);
+    color: var(--term-bg);
+    font: 700 11px/1 var(--font-display);
+    vertical-align: 1px;
+    text-indent: 0;
+  }
+  @media (max-width: 719px) {
+    pre { padding: 16px; font-size: 12.5px; }
+  }
+
+  /* Plays once on load: each line arrives in order, as the run would print it. */
+  @media (prefers-reduced-motion: no-preference) {
+    .line {
+      animation: arrive 360ms var(--ease-out) both;
+      animation-delay: calc(240ms + var(--i) * 70ms);
+    }
+    .ok { animation-delay: calc(560ms + var(--i) * 70ms); }
+  }
+  @keyframes arrive {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+</style>

@@ -1,0 +1,87 @@
+---
+import { copy, type Lang } from '../lib/copy';
+
+interface Props { lang: Lang; text: string; label?: string; tone?: 'light' | 'dark' }
+const { lang, text, label, tone = 'light' } = Astro.props;
+const t = copy[lang].copy;
+---
+<button
+  type="button"
+  class:list={['copy', tone]}
+  data-copy={text}
+  data-done={t.done}
+  data-failed={t.failed}
+  aria-label={label ?? t.label}
+>
+  <svg class="icon idle" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" />
+    <path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" fill="none" stroke="currentColor" stroke-width="1.4" />
+  </svg>
+  <svg class="icon ok" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+  <span class="text">{t.label}</span>
+  <span class="visually-hidden status" role="status"></span>
+</button>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('button[data-copy]').forEach(button => {
+    const status = button.querySelector('.status')!;
+    let timer: number | undefined;
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy ?? '');
+        button.dataset.state = 'done';
+        status.textContent = button.dataset.done ?? '';
+      } catch {
+        button.dataset.state = 'failed';
+        status.textContent = button.dataset.failed ?? '';
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        delete button.dataset.state;
+        status.textContent = '';
+      }, 1800);
+    });
+  });
+</script>
+
+<style>
+  .copy {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-s);
+    font: 600 14px/1 var(--font-display);
+    cursor: pointer;
+    transition-property: transform, background-color;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .copy:active { transform: scale(0.96); }
+  @media (max-width: 419px) {
+    .copy { width: 40px; justify-content: center; padding: 0; }
+    .ok { left: 12px; }
+    .text { display: none; }
+  }
+  .light { background: var(--ink); color: var(--paper); }
+  .dark { background: rgba(255, 255, 255, 0.08); color: var(--term-ink); }
+  @media (hover: hover) {
+    .light:hover { background: color-mix(in srgb, var(--ink) 88%, var(--green)); }
+    .dark:hover { background: rgba(255, 255, 255, 0.14); }
+  }
+  .icon {
+    transition-property: transform, opacity;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  .ok { position: absolute; left: 12px; opacity: 0; transform: scale(0.25); color: var(--term-green); }
+  .light .ok { color: var(--green); }
+  .copy[data-state='done'] .idle { opacity: 0; transform: scale(0.25); }
+  .copy[data-state='done'] .ok { opacity: 1; transform: scale(1); }
+  .copy[data-state='failed'] { outline: 2px solid var(--amber); outline-offset: 2px; }
+</style>

@@ -1,0 +1,38 @@
+---
+import { copy, type Lang } from '../lib/copy';
+import { links, version } from '../lib/repo';
+
+interface Props { lang: Lang }
+const t = copy[Astro.props.lang];
+---
+<footer class="wrap foot">
+  <p class="mark"><span>Dash</span><span class="bye">Bye</span> <span class="ver">v{version}</span></p>
+  <ul>
+    <li><a href={links.license}>{t.footer.license}</a></li>
+    <li><a href={links.brand}>{t.footer.brand}</a></li>
+    <li><a href={links.github}>GitHub</a></li>
+    <li><a href={links.npm}>npm</a></li>
+  </ul>
+  <p class="note">{t.footer.disclaimer}</p>
+</footer>
+
+<style>
+  .foot {
+    display: grid;
+    gap: 12px;
+    padding-top: 32px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+  .mark { margin: 0; font: 700 17px/1 var(--font-display); color: var(--ink); letter-spacing: -0.02em; }
+  .bye { color: var(--green); }
+  .ver { margin-left: 6px; font: 500 13px var(--font-mono); color: var(--ink-faint); letter-spacing: 0; }
+  ul { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; }
+  a { color: var(--ink-soft); }
+  .note { margin: 0; }
+  @media (min-width: 900px) {
+    .foot { grid-template-columns: auto 1fr auto; align-items: center; gap: 32px; }
+  }
+</style>
