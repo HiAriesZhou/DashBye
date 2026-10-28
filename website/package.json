@@ -4,7 +4,7 @@
   "type": "module",
   "description": "dashbye.lol: the DashBye product site and usage guide, built from this repository's README and docs.",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "dev": "astro dev",
