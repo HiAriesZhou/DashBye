@@ -90,7 +90,7 @@ const en = {
     guide: 'Usage guide',
   },
   footer: { license: 'Code: MIT', brand: 'Brand and mascot terms' },
-  star: { text: 'Star on GitHub', label: 'Star DashBye on GitHub', count: (n: number) => `${n} ${n === 1 ? 'star' : 'stars'}` },
+  star: { question: 'Star DashBye on GitHub?', label: 'Star DashBye on GitHub', count: (n: number) => `${n} ${n === 1 ? 'star' : 'stars'}` },
   docs: { onPage: 'On this page', back: 'Back to top' },
   notFound: { title: 'This page waved goodbye.', text: 'Nothing lives at this address.', home: 'Go to the home page', guide: 'Open the usage guide' },
 };
@@ -181,7 +181,7 @@ const zh: Copy = {
     guide: '使用指南',
   },
   footer: { license: '代码：MIT', brand: '品牌与吉祥物条款' },
-  star: { text: '在 GitHub 点 Star', label: '在 GitHub 上给 DashBye 点 Star', count: (n: number) => `已有 ${n} 个 Star` },
+  star: { question: '给 DashBye 点个 Star？', label: '在 GitHub 上给 DashBye 点 Star', count: (n: number) => `已有 ${n} 个 Star` },
   docs: { onPage: '本页内容', back: '回到顶部' },
   notFound: { title: '这个页面已经挥手告别。', text: '这个地址没有内容。', home: '回到首页', guide: '打开使用指南' },
 };

@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import CopyButton from './CopyButton.astro';
-import StarLink from './StarLink.astro';
+import StarPrompt from './StarPrompt.astro';
 import Terminal from './Terminal.astro';
 import mascot from '../../../brand/dashbye-readme.png';
 import { copy, paths, type Lang } from '../lib/copy';
@@ -20,9 +20,9 @@ const install = 'npm install --global dashbye';
       <code><span aria-hidden="true">$ </span>{install}</code>
       <CopyButton lang={lang} text={install} />
     </div>
+    <p class="prompt-line"><StarPrompt lang={lang} /></p>
     <p class="hero-links">
       <a href={paths[lang].docs}>{t.hero.guide} <span aria-hidden="true">→</span></a>
-      <StarLink lang={lang} />
     </p>
     <ul class="facts">
       <li><a href={links.npm}>v{version}</a></li>
@@ -119,9 +119,9 @@ const install = 'npm install --global dashbye';
     <code><span aria-hidden="true">$ </span>{install}</code>
     <CopyButton lang={lang} text={install} />
   </div>
+  <p class="prompt-line"><StarPrompt lang={lang} /></p>
   <p class="hero-links">
     <a href={paths[lang].docs}>{t.end.guide} <span aria-hidden="true">→</span></a>
-    <a href={links.github}>GitHub <span aria-hidden="true">→</span></a>
   </p>
 </section>
 
@@ -167,7 +167,9 @@ const install = 'npm install --global dashbye';
     font-size: 15px;
   }
   .install code span { color: var(--ink-faint); }
-  .hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 20px 0 0; }
+  /* The question continues the install box like the next terminal line, aligned with its "$". */
+  .prompt-line { margin: 6px 0 0; padding-left: 17px; }
+  .hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 12px 0 0; }
   .hero-links a, .limits a {
     display: inline-flex;
     align-items: center;
