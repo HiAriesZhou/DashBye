@@ -1,0 +1,41 @@
+---
+import Icon from './Icon.astro';
+import { copy, type Lang } from '../lib/copy';
+import { links, version } from '../lib/repo';
+
+interface Props { lang: Lang }
+const f = copy[Astro.props.lang].hero.facts;
+---
+<ul class="facts">
+  <li><a class="npm" href={links.npm}><Icon name="npm" /><span class="mono">v{version}</span></a></li>
+  <li class="node"><Icon name="node" />{f.node}</li>
+  <li><a href={links.license}><Icon name="law" />{f.license}</a></li>
+  <li><Icon name="shield" />{f.privacy}</li>
+</ul>
+
+<style>
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  li, a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+  }
+  a { color: inherit; text-decoration: none; }
+  li :global(svg) { flex: none; color: var(--ink-faint); transition: color 140ms var(--ease-out); }
+  .mono { font: 500 13px var(--font-mono); }
+  @media (hover: hover) {
+    a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+    .npm:hover :global(svg) { color: #cb3837; }
+    a:hover :global(svg) { color: var(--ink); }
+  }
+</style>

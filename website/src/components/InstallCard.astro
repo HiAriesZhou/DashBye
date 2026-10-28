@@ -1,0 +1,111 @@
+---
+import CopyButton from './CopyButton.astro';
+import Icon from './Icon.astro';
+import { copy, type Lang } from '../lib/copy';
+import { links, stars } from '../lib/repo';
+
+// One terminal card, two lines: the install command, then the single [Y/n] question
+// DashBye itself would ask, here asking for a star.
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = copy[lang].star;
+const install = 'npm install --global dashbye';
+const label = stars === null ? t.label : `${t.label}, ${t.count(stars)}`;
+---
+<div class="card">
+  <div class="line cmd">
+    <code><span class="dollar" aria-hidden="true">$ </span>{install}</code>
+    <CopyButton lang={lang} text={install} />
+  </div>
+  <a class="line ask" href={links.github} aria-label={label}>
+    <span class="q">{t.question} <span class="yn">[<b>Y</b>/n]</span><span class="caret"></span></span>
+    {stars !== null && <span class="count" aria-hidden="true"><Icon name="star" size={13} />{stars}</span>}
+  </a>
+</div>
+
+<style>
+  .card {
+    display: inline-grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 520px);
+    border-radius: var(--radius-m);
+    background: var(--paper-step);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    font: 500 15px/1.5 var(--font-mono);
+  }
+  .line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding: 6px 6px 6px 16px;
+  }
+  .cmd code { min-width: 0; overflow-x: auto; white-space: nowrap; font-size: inherit; }
+  .dollar { color: var(--ink-faint); }
+  .ask {
+    padding-right: 14px;
+    border-top: 1px dashed var(--rule);
+    border-radius: 0 0 var(--radius-m) var(--radius-m);
+    color: var(--ink);
+    font-size: 14px;
+    text-decoration: none;
+    transition-property: background-color;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .q { min-width: 0; }
+  .yn { color: var(--ink-faint); white-space: nowrap; }
+  .yn b { color: var(--green-ink); font-weight: 700; }
+  .caret {
+    position: relative;
+    display: inline-block;
+    width: 8px;
+    height: 1.1em;
+    margin-left: 6px;
+    vertical-align: -0.2em;
+    background: var(--ink);
+    animation: blink 1.1s steps(1) infinite;
+  }
+  /* Hover or focus answers the prompt: the caret becomes the typed "y". */
+  .caret::before {
+    content: 'y';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    opacity: 0;
+    color: var(--green-ink);
+    font-weight: 700;
+  }
+  .count {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-s);
+    background: var(--green-wash);
+    color: var(--green-ink);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ask:focus-visible { outline-offset: -2px; }
+  .ask:focus-visible .caret, .ask:active .caret { animation: none; background: none; }
+  .ask:focus-visible .caret::before, .ask:active .caret::before { opacity: 1; }
+  @media (hover: hover) {
+    .ask:hover { background: color-mix(in srgb, var(--green-wash) 60%, transparent); }
+    .ask:hover .caret { animation: none; background: none; }
+    .ask:hover .caret::before { opacity: 1; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+  }
+  @media (max-width: 419px) {
+    .card { width: 100%; font-size: 14px; }
+    .line { padding-left: 12px; }
+    .ask { font-size: 13px; }
+  }
+</style>

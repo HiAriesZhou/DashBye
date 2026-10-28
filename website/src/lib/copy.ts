@@ -18,8 +18,7 @@ const en = {
   hero: {
     title: ['Less dashboard.', 'More shipping.'],
     lede: 'Give your coding agent a versioned release workspace for browser extensions. DashBye keeps the package, store copy, screenshots, artwork, and privacy declarations in your extension repository, compares them with each store, and writes nothing until you approve the exact plan.',
-    guide: 'Read the usage guide',
-    facts: ['Node.js 22+', 'MIT', 'No account, server, or telemetry'],
+    facts: { node: 'Node.js 22+', license: 'MIT', privacy: 'No account, server, or telemetry' },
     mascotAlt: 'The DashBye gecko waving goodbye from the top of a dashboard',
   },
   copy: { label: 'Copy', done: 'Copied', failed: 'Copy failed. Select the text instead.', failedShort: 'Select to copy' },
@@ -109,8 +108,7 @@ const zh: Copy = {
   hero: {
     title: ['少填表，', '多发版。'],
     lede: '让编码 Agent 替你打理浏览器扩展的商店发布。扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与各个商店逐项比对，你批准具体计划之前不写入任何内容。',
-    guide: '阅读使用指南',
-    facts: ['Node.js 22+', 'MIT', '无需账号，没有服务器，不收集遥测'],
+    facts: { node: 'Node.js 22+', license: 'MIT', privacy: '无需账号，没有服务器，不收集遥测' },
     mascotAlt: 'DashBye 的壁虎站在 dashboard 上挥手告别',
   },
   copy: { label: '复制', done: '已复制', failed: '复制失败，请手动选择文本。', failedShort: '请手动复制' },
