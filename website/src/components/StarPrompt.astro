@@ -1,0 +1,77 @@
+---
+import Icon from './Icon.astro';
+import { copy, type Lang } from '../lib/copy';
+import { links, stars } from '../lib/repo';
+
+// The CLI asks one [Y/n] question before it writes; the site asks one too.
+interface Props { lang: Lang }
+const t = copy[Astro.props.lang].star;
+const label = stars === null ? t.label : `${t.label}, ${t.count(stars)}`;
+---
+<a class="ask" href={links.github} aria-label={label}>
+  <span class="q">{t.question}</span>
+  <span class="yn" aria-hidden="true">[<b>Y</b>/n]</span><span class="caret" aria-hidden="true"></span>
+  {stars !== null && <span class="count" aria-hidden="true"><Icon name="star" size={13} />{stars}</span>}
+</a>
+
+<style>
+  .ask {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 8px;
+    min-height: 40px;
+    color: var(--ink);
+    font: 500 14px/1.5 var(--font-mono);
+    text-decoration: none;
+    transition-property: transform;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .ask:active { transform: scale(0.98); }
+  .yn { color: var(--ink-faint); }
+  .yn b { color: var(--green-ink); font-weight: 700; }
+  .caret {
+    position: relative;
+    width: 8px;
+    height: 1.15em;
+    margin-left: -4px;
+    background: var(--ink);
+    animation: blink 1.1s steps(1) infinite;
+  }
+  /* Hover answers the prompt: the caret becomes the typed "y". */
+  .caret::before {
+    content: 'y';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    opacity: 0;
+    color: var(--green-ink);
+    font-weight: 700;
+  }
+  .count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 0 8px;
+    border-radius: var(--radius-s);
+    background: var(--green-wash);
+    color: var(--green-ink);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (hover: hover) {
+    .ask:hover .q { text-decoration: underline; text-underline-offset: 4px; }
+    .ask:hover .caret { animation: none; background: none; }
+    .ask:hover .caret::before { opacity: 1; }
+  }
+  .ask:focus-visible .caret { animation: none; background: none; }
+  .ask:focus-visible .caret::before { opacity: 1; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+  }
+</style>
