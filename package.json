@@ -12,10 +12,13 @@
     "url": "https://github.com/HiAriesZhou/DashBye/issues"
   },
   "keywords": [
+    "browser-extension",
     "chrome-extension",
     "chrome-web-store",
+    "firefox-addons",
+    "edge-addons",
     "cli",
-    "playwright",
+    "coding-agent",
     "release-automation"
   ],
   "type": "module",
