@@ -9,7 +9,7 @@
 <p>让编码 Agent 替你打理浏览器扩展的商店发布。<br>
 扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与 Chrome Web Store、Firefox 附加组件商店和 Microsoft Edge 加载项商店逐项比对，你批准具体计划之前不写入任何内容。</p>
 
-[![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: MIT](https://img.shields.io/badge/license-MIT-1D3043)](LICENSE)
 
 [官网](https://dashbye.lol/zh/) · [English](README.md) · **简体中文** · [使用指南](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.zh-CN.md) · [示例](#示例)
 
@@ -186,6 +186,6 @@ browser:
 
 ## 许可与品牌
 
-代码以 [GPL-3.0-only](LICENSE) 发布，在遵守条款的前提下可以商用，适用范围见[许可说明](LICENSING.md)。早先以 MIT 发布的版本，仍按原许可使用。
+代码以 [MIT](LICENSE) 发布，适用范围见[许可说明](LICENSING.md)。0.2.0 至 0.6.1 版本以 GPL-3.0-only 发布，仍按原许可使用。
 
 DashBye 的名称、Logo 和吉祥物另有[品牌政策](TRADEMARK.md)和[素材条款](https://github.com/HiAriesZhou/DashBye/blob/main/brand/LICENSE)。fork 之后若作为独立产品推广，请换用自己的名称和形象。

@@ -16,7 +16,7 @@ DashBye logo as its identity, or use confusing branding to imply affiliation.
 Keep required copyright notices and clearly credit upstream where appropriate.
 
 These rules address branding, not competition: they do not prohibit commercial
-use or redistribution of code allowed by GPLv3, or truthful attribution. Rights
+use or redistribution of code allowed by the MIT License, or truthful attribution. Rights
 available under applicable law are not restricted by this policy.
 
 For other uses of the identity or artwork, request written permission from

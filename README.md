@@ -9,7 +9,7 @@
 <p>Give your coding agent a versioned release workspace for browser extensions.<br>
 DashBye keeps the package, store copy, screenshots, artwork, and privacy declarations in your extension repository, compares them with Chrome Web Store, Firefox Add-ons, and Microsoft Edge Add-ons, and writes nothing until you approve the exact plan.</p>
 
-[![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: MIT](https://img.shields.io/badge/license-MIT-1D3043)](LICENSE)
 
 [Website](https://dashbye.lol) · **English** · [简体中文](README.zh-CN.md) · [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Example](#example)
 
@@ -189,6 +189,6 @@ For all commands and options, run `dashbye -h`.
 
 ## License & brand
 
-Code: [GPL-3.0-only](LICENSE), with commercial use permitted under its terms; see [licensing scope](LICENSING.md). Earlier MIT releases retain their original permissions.
+Code: [MIT](LICENSE); see [licensing scope](LICENSING.md). Versions 0.2.0 through 0.6.1 were published under GPL-3.0-only and keep those terms.
 
 The name, logo, and mascot have separate [brand](TRADEMARK.md) and [asset terms](https://github.com/HiAriesZhou/DashBye/blob/main/brand/LICENSE). Forks marketed as another product must use their own identity.
