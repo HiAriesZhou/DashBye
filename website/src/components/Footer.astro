@@ -1,9 +1,13 @@
 ---
+import { Image } from 'astro:assets';
+import avatar from '../assets/aries-avatar.webp';
 import { copy, type Lang } from '../lib/copy';
 import { links, version } from '../lib/repo';
 
 interface Props { lang: Lang }
-const t = copy[Astro.props.lang];
+const { lang } = Astro.props;
+const t = copy[lang];
+const heart = '❤️';
 ---
 <footer class="wrap foot">
   <p class="mark"><span>Dash</span><span class="bye">Bye</span> <span class="ver">v{version}</span></p>
@@ -13,6 +17,13 @@ const t = copy[Astro.props.lang];
     <li><a href={links.github}>GitHub</a></li>
     <li><a href={links.npm}>npm</a></li>
   </ul>
+  <p class="credit">
+    {lang === 'zh' && <>由 </>}
+    {lang === 'en' && <>Made with <span role="img" aria-label="love">{heart}</span> by </>}
+    <a class="me" href={links.author[lang]}>
+      <Image src={avatar} alt="" width={24} height={24} densities={[1, 2]} loading="lazy" />AriesZhou</a>
+    {lang === 'zh' && <> 用 <span role="img" aria-label="爱">{heart}</span> 制作</>}
+  </p>
   <p class="note">{t.footer.disclaimer}</p>
 </footer>
 
@@ -32,7 +43,23 @@ const t = copy[Astro.props.lang];
   ul { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; }
   a { color: var(--ink-soft); }
   .note { margin: 0; }
+  .credit { margin: 0; color: var(--ink-soft); }
+  .me {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+    vertical-align: middle;
+  }
+  .me img { width: 24px; height: 24px; border-radius: 50%; outline: 1px solid rgba(0, 0, 0, 0.1); outline-offset: -1px; }
+  @media (hover: hover) {
+    .me:hover { text-decoration: underline; }
+  }
   @media (min-width: 900px) {
-    .foot { grid-template-columns: auto 1fr auto; align-items: center; gap: 32px; }
+    .foot { grid-template-columns: auto 1fr auto; align-items: center; gap: 12px 32px; }
+    .note { grid-column: 1 / -1; }
   }
 </style>

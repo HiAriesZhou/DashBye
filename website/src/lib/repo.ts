@@ -21,4 +21,5 @@ export const links = {
   validation: 'https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md',
   security: 'https://github.com/HiAriesZhou/DashBye/blob/main/docs/security.md',
   schema: 'https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md',
+  author: { en: 'https://www.arieszhou.com/', zh: 'https://www.arieszhou.com/zh/' },
 };
