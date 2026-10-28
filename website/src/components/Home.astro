@@ -1,33 +1,23 @@
 ---
 import { Image } from 'astro:assets';
 import CopyButton from './CopyButton.astro';
-import StarPrompt from './StarPrompt.astro';
+import Facts from './Facts.astro';
+import InstallCard from './InstallCard.astro';
 import Terminal from './Terminal.astro';
 import mascot from '../../../brand/dashbye-readme.png';
 import { copy, paths, type Lang } from '../lib/copy';
-import { agentPrompt, links, version } from '../lib/repo';
+import { agentPrompt, links } from '../lib/repo';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = copy[lang];
-const install = 'npm install --global dashbye';
 ---
 <section class="wrap hero">
   <div class="hero-text">
     <h1>{t.hero.title.map(line => <span>{line}</span>)}</h1>
     <p class="lede">{t.hero.lede}</p>
-    <div class="install">
-      <code><span aria-hidden="true">$ </span>{install}</code>
-      <CopyButton lang={lang} text={install} />
-    </div>
-    <p class="prompt-line"><StarPrompt lang={lang} /></p>
-    <p class="hero-links">
-      <a href={paths[lang].docs}>{t.hero.guide} <span aria-hidden="true">→</span></a>
-    </p>
-    <ul class="facts">
-      <li><a href={links.npm}>v{version}</a></li>
-      {t.hero.facts.map(fact => <li>{fact}</li>)}
-    </ul>
+    <div class="actions"><InstallCard lang={lang} /></div>
+    <Facts lang={lang} />
   </div>
   <Image class="mascot" src={mascot} alt={t.hero.mascotAlt} width={440} widths={[280, 440, 880]} sizes="(min-width: 900px) 440px, 280px" loading="eager" fetchpriority="high" />
 </section>
@@ -115,11 +105,7 @@ const install = 'npm install --global dashbye';
 
 <section class="wrap end" aria-labelledby="end-title">
   <h2 id="end-title">{t.end.title}</h2>
-  <div class="install">
-    <code><span aria-hidden="true">$ </span>{install}</code>
-    <CopyButton lang={lang} text={install} />
-  </div>
-  <p class="prompt-line"><StarPrompt lang={lang} /></p>
+  <div class="actions"><InstallCard lang={lang} /></div>
   <p class="hero-links">
     <a href={paths[lang].docs}>{t.end.guide} <span aria-hidden="true">→</span></a>
   </p>
@@ -149,26 +135,7 @@ const install = 'npm install --global dashbye';
     color: var(--ink-soft);
     font-size: clamp(17px, 1.6vw, 19px);
   }
-  .install {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    max-width: 100%;
-    margin-top: 32px;
-    padding: 6px 6px 6px 16px;
-    border-radius: var(--radius-m);
-    background: var(--paper-step);
-    box-shadow: inset 0 0 0 1px var(--rule);
-  }
-  .install code {
-    min-width: 0;
-    overflow-x: auto;
-    white-space: nowrap;
-    font-size: 15px;
-  }
-  .install code span { color: var(--ink-faint); }
-  /* The question continues the install box like the next terminal line, aligned with its "$". */
-  .prompt-line { margin: 6px 0 0; padding-left: 17px; }
+  .actions { margin-top: 32px; }
   .hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 12px 0 0; }
   .hero-links a, .limits a {
     display: inline-flex;
@@ -182,22 +149,8 @@ const install = 'npm install --global dashbye';
   @media (hover: hover) {
     .hero-links a:hover, .limits a:hover { text-decoration: underline; }
   }
-  .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 18px;
-    margin: 20px 0 0;
-    padding: 0;
-    list-style: none;
-    color: var(--ink-faint);
-    font-size: 14px;
-  }
-  .facts a { font-family: var(--font-mono); color: inherit; }
   /* Phones: the gecko waves from above the headline instead of trailing the facts. */
   .mascot { order: -1; width: 128px; margin-bottom: -8px; }
-  @media (max-width: 419px) {
-    .install code { font-size: 14px; }
-  }
   @media (min-width: 900px) {
     .hero { grid-template-columns: 1fr 400px; align-items: center; gap: 48px; }
     .mascot { order: 0; width: 400px; margin-bottom: 8px; }
