@@ -20,6 +20,23 @@ jobs:
       - run: npm run check
       - run: npm test
 
+  # dashbye.lol, built from website/ plus the READMEs, docs/usage*.md, and brand/.
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
   # Chrome install locations on Windows and Linux are not exercised on a real
   # Dashboard; check that DashBye finds and opens the runner's official Chrome.
   chrome-location:
