@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import Home from '../../components/Home.astro';
+import { copy, paths } from '../../lib/copy';
+
+const t = copy.zh;
+---
+<Base lang="zh" title={t.meta.title} description={t.meta.description} alternate={paths.en.home}>
+  <Home lang="zh" />
+</Base>

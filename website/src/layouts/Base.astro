@@ -1,0 +1,63 @@
+---
+import '@fontsource-variable/sora';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { getImage } from 'astro:assets';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import icon from '../../../brand/dashbye-icon.png';
+import launch from '../../../brand/dashbye-launch.png';
+import { copy, type Lang } from '../lib/copy';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  // The same page in the other language, for hreflang and the language switch.
+  alternate: string;
+}
+
+const { lang, title, description, alternate } = Astro.props;
+const t = copy[lang];
+const site = Astro.site!;
+// Absolute canonical on dashbye.lol, so the backup domain serves the same pages without competing in search.
+const canonical = new URL(Astro.url.pathname, site).href;
+const alternateUrl = new URL(alternate, site).href;
+const [favicon, touchIcon, social] = await Promise.all([
+  getImage({ src: icon, width: 64, height: 64, format: 'png' }),
+  getImage({ src: icon, width: 180, height: 180, format: 'png' }),
+  getImage({ src: launch, width: 1200, format: 'png' }),
+]);
+---
+<!doctype html>
+<html lang={t.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={t.htmlLang} href={canonical} />
+    <link rel="alternate" hreflang={lang === 'en' ? 'zh-CN' : 'en'} href={alternateUrl} />
+    <link rel="alternate" hreflang="x-default" href={lang === 'en' ? canonical : alternateUrl} />
+    <link rel="icon" type="image/png" href={favicon.src} />
+    <link rel="apple-touch-icon" href={touchIcon.src} />
+    <meta name="theme-color" content="#f7faf9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1a24" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DashBye" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(social.src, site).href} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.nav.skip}</a>
+    <Header lang={lang} alternate={alternate} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+  </body>
+</html>
