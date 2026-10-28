@@ -43,6 +43,17 @@ Pipeline: local intent → remote observation → approved write. See `docs/arch
 - Browser profiles, reports, packages, real-listing screenshots, HAR files, and traces stay outside the repo. Tests and examples use fictional item IDs (e.g. `'a'.repeat(32)`) and synthetic assets only.
 - Unit tests cover parsing/validation/planning only; real selector changes need a reviewed, reversible draft verification (record in `docs/validation.md`).
 
+## Website
+
+`website/` is the dashbye.lol site: a standalone Astro static package with its own lockfile, not an npm workspace, so the CLI's install, tests, and npm package are unaffected. It reads `../package.json` (version), the agent prompt from both READMEs (`src/lib/readme.mjs` fails the build if the heading or its `text` block moves), `../docs/usage*.md` (the `/docs/` pages; relative links are rewritten in `src/lib/doc-links.mjs`), and `../brand/`. Page copy lives in `src/lib/copy.ts` (en + zh) and follows the READMEs; change both when store support or limits change.
+
+```bash
+cd website && npm ci && npm test && npm run build   # same as CI's website job
+npm run dev                                          # http://localhost:4321
+```
+
+Vercel project `dashbye` builds it with Root Directory `website` (`website/vercel.json`); `dashbye.lol` is primary and `dashbye.arieszhou.com` serves the same build with canonical URLs on dashbye.lol. Merges to `main` deploy production.
+
 ## Docs
 
 `README.md` and `README.zh-CN.md` (and `docs/usage.md` / `docs/usage.zh-CN.md`) are parallel translations — update both together. Design notes live in `docs/plans/`.

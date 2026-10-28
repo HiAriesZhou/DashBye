@@ -18,6 +18,12 @@
 - Every write must be preceded by a plan and followed by a reload/read-back check.
 - Examples and tests must use fictional item IDs and synthetic assets only.
 
+## Website
+
+- `website/` (dashbye.lol) is a separate static package; see CLAUDE.md. Keep its copy in
+  `website/src/lib/copy.ts` consistent with both READMEs, and never add analytics,
+  tracking, or third-party requests: the product promises no telemetry.
+
 ## Releasing DashBye
 
 - Bump `package.json`, `package-lock.json` (via `npm version <x.y.z> --no-git-tag-version`)
