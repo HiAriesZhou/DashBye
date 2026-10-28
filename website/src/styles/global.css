@@ -5,7 +5,7 @@
   --paper-step: #ecf2f0;
   --ink: #1d3043;
   --ink-soft: #4a5b6b;
-  --ink-faint: #6a7987;
+  --ink-faint: #56677a;
   --rule: #d3dddd;
   --green: #429c7e;
   --green-ink: #2b7559;
@@ -71,6 +71,8 @@ body {
 }
 
 :lang(zh) body, body:lang(zh) { line-height: 1.75; }
+
+p, li, dt, dd, h3 { text-wrap: pretty; }
 
 img { max-width: 100%; height: auto; display: block; }
 

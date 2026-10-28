@@ -14,7 +14,7 @@ const en = {
     docsTitle: 'Usage guide · DashBye',
     docsDescription: 'Install DashBye, set it up with a coding agent, and run store releases for Chrome Web Store, Firefox Add-ons, and Edge Add-ons.',
   },
-  nav: { guide: 'Guide', github: 'GitHub', switchLabel: '中文', switchName: '简体中文', skip: 'Skip to content', home: 'DashBye home' },
+  nav: { guide: 'Guide', github: 'GitHub', switchLabel: '中文', switchName: '简体中文', skip: 'Skip to content', home: 'DashBye home', label: 'Main' },
   hero: {
     title: ['Less dashboard.', 'More shipping.'],
     lede: 'Give your coding agent a versioned release workspace for browser extensions. DashBye keeps the package, store copy, screenshots, artwork, and privacy declarations in your extension repository, compares them with each store, and writes nothing until you approve the exact plan.',
@@ -22,14 +22,14 @@ const en = {
     facts: ['Node.js 22+', 'GPL-3.0-only', 'No account, server, or telemetry'],
     mascotAlt: 'The DashBye gecko waving goodbye from the top of a dashboard',
   },
-  copy: { label: 'Copy', done: 'Copied', failed: 'Copy failed. Select the text instead.' },
+  copy: { label: 'Copy', done: 'Copied', failed: 'Copy failed. Select the text instead.', failedShort: 'Select to copy' },
   release: {
     eyebrow: 'dashbye release',
     title: 'One plan. One yes. Then a read-back.',
     notes: [
       { term: 'Readable, not revealing', text: 'Saved plans and JSON output hold versions, counts, and which fields change, never field contents. Text changes are previewed only in your terminal.' },
-      { term: 'Destructive changes are marked', text: 'A replaced image or a removed screenshot is flagged before you answer, and deletions need explicit approval.' },
-      { term: 'Done means zero differences', text: 'After saving, DashBye reads every draft back. The release lock is written only when nothing is left to change.' },
+      { term: 'Destructive changes are marked', text: 'A replaced image or a removed screenshot is flagged in the plan, before you answer the one question.' },
+      { term: 'Done means zero differences', text: 'After saving, DashBye reads the Chrome draft back and writes the release lock only when nothing is left to change. Edge’s API cannot read its draft, so DashBye records the upload instead.' },
     ],
   },
   problems: {
@@ -76,13 +76,13 @@ const en = {
       'Sign in for you, solve CAPTCHAs, or disguise its browser',
       'Invent product claims, permission purposes, or data-use certifications',
       'Talk to Chrome over anything but a loopback connection',
-      'Send your data anywhere: there is no DashBye account or server',
+      'Collect telemetry: there is no DashBye account or server',
     ],
     more: 'Security boundaries',
   },
   status: {
     title: 'Early, and honest about it',
-    text: 'Each store path has run against real store items: Chrome package, artwork, and privacy-copy changes; a Firefox submission and a listing update; an Edge package upload. Multiple locales and data-use certification changes are not yet verified.',
+    text: 'Exercised on real store items: Chrome package upload, artwork replacement, and selected privacy-copy changes; one Firefox submission and a listing update after approval; one Edge package upload. Still unverified: multiple locales, collected-data and certification changes, new permission confirmations, and sign-in on Windows and Linux.',
     link: 'Validation record',
   },
   end: {
@@ -104,7 +104,7 @@ const zh: Copy = {
     docsTitle: '使用指南 · DashBye',
     docsDescription: '安装 DashBye，交给编码 Agent 配置，并在 Chrome Web Store、Firefox 附加组件商店和 Edge 加载项商店完成发布。',
   },
-  nav: { guide: '使用指南', github: 'GitHub', switchLabel: 'EN', switchName: 'English', skip: '跳到正文', home: 'DashBye 首页' },
+  nav: { guide: '使用指南', github: 'GitHub', switchLabel: 'EN', switchName: 'English', skip: '跳到正文', home: 'DashBye 首页', label: '主导航' },
   hero: {
     title: ['少填表，', '多发版。'],
     lede: '让编码 Agent 替你打理浏览器扩展的商店发布。扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与各个商店逐项比对，你批准具体计划之前不写入任何内容。',
@@ -112,14 +112,14 @@ const zh: Copy = {
     facts: ['Node.js 22+', 'GPL-3.0-only', '无需账号，没有服务器，不收集遥测'],
     mascotAlt: 'DashBye 的壁虎站在 dashboard 上挥手告别',
   },
-  copy: { label: '复制', done: '已复制', failed: '复制失败，请手动选择文本。' },
+  copy: { label: '复制', done: '已复制', failed: '复制失败，请手动选择文本。', failedShort: '请手动复制' },
   release: {
     eyebrow: 'dashbye release',
     title: '一份计划，一次确认，写完回读。',
     notes: [
       { term: '看得懂，不泄露', text: '保存的计划和 JSON 输出只记录版本号、数量和要改哪些字段，不含字段内容。文案改动只在你的终端里预览。' },
-      { term: '破坏性改动单独标出', text: '替换图片、删除截图会在你回答之前标出来，删除操作需要你明确批准。' },
-      { term: '剩余差异为零才算完成', text: '保存后 DashBye 会回读每份草稿，确认没有剩余改动才写入版本锁。' },
+      { term: '破坏性改动单独标出', text: '替换图片、删除截图会在计划里单独标出，你回答那一个问题之前就能看到。' },
+      { term: '剩余差异为零才算完成', text: '保存后 DashBye 回读 Chrome 草稿，确认没有剩余改动才写入版本锁。Edge 的 API 读不到草稿，所以 DashBye 改为记录这次上传。' },
     ],
   },
   problems: {
@@ -166,13 +166,13 @@ const zh: Copy = {
       '替你登录、处理验证码，或伪装浏览器指纹',
       '编造产品功能、权限用途或数据使用认证',
       '通过 loopback 以外的连接控制 Chrome',
-      '把你的数据发到任何地方：DashBye 没有账号，也没有服务器',
+      '收集遥测数据：DashBye 没有账号，也没有服务器',
     ],
     more: '安全边界',
   },
   status: {
     title: '早期版本，如实说明',
-    text: '每个商店的流程都在真实条目上跑通过：Chrome 的扩展包、图片和隐私文案修改；一次 Firefox 版本提交和一次商店页更新；一次 Edge 扩展包上传。多语言和数据使用认证的变更尚未验证。',
+    text: '已在真实商店条目上跑通：Chrome 的扩展包上传、图片替换和部分隐私文案修改；一次 Firefox 版本提交，以及审核通过后的一次商店页更新；一次 Edge 扩展包上传。尚未验证：多语言、数据类别与认证的变更、新增权限的确认，以及在 Windows 和 Linux 上登录。',
     link: '验证记录',
   },
   end: {
@@ -186,11 +186,12 @@ const zh: Copy = {
 
 export const copy: Record<Lang, Copy> = { en, zh };
 
-// A synthetic run: fictional item ID and versions, formatted like the real CLI output.
+// A synthetic run (fictional item ID, versions, and text) in the real terminal output format:
+// format.ts, multi-plan.ts, text-preview.ts, and release() in cli.ts.
 export const releaseTranscript = [
   { kind: 'cmd', text: 'dashbye release' },
   { kind: 'head', text: 'Chrome Web Store' },
-  { kind: 'out', text: '  Target: item mlbphkcdghnfaokeojdcpbnnjaabnmie, en' },
+  { kind: 'out', text: `  Target: item ${'a'.repeat(32)}, en` },
   { kind: 'out', text: '  3 changes:', note: 1 },
   { kind: 'out', text: '    Package  upload package version 1.4.2 → 1.5.0' },
   { kind: 'out', text: '    Listing  update description' },
@@ -200,7 +201,14 @@ export const releaseTranscript = [
   { kind: 'out', text: '  Package 1.5.0 → draft submission' },
   { kind: 'out', text: '  Store listing and publishing stay in Partner Center.' },
   { kind: 'gap', text: '' },
+  { kind: 'head', text: 'Text changes' },
+  { kind: 'out', text: '  Chrome Web Store · description: new text, 412 characters' },
+  { kind: 'out', text: '    starts: "Jump between headings in long pages and pick up where you left off."' },
   { kind: 'ask', text: 'Save these changes to the Dashboard draft and upload the Edge package to its draft? [Y/n] ', answer: 'y' },
   { kind: 'ok', text: 'Chrome Web Store: Draft saved and read back with no remaining differences. Release lock: 1.5.0.lock.json', note: 3 },
   { kind: 'out', text: 'Microsoft Edge Add-ons: uploaded 1.5.0 to the draft submission. Review the listing and publish in Partner Center.' },
+  { kind: 'gap', text: '' },
+  { kind: 'head', text: 'Next:' },
+  { kind: 'out', text: '  - Chrome Web Store: review the saved draft and submit it for review in the Developer Dashboard.' },
+  { kind: 'out', text: '  - Microsoft Edge Add-ons: update the store listing if needed, then publish in Partner Center.' },
 ] as const;

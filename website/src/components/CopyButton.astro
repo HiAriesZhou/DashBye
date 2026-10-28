@@ -11,6 +11,7 @@ const t = copy[lang].copy;
   data-copy={text}
   data-done={t.done}
   data-failed={t.failed}
+  data-failed-short={t.failedShort}
   aria-label={label ?? t.label}
 >
   <svg class="icon idle" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -27,19 +28,24 @@ const t = copy[lang].copy;
 <script>
   document.querySelectorAll<HTMLButtonElement>('button[data-copy]').forEach(button => {
     const status = button.querySelector('.status')!;
+    const text = button.querySelector('.text')!;
+    const label = text.textContent ?? '';
     let timer: number | undefined;
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(button.dataset.copy ?? '');
         button.dataset.state = 'done';
+        text.textContent = button.dataset.done ?? '';
         status.textContent = button.dataset.done ?? '';
       } catch {
         button.dataset.state = 'failed';
+        text.textContent = button.dataset.failedShort ?? '';
         status.textContent = button.dataset.failed ?? '';
       }
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         delete button.dataset.state;
+        text.textContent = label;
         status.textContent = '';
       }, 1800);
     });
@@ -67,6 +73,8 @@ const t = copy[lang].copy;
     .copy { width: 40px; justify-content: center; padding: 0; }
     .ok { left: 12px; }
     .text { display: none; }
+    .copy[data-state='failed'] { width: auto; padding: 0 12px; }
+    .copy[data-state='failed'] .text { display: inline; }
   }
   .light { background: var(--ink); color: var(--paper); }
   .dark { background: rgba(255, 255, 255, 0.08); color: var(--term-ink); }
@@ -80,7 +88,8 @@ const t = copy[lang].copy;
     transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
   }
   .ok { position: absolute; left: 12px; opacity: 0; transform: scale(0.25); color: var(--term-green); }
-  .light .ok { color: var(--green); }
+  .light .ok { color: inherit; }
+  .dark:focus-visible { outline-color: var(--term-green); }
   .copy[data-state='done'] .idle { opacity: 0; transform: scale(0.25); }
   .copy[data-state='done'] .ok { opacity: 1; transform: scale(1); }
   .copy[data-state='failed'] { outline: 2px solid var(--amber); outline-offset: 2px; }
