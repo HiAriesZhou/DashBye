@@ -24,15 +24,14 @@ const heart = '❤️';
       <Image src={avatar} alt="" width={24} height={24} densities={[1, 2]} loading="lazy" />AriesZhou</a>
     {lang === 'zh' && <> 用 <span role="img" aria-label="爱">{heart}</span> 制作</>}
   </p>
-  <p class="note">{t.footer.disclaimer}</p>
 </footer>
 
 <style>
   .foot {
     display: grid;
-    gap: 12px;
-    padding-top: 32px;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    gap: 8px;
+    padding-top: 28px;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--rule);
     color: var(--ink-faint);
     font-size: 14px;
@@ -40,9 +39,14 @@ const heart = '❤️';
   .mark { margin: 0; font: 700 17px/1 var(--font-display); color: var(--ink); letter-spacing: -0.02em; }
   .bye { color: var(--green); }
   .ver { margin-left: 6px; font: 500 13px var(--font-mono); color: var(--ink-faint); letter-spacing: 0; }
-  ul { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; }
-  a { color: var(--ink-soft); }
-  .note { margin: 0; }
+  ul { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 0; list-style: none; }
+  ul a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
   .credit { margin: 0; color: var(--ink-soft); }
   .me {
     display: inline-flex;
@@ -56,10 +60,9 @@ const heart = '❤️';
   }
   .me img { width: 24px; height: 24px; border-radius: 50%; outline: 1px solid rgba(0, 0, 0, 0.1); outline-offset: -1px; }
   @media (hover: hover) {
-    .me:hover { text-decoration: underline; }
+    ul a:hover, .me:hover { color: var(--ink); text-decoration: underline; }
   }
   @media (min-width: 900px) {
-    .foot { grid-template-columns: auto 1fr auto; align-items: center; gap: 12px 32px; }
-    .note { grid-column: 1 / -1; }
+    .foot { grid-template-columns: auto 1fr auto; align-items: center; column-gap: 40px; padding-top: 20px; padding-bottom: 24px; }
   }
 </style>

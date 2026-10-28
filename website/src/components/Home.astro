@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import CopyButton from './CopyButton.astro';
+import StarLink from './StarLink.astro';
 import Terminal from './Terminal.astro';
 import mascot from '../../../brand/dashbye-readme.png';
 import { copy, paths, type Lang } from '../lib/copy';
@@ -21,6 +22,7 @@ const install = 'npm install --global dashbye';
     </div>
     <p class="hero-links">
       <a href={paths[lang].docs}>{t.hero.guide} <span aria-hidden="true">→</span></a>
+      <StarLink lang={lang} />
     </p>
     <ul class="facts">
       <li><a href={links.npm}>v{version}</a></li>
@@ -165,7 +167,7 @@ const install = 'npm install --global dashbye';
     font-size: 15px;
   }
   .install code span { color: var(--ink-faint); }
-  .hero-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 20px 0 0; }
+  .hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 20px 0 0; }
   .hero-links a, .limits a {
     display: inline-flex;
     align-items: center;
@@ -189,10 +191,14 @@ const install = 'npm install --global dashbye';
     font-size: 14px;
   }
   .facts a { font-family: var(--font-mono); color: inherit; }
-  .mascot { width: min(220px, 56vw); justify-self: end; }
+  /* Phones: the gecko waves from above the headline instead of trailing the facts. */
+  .mascot { order: -1; width: 128px; margin-bottom: -8px; }
+  @media (max-width: 419px) {
+    .install code { font-size: 14px; }
+  }
   @media (min-width: 900px) {
     .hero { grid-template-columns: 1fr 400px; align-items: center; gap: 48px; }
-    .mascot { width: 400px; margin-bottom: 8px; }
+    .mascot { order: 0; width: 400px; margin-bottom: 8px; }
   }
 
   .eyebrow { margin: 0 0 12px; color: var(--green-ink); font-size: 15px; }
