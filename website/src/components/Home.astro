@@ -68,14 +68,14 @@ const install = 'npm install --global dashbye';
 
 <section class="wrap stores" aria-labelledby="stores-title">
   <h2 id="stores-title">{t.stores.title}</h2>
-  <table>
-    <thead><tr>{t.stores.head.map(cell => <th scope="col">{cell}</th>)}</tr></thead>
-    <tbody>
+  <table role="table">
+    <thead role="rowgroup"><tr role="row">{t.stores.head.map(cell => <th scope="col" role="columnheader">{cell}</th>)}</tr></thead>
+    <tbody role="rowgroup">
       {t.stores.rows.map(([store, does, you]) => (
-        <tr>
-          <th scope="row">{store}</th>
-          <td data-label={t.stores.head[1]}>{does}</td>
-          <td data-label={t.stores.head[2]}>{you}</td>
+        <tr role="row">
+          <th scope="row" role="rowheader">{store}</th>
+          <td role="cell" data-label={t.stores.head[1]}>{does}</td>
+          <td role="cell" data-label={t.stores.head[2]}>{you}</td>
         </tr>
       ))}
     </tbody>
@@ -245,7 +245,7 @@ const install = 'npm install --global dashbye';
   }
   .steps p { margin: 8px 0 0; color: var(--ink-soft); font-size: 15px; }
   .steps .you { border-top-color: var(--green); }
-  .steps .you .who { background: var(--green); color: #fff; }
+  .steps .you .who { background: var(--green-ink); color: var(--paper); }
   .aside { max-width: 70ch; margin: 28px 0 0; color: var(--ink-soft); font-size: 15px; }
   @media (min-width: 900px) {
     .steps { grid-template-columns: repeat(5, 1fr); gap: 24px; }

@@ -15,9 +15,11 @@ interface Props {
   description: string;
   // The same page in the other language, for hreflang and the language switch.
   alternate: string;
+  // Error pages are served at any URL: no canonical or alternates, and kept out of search.
+  noindex?: boolean;
 }
 
-const { lang, title, description, alternate } = Astro.props;
+const { lang, title, description, alternate, noindex = false } = Astro.props;
 const t = copy[lang];
 const site = Astro.site!;
 // Absolute canonical on dashbye.lol, so the backup domain serves the same pages without competing in search.
@@ -36,10 +38,12 @@ const [favicon, touchIcon, social] = await Promise.all([
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang={t.htmlLang} href={canonical} />
-    <link rel="alternate" hreflang={lang === 'en' ? 'zh-CN' : 'en'} href={alternateUrl} />
-    <link rel="alternate" hreflang="x-default" href={lang === 'en' ? canonical : alternateUrl} />
+    {noindex ? <meta name="robots" content="noindex" /> : <>
+      <link rel="canonical" href={canonical} />
+      <link rel="alternate" hreflang={t.htmlLang} href={canonical} />
+      <link rel="alternate" hreflang={lang === 'en' ? 'zh-CN' : 'en'} href={alternateUrl} />
+      <link rel="alternate" hreflang="x-default" href={lang === 'en' ? canonical : alternateUrl} />
+    </>}
     <link rel="icon" type="image/png" href={favicon.src} />
     <link rel="apple-touch-icon" href={touchIcon.src} />
     <meta name="theme-color" content="#f7faf9" media="(prefers-color-scheme: light)" />

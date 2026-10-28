@@ -11,7 +11,7 @@ const other = lang === 'en' ? 'zh-CN' : 'en';
   <a class="mark" href={paths[lang].home} aria-label={t.nav.home}>
     <span>Dash</span><span class="bye">Bye</span>
   </a>
-  <nav aria-label="Primary">
+  <nav aria-label={t.nav.label}>
     <a href={paths[lang].docs}>{t.nav.guide}</a>
     <a href={links.github}>{t.nav.github}</a>
     <a href={alternate} hreflang={other} lang={other} title={t.nav.switchName}>{t.nav.switchLabel}</a>
