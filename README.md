@@ -11,7 +11,7 @@ DashBye keeps the package, store copy, screenshots, artwork, and privacy declara
 
 [![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1D3043)](LICENSE)
 
-**English** · [简体中文](README.zh-CN.md) · [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Example](#example)
+[Website](https://dashbye.lol) · **English** · [简体中文](README.zh-CN.md) · [Usage guide](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md) · [Example](#example)
 
 </div>
 
