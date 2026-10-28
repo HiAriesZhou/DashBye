@@ -25,9 +25,8 @@ const site = Astro.site!;
 // Absolute canonical on dashbye.lol, so the backup domain serves the same pages without competing in search.
 const canonical = new URL(Astro.url.pathname, site).href;
 const alternateUrl = new URL(alternate, site).href;
-const [favicon, touchIcon, social] = await Promise.all([
+const [favicon, social] = await Promise.all([
   getImage({ src: icon, width: 64, height: 64, format: 'png' }),
-  getImage({ src: icon, width: 180, height: 180, format: 'png' }),
   getImage({ src: launch, width: 1200, format: 'png' }),
 ]);
 ---
@@ -45,7 +44,7 @@ const [favicon, touchIcon, social] = await Promise.all([
       <link rel="alternate" hreflang="x-default" href={lang === 'en' ? canonical : alternateUrl} />
     </>}
     <link rel="icon" type="image/png" href={favicon.src} />
-    <link rel="apple-touch-icon" href={touchIcon.src} />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f7faf9" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f1a24" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
