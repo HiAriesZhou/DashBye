@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import { copy, paths, type Lang } from '../lib/copy';
 import { links } from '../lib/repo';
 
@@ -12,9 +13,9 @@ const other = lang === 'en' ? 'zh-CN' : 'en';
     <span>Dash</span><span class="bye">Bye</span>
   </a>
   <nav aria-label={t.nav.label}>
-    <a href={paths[lang].docs}>{t.nav.guide}</a>
-    <a href={links.github}>{t.nav.github}</a>
-    <a href={alternate} hreflang={other} lang={other} title={t.nav.switchName}>{t.nav.switchLabel}</a>
+    <a class="icon" href={paths[lang].docs} aria-label={t.nav.guide} title={t.nav.guide}><Icon name="book" size={18} /></a>
+    <a class="icon" href={links.github} aria-label={t.nav.github} title={t.nav.github}><Icon name="github" size={18} /></a>
+    <a class="lang" href={alternate} hreflang={other} lang={other} title={t.nav.switchName}>{t.nav.switchLabel}</a>
   </nav>
 </header>
 
@@ -44,8 +45,13 @@ const other = lang === 'en' ? 'zh-CN' : 'en';
     color: var(--ink-soft);
     font-size: 15px;
     text-decoration: none;
+    transition-property: transform, background-color, color;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
   }
-  nav a:last-child { font-family: var(--font-display); font-weight: 600; color: var(--ink); }
+  nav a.icon { justify-content: center; width: 40px; padding: 0; }
+  nav a.lang { margin-left: 4px; font-family: var(--font-display); font-weight: 600; color: var(--ink); }
+  nav a:active { transform: scale(0.96); }
   @media (hover: hover) {
     nav a:hover { color: var(--ink); background: var(--paper-step); }
   }

@@ -13,6 +13,24 @@ export const agentPrompt = {
   zh: extractAgentPrompt(read('README.zh-CN.md'), '交给 Agent 快速上手'),
 };
 
+// Star count for the hero link, read once at build time so visitors never contact GitHub.
+// The link still works without it.
+async function readStars(): Promise<number | null> {
+  try {
+    const response = await fetch('https://api.github.com/repos/HiAriesZhou/DashBye', {
+      headers: { accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const { stargazers_count: count } = await response.json() as { stargazers_count?: unknown };
+    return typeof count === 'number' ? count : null;
+  } catch {
+    return null;
+  }
+}
+
+export const stars = await readStars();
+
 export const links = {
   github: 'https://github.com/HiAriesZhou/DashBye',
   npm: 'https://www.npmjs.com/package/dashbye',
