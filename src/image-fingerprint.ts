@@ -79,17 +79,6 @@ function blockDifference(left: Buffer, right: Buffer): number {
   return worst;
 }
 
-export function hammingDistance(left: string, right: string): number {
-  const xor = BigInt(`0x${left}`) ^ BigInt(`0x${right}`);
-  let value = xor;
-  let count = 0;
-  while (value) {
-    count += Number(value & 1n);
-    value >>= 1n;
-  }
-  return count;
-}
-
 function signature(value: string): Buffer | null {
   if (!value.startsWith('v2:')) return null;
   const pixels = Buffer.from(value.slice(3), 'base64url');

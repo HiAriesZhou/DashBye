@@ -20,11 +20,6 @@ export function chromeProfileDir(context: PlatformContext = current()): string {
   return join(appStateDir(context), 'chrome-profile');
 }
 
-// The directory name is a hash prefix so paths and logs never contain the item ID.
-export function itemStateDir(itemId: string, context: PlatformContext = current()): string {
-  return join(appStateDir(context), 'items', sha256(itemId).slice(0, 16));
-}
-
 export async function ensurePrivateDir(directory: string): Promise<void> {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await chmod(directory, 0o700);
