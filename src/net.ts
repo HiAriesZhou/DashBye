@@ -34,20 +34,30 @@ const viaUndiciProxy = (proxy: string): typeof fetch => {
   return ((input: string | URL | Request, init?: RequestInit) => undiciFetch(input as never, { ...init, dispatcher } as never)) as unknown as typeof fetch;
 };
 
-// Errors raised while connecting to the proxy itself, before any request byte is sent.
-// undici reports them as TypeError('fetch failed') with the code on `cause`.
+// Failures before any request byte reaches the store: the proxy could not be connected
+// to, or it refused the CONNECT tunnel. undici wraps them in TypeError('fetch failed');
+// a refused tunnel has only a generic abort code, so it is recognised by its message.
+// A reset (ECONNRESET) may come after the request was sent and is not listed.
 const PROXY_UNREACHED = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_CONNECT_TIMEOUT']);
+const TUNNEL_REFUSED = /^Proxy response \(\d+\) !== 200 when HTTP Tunneling$/;
 
 const requestMethod = (input: string | URL | Request, init?: RequestInit) =>
   (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
 
+function neverSent(error: unknown): boolean {
+  for (let cause = (error as { cause?: unknown } | null)?.cause, depth = 0; cause && depth < 4; cause = (cause as { cause?: unknown }).cause, depth += 1) {
+    const { code, message } = cause as { code?: unknown; message?: unknown };
+    if (typeof code === 'string' && PROXY_UNREACHED.has(code)) return true;
+    if (typeof message === 'string' && TUNNEL_REFUSED.test(message)) return true;
+  }
+  return false;
+}
+
 // A read can always be repeated. A write (an upload, an AMO version, a listing edit)
 // may already have reached the store when the connection dropped, so it is sent again
-// directly only when the proxy was never reached.
+// directly only when it never left for the store.
 export function canRetryDirect(method: string, error: unknown): boolean {
-  if (method === 'GET' || method === 'HEAD') return true;
-  const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
-  return typeof code === 'string' && PROXY_UNREACHED.has(code);
+  return method === 'GET' || method === 'HEAD' || neverSent(error);
 }
 
 // Store APIs: use a configured proxy, fall back to a direct connection when the proxy
