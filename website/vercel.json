@@ -5,7 +5,7 @@
   "buildCommand": "npm test && npm run build",
   "outputDirectory": "dist",
   "trailingSlash": true,
-  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- . ../docs/usage.md ../docs/usage.zh-CN.md ../brand ../README.md ../README.zh-CN.md ../package.json",
+  "ignoreCommand": "sh scripts/ignore-build.sh",
   "headers": [
     {
       "source": "/(.*)",

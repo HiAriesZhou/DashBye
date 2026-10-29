@@ -54,7 +54,7 @@ npm run dev                                          # http://localhost:4321
 
 `/apple-touch-icon.png` is generated from `brand/dashbye-icon.png` at a fixed, unhashed path (`src/pages/apple-touch-icon.png.ts`); other sites load it to check whether dashbye.lol is reachable, so keep the path.
 
-Vercel project `dashbye` builds it with Root Directory `website` (`website/vercel.json`); `dashbye.lol` is primary and `dashbye.arieszhou.com` serves the same build with canonical URLs on dashbye.lol. Merges to `main` deploy production.
+Vercel project `dashbye` builds it with Root Directory `website` (`website/vercel.json`); `dashbye.lol` is primary and `dashbye.arieszhou.com` serves the same build with canonical URLs on dashbye.lol. Merges to `main` deploy production. `website/scripts/ignore-build.sh` (Vercel's ignored build step) skips a deploy when none of the paths the site reads changed; add a path there when the site starts reading a new file. Vercel limits `ignoreCommand` to 256 characters, so keep logic in that script.
 
 ## Docs
 
