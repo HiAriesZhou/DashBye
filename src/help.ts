@@ -8,7 +8,7 @@ Less dashboard. More shipping.
 少填表，多发版。
 
 Version and synchronize browser extension store listings, packages, and privacy drafts
-for Chrome Web Store, Firefox Add-ons, and Microsoft Edge Add-ons.
+for Chrome Web Store, with Firefox Add-ons and Microsoft Edge Add-ons as optional stores.
 
 Usage
   dashbye [command] [options]
@@ -20,12 +20,13 @@ ${commands}
   --version     Show the installed version
 
 First run
-  Run "dashbye init" in the extension repository. It shows which stores the
-  repository appears to ship to, asks which ones to manage (chrome, edge, firefox),
-  then asks only for those stores' packages and IDs, the release resources path
-  (default ./store), and the loopback Chrome endpoint, and previews the result.
+  Run "dashbye init" in the extension repository. It asks which stores to manage:
+  Chrome Web Store is the default (press Enter); add edge or firefox only if you
+  publish there. It shows what it found for each store, then asks only for the
+  chosen stores' packages and IDs, the release resources path (default ./store),
+  and the loopback Chrome endpoint, and previews the result.
   Later runs discover the nearest dashbye.config.yml. To add or remove a store,
-  edit its targets or run "dashbye init" again and choose "change stores".
+  run "dashbye init --stores chrome,firefox", or edit its targets.
   --store chrome limits validate, plan, or sync-draft to some configured stores.
 
 Each release
