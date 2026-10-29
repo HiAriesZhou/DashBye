@@ -1,6 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
-import { compareVersions } from './stores/firefox/plan.js';
+import { compareVersions } from './version.js';
 
 const PLACEHOLDER = '{version}';
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
