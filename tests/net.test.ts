@@ -17,11 +17,14 @@ test('reads an HTTP(S) proxy from the environment and ignores SOCKS', () => {
 
 type Route = 'direct' | 'proxy';
 
-function routes(fail: Partial<Record<Route, boolean>> = {}) {
+// A string fails with undici's shape: TypeError('fetch failed') with that cause code.
+function routes(fail: Partial<Record<Route, boolean | string>> = {}) {
   const calls: Route[] = [];
   const make = (route: Route) => (async () => {
     calls.push(route);
-    if (fail[route]) throw new TypeError('fetch failed');
+    const failure = fail[route];
+    if (typeof failure === 'string') throw new TypeError('fetch failed', { cause: Object.assign(new Error(failure), { code: failure }) });
+    if (failure) throw new TypeError('fetch failed');
     return new Response(route);
   }) as unknown as typeof fetch;
   return { calls, direct: make('direct'), viaProxy: (_proxy: string) => make('proxy') };
@@ -39,6 +42,28 @@ test('falls back to a direct connection when the proxy cannot connect', async ()
   const net = createNetFetch({ env: { https_proxy: 'http://127.0.0.1:7897' }, direct: r.direct, viaProxy: r.viaProxy });
   assert.equal(await (await net('https://addons.mozilla.org/api/v5/x')).text(), 'direct');
   assert.deepEqual(r.calls, ['proxy', 'direct']);
+});
+
+// A write the proxy already forwarded may have reached the store; sending it again
+// directly could, for example, create an AMO version twice.
+test('a write that reached the proxy is not sent again directly', async () => {
+  const r = routes({ proxy: 'UND_ERR_SOCKET' });
+  const net = createNetFetch({ env: { https_proxy: 'http://127.0.0.1:7897' }, direct: r.direct, viaProxy: r.viaProxy });
+  await assert.rejects(net('https://addons.mozilla.org/api/v5/addons/addon/x/versions/', { method: 'POST', body: 'x' }), /fetch failed/);
+  assert.deepEqual(r.calls, ['proxy']);
+});
+
+test('a write falls back to a direct connection only when the proxy was never reached', async () => {
+  for (const code of ['ECONNREFUSED', 'ENOTFOUND']) {
+    const r = routes({ proxy: code });
+    const net = createNetFetch({ env: { https_proxy: 'http://127.0.0.1:7897' }, direct: r.direct, viaProxy: r.viaProxy });
+    assert.equal(await (await net('https://addons.mozilla.org/api/v5/addons/upload/', { method: 'POST', body: 'x' })).text(), 'direct');
+    assert.deepEqual(r.calls, ['proxy', 'direct']);
+  }
+  const unknown = routes({ proxy: true });
+  const net = createNetFetch({ env: { https_proxy: 'http://127.0.0.1:7897' }, direct: unknown.direct, viaProxy: unknown.viaProxy });
+  await assert.rejects(net('https://addons.mozilla.org/api/v5/addons/addon/x/', { method: 'PATCH', body: '{}' }), /fetch failed/);
+  assert.deepEqual(unknown.calls, ['proxy']);
 });
 
 test('connects directly without a proxy, and for NO_PROXY hosts', async () => {
