@@ -267,10 +267,14 @@ export function validateWorkspace(workspace: LoadedWorkspace): ValidationIssue[]
   const manifest = workspace.artifact.manifest;
   const privacy = workspace.release.privacy;
   if (!isDashboardReadableVersion(manifest.version)) {
+    // Padding helps a short numeric version; for any other shape it would suggest a
+    // pre-release or a downgrade.
+    const parts = manifest.version.split('.');
+    const padded = parts.length < 3 && parts.every(part => /^\d+$/.test(part)) ? [...parts, '0', '0'].slice(0, 3).join('.') : null;
     issues.push({
       severity: 'error',
       code: 'unreadable_chrome_version',
-      message: `version ${manifest.version} has fewer than three parts; DashBye can read the Chrome Web Store draft version back only as x.y.z or x.y.z.w (for example ${manifest.version.split('.').concat('0', '0').slice(0, 3).join('.')}, if it is newer than the published version)`,
+      message: `version ${manifest.version} must be x.y.z or x.y.z.w for DashBye to read the Chrome Web Store draft version back${padded ? ` (for example ${padded}, if it is newer than the published version)` : ''}`,
     });
   }
   const permissions = [...new Set([...manifest.permissions, ...manifest.optionalPermissions])].sort();

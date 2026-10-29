@@ -89,3 +89,18 @@ test('refuses a Chrome version the Dashboard draft cannot be read back for', () 
     assert.deepEqual(validateWorkspace(value), []);
   }
 });
+
+// A padded suggestion helps only a version that is short; for other shapes it would
+// propose a pre-release or a downgrade.
+test('the Chrome version message suggests padding only for short versions', () => {
+  const message = (version: string) => {
+    const value = workspace();
+    value.artifact.manifest.version = version;
+    return validateWorkspace(value)[0]?.message ?? '';
+  };
+  assert.match(message('1.0'), /must be x\.y\.z or x\.y\.z\.w.*for example 1\.0\.0/);
+  for (const version of ['1.0.0-beta', '1.2.3.4.5']) {
+    assert.match(message(version), /must be x\.y\.z or x\.y\.z\.w/);
+    assert.doesNotMatch(message(version), /for example/);
+  }
+});
