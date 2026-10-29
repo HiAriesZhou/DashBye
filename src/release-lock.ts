@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, join, relative } from 'node:path';
 import type { ManifestFacts } from './artifact.js';
+import { compareVersions } from './version.js';
 import type { LoadedWorkspace } from './workspace.js';
 
 export type ReleaseLock = {
@@ -38,10 +39,19 @@ export function compareManifest(previous: ManifestFacts | null, current: Manifes
   });
 }
 
+const LOCK_SUFFIX = '.lock.json';
+
+// The baseline is the newest release before the current version, in version order
+// (as text, 1.10.0 would sort before 1.9.0).
 export async function loadLatestLock(resources: string, currentVersion: string): Promise<ReleaseLock | null> {
   const directory = join(resources, 'releases');
   const files = await readdir(directory).catch(() => []);
-  const candidates = files.filter(file => file.endsWith('.lock.json') && file !== `${currentVersion}.lock.json`).sort().reverse();
+  const candidates = files
+    .filter(file => file.endsWith(LOCK_SUFFIX))
+    .map(file => ({ file, version: file.slice(0, -LOCK_SUFFIX.length) }))
+    .filter(candidate => compareVersions(candidate.version, currentVersion) < 0)
+    .sort((left, right) => compareVersions(right.version, left.version))
+    .map(candidate => candidate.file);
   for (const file of candidates) {
     try {
       const lock = JSON.parse(await readFile(join(directory, file), 'utf8')) as ReleaseLock;
@@ -71,7 +81,7 @@ export function createReleaseLock(workspace: LoadedWorkspace): ReleaseLock {
 export async function writeReleaseLock(workspace: LoadedWorkspace): Promise<string> {
   const directory = join(workspace.config.resources, 'releases');
   await mkdir(directory, { recursive: true });
-  const path = join(directory, `${workspace.artifact.manifest.version}.lock.json`);
+  const path = join(directory, `${workspace.artifact.manifest.version}${LOCK_SUFFIX}`);
   await writeFile(path, `${JSON.stringify(createReleaseLock(workspace), null, 2)}\n`, { mode: 0o600 });
   return path;
 }
