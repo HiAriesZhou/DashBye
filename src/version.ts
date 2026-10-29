@@ -8,3 +8,11 @@ export function compareVersions(left: string, right: string): number {
   }
   return 0;
 }
+
+// The Chrome Web Store Dashboard shows the draft package version in free text beside
+// dates and file sizes, so only three- or four-part versions can be told apart there.
+const DASHBOARD_VERSION = String.raw`\d+\.\d+\.\d+(?:\.\d+)?`;
+
+export const dashboardVersionPattern = (flags = '') => new RegExp(String.raw`\b${DASHBOARD_VERSION}\b`, flags);
+
+export const isDashboardReadableVersion = (version: string) => new RegExp(`^${DASHBOARD_VERSION}$`).test(version);

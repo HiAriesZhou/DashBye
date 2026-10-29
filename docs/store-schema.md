@@ -118,6 +118,12 @@ or optional permission needs a matching justification; removed permissions must 
 leave stale entries. Host access requires a host justification. DashBye reports
 inconsistencies but never invents collection claims or legal certifications.
 
+For the Chrome Web Store, the manifest `version` needs three or four parts (`1.2.0`,
+`1.2.0.1`). DashBye reads the draft package version back from the Dashboard, where a
+`1.2` or `1` cannot be told apart from dates and file sizes on the same page.
+`dashbye validate` (and `plan`, before any browser access) reports a shorter version
+as `unreadable_chrome_version`.
+
 `privacy.collectedData` lists the Dashboard data-usage categories the extension
 collects, using these exact identifiers (case-sensitive):
 

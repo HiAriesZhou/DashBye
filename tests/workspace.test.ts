@@ -73,3 +73,19 @@ test('accepts every known collected-data category', () => {
   value.release.privacy.collectedData = ['authenticationInformation', 'location', 'websiteContent'];
   assert.deepEqual(validateWorkspace(value), []);
 });
+
+// The Dashboard reader finds the draft version in free text beside dates and sizes,
+// so it reads only three- or four-part versions. Fewer parts would be uploaded on
+// every run and never read back; validation stops that before the browser opens.
+test('refuses a Chrome version the Dashboard draft cannot be read back for', () => {
+  for (const version of ['1', '1.0']) {
+    const value = workspace();
+    value.artifact.manifest.version = version;
+    assert.deepEqual(validateWorkspace(value).map(issue => issue.code), ['unreadable_chrome_version']);
+  }
+  for (const version of ['1.0.0', '1.2.3.4']) {
+    const value = workspace();
+    value.artifact.manifest.version = version;
+    assert.deepEqual(validateWorkspace(value), []);
+  }
+});
