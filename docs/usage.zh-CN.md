@@ -62,7 +62,7 @@ Agent 可以从 manifest 获取事实并整理文件；如果仓库证据无法�
 
 ## 手动 CLI 流程
 
-需要 Node.js 22+、Git、官方 Chrome，以及 Chrome Web Store 里已有的条目。Firefox 附加组件商店和 Edge 加载项商店是可选的，各自需要已有的条目和 API 密钥（见 [Firefox Add-ons](store-schema.md#firefox-add-ons) 和 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。
+需要 Node.js 22+ 和 Git。默认的 Chrome Web Store 需要官方 Chrome 和已有的条目。Firefox 附加组件商店和 Edge 加载项商店是可选的，各自需要已有的条目和 API 密钥（见 [Firefox Add-ons](store-schema.md#firefox-add-ons) 和 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。
 
 安装后，在扩展仓库中初始化：
 
@@ -114,9 +114,9 @@ node dist/src/cli.js -h
 
 默认只管理 Chrome Web Store；Firefox 附加组件商店和 Microsoft Edge 加载项商店是可选的。`dashbye init` 会在仓库里查找扩展包（`*.zip`、`*.xpi`、`dist/<浏览器>/`、`web-ext-artifacts/`、WXT 的 `.output/`）、`package.json` 里的打包脚本，以及 README 里的商店链接，然后问你要管理哪些商店。默认答案是 `chrome`；Firefox 和 Edge 会连同找到的依据一起列出，但只有你选了（例如输入 `chrome,firefox`）才会添加。只有你选中的商店会写进 `dashbye.config.yml` 的 `targets`，也只有它们会被校验、生成计划和同步。
 
-以后想增减商店，可以运行 `dashbye init --stores chrome,firefox`（或运行 `dashbye init` 并选择 **change stores**），也可以直接改 `targets`：已配置的商店保持不变，只会询问新加的商店。`validate`、`plan`、`sync-draft` 加上 `--store chrome` 这样的参数，可以只处理其中一部分。`validate` 发现仓库里有某个商店的包、但这个商店没配置时，会给出提示。
+以后想增减商店，可以运行 `dashbye init --stores chrome,firefox`（或运行 `dashbye init` 并选择 **change stores**），也可以直接改 `targets`。`--stores` 是完整列表：要列出所有要管理的商店，包括已经配置的。列出的已配置商店保持不变，没列出的会被移除，只会询问新加的商店。不在终端里运行时，还要一并传入新商店的参数，例如 `--firefox-artifact` 和 `--firefox-addon`；缺哪个参数，命令会直接指出。`validate`、`plan`、`sync-draft` 加上 `--store chrome` 这样的参数，可以只处理其中一部分。`validate` 发现仓库里有某个商店的包、但这个商店没配置时，会给出提示。
 
-Chrome 应用商店：保存草稿并回读核对。Edge：通过 Edge Add-ons API 把扩展包上传到产品的草稿提交；商店信息和发布仍在 Partner Center 完成（见 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。Firefox 附加组件（AMO）没有草稿：在 AMO 审核通过这个版本之前，`sync-draft` 只上传扩展包供 AMO 验证；审核通过后，它会更新 AMO API 允许修改的商店字段（见 [Firefox Add-ons](store-schema.md#firefox-add-ons)）。
+Chrome Web Store：保存草稿并回读核对。Edge：通过 Edge Add-ons API 把扩展包上传到产品的草稿提交；商店信息和发布仍在 Partner Center 完成（见 [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)）。Firefox 附加组件（AMO）没有草稿：在 AMO 审核通过这个版本之前，`sync-draft` 只上传扩展包供 AMO 验证；审核通过后，它会更新 AMO API 允许修改的商店字段（见 [Firefox Add-ons](store-schema.md#firefox-add-ons)）。
 
 ## 一次完成发布
 

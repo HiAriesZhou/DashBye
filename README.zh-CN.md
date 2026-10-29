@@ -86,7 +86,7 @@ dashbye init --prompt --project /path/to/extension
 
 ## 手动使用命令行
 
-需要 **Node.js 22+**、Git、官方版 Chrome，以及 Chrome Web Store 里已经存在的条目。Firefox 附加组件商店和 Edge 加载项商店是可选的，各自需要已存在的条目和 API 密钥（见[素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)）。
+需要 **Node.js 22+** 和 Git。默认的 Chrome Web Store 需要官方版 Chrome 和已经存在的条目。Firefox 附加组件商店和 Edge 加载项商店是可选的，各自需要已存在的条目和 API 密钥（见[素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)）。
 
 全局安装，然后在扩展仓库里初始化：
 
@@ -96,7 +96,7 @@ cd /path/to/extension
 dashbye init
 ```
 
-`init` 会问要管理哪些商店：直接回车只管理 Chrome Web Store，也可以加上 `firefox` 和 `edge`。之后要添加商店，运行 `dashbye init --stores chrome,firefox`，已有的配置会保留。
+`init` 会问要管理哪些商店：直接回车只管理 Chrome Web Store，也可以加上 `firefox` 和 `edge`。之后要增减商店，运行 `dashbye init --stores chrome,firefox`，并列出所有要管理的商店，包括已经配置的：已配置商店的设置保持不变，没列出的商店会被移除，只会询问新加的商店。
 
 用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后运行发布：
 
