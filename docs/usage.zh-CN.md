@@ -167,7 +167,7 @@ Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.jso
 
 ### 代理
 
-有没有代理都能使用。DashBye 连接专用 Chrome 走的是本机回环地址，因此即使设置了 `HTTP_PROXY` / `HTTPS_PROXY` 也始终直连；Chrome 自己按系统代理设置访问商店后台。访问商店 API（AMO、Edge）时：设置了 `HTTPS_PROXY` / `HTTP_PROXY` 就走代理，代理连不上时自动改为直连；没有代理或域名在 `NO_PROXY` 里时直连。仅支持 HTTP(S) 代理，不使用 SOCKS 代理。
+有没有代理都能使用。DashBye 连接专用 Chrome 走的是本机回环地址，因此即使设置了 `HTTP_PROXY` / `HTTPS_PROXY` 也始终直连；Chrome 自己按系统代理设置访问商店后台。访问商店 API（AMO、Edge）时：设置了 `HTTPS_PROXY` / `HTTP_PROXY` 就走代理，代理连不上时自动改为直连；没有代理或域名在 `NO_PROXY` 里时直连。写操作（上传包、提交版本、修改商店信息）只有在确定没有发到商店时才会改为直连重发；如果请求已经发出后连接才断开，DashBye 会报告失败，不会重复发送。重试前请先重新运行 `dashbye plan`。仅支持 HTTP(S) 代理，不使用 SOCKS 代理。
 
 ### 在另一块屏幕上运行（可选）
 

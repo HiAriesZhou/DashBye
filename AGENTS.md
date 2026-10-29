@@ -16,6 +16,9 @@
 - Browser profiles, reports, downloaded packages, screenshots from real listings,
   HAR files, and traces must stay outside the repository.
 - Every write must be preceded by a plan and followed by a reload/read-back check.
+- Never resend a store write over another route or as a retry unless it provably never
+  left (see `canRetryDirect` in `src/net.ts`); an AMO version create sent twice can
+  leave a version in review without its notes.
 - Examples and tests must use fictional item IDs and synthetic assets only.
 
 ## Website
