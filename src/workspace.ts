@@ -8,6 +8,7 @@ import { boolean, nullableText, pathFrom, record, stringList, text } from './par
 import { closestCollectedDataCategory, isCollectedDataCategory } from './privacy-categories.js';
 import { loadProject } from './project.js';
 import { normalizeLoopbackEndpoint, assertItemId } from './security.js';
+import { isDashboardReadableVersion } from './version.js';
 
 export const CONFIG_NAME = 'dashbye.config.yml';
 
@@ -265,6 +266,13 @@ export function validateWorkspace(workspace: LoadedWorkspace): ValidationIssue[]
   const issues: ValidationIssue[] = [];
   const manifest = workspace.artifact.manifest;
   const privacy = workspace.release.privacy;
+  if (!isDashboardReadableVersion(manifest.version)) {
+    issues.push({
+      severity: 'error',
+      code: 'unreadable_chrome_version',
+      message: `version ${manifest.version} has fewer than three parts; DashBye can read the Chrome Web Store draft version back only as x.y.z or x.y.z.w (for example ${manifest.version.split('.').concat('0', '0').slice(0, 3).join('.')}, if it is newer than the published version)`,
+    });
+  }
   const permissions = [...new Set([...manifest.permissions, ...manifest.optionalPermissions])].sort();
   for (const permission of permissions) {
     if (!privacy.permissionJustifications[permission]) {

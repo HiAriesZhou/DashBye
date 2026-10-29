@@ -7,6 +7,7 @@ import { chromium } from 'playwright-core';
 import { connectChrome } from './chrome.js';
 import { assertDraftEditable, assertPlanWritable, fieldsLocked, UNLOCKED, type EditLock } from './edit-lock.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
+import { dashboardVersionPattern } from './version.js';
 import type { LoadedWorkspace } from './workspace.js';
 
 const sectionSelector = '.TVM7Wc';
@@ -309,11 +310,11 @@ async function readPackageVersion(page: Page, itemId: string): Promise<string | 
   for (let index = 0; index < await cards.count(); index += 1) {
     const text = await cards.nth(index).innerText();
     if (!/\bdraft\b/i.test(text)) continue;
-    const version = text.match(/\b\d+\.\d+\.\d+(?:\.\d+)?\b/)?.[0];
+    const version = text.match(dashboardVersionPattern())?.[0];
     if (version) return version;
   }
   const text = await page.locator('body').innerText();
-  const versions = [...new Set(text.match(/\b\d+\.\d+\.\d+(?:\.\d+)?\b/g) ?? [])];
+  const versions = [...new Set(text.match(dashboardVersionPattern('g')) ?? [])];
   return versions[0] ?? null;
 }
 
