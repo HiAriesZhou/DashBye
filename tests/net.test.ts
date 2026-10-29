@@ -66,6 +66,33 @@ test('a write falls back to a direct connection only when the proxy was never re
   assert.deepEqual(unknown.calls, ['proxy']);
 });
 
+class RequestAbortedLike extends Error {
+  readonly code = 'UND_ERR_ABORTED';
+}
+
+// undici 7 reports a refused tunnel two causes deep, with only a generic abort code.
+test('a write falls back to a direct connection when the proxy refuses the tunnel', async () => {
+  const calls: Route[] = [];
+  const refused = new RequestAbortedLike('Proxy response (403) !== 200 when HTTP Tunneling');
+  const net = createNetFetch({
+    env: { https_proxy: 'http://127.0.0.1:7897' },
+    direct: (async () => { calls.push('direct'); return new Response('direct'); }) as unknown as typeof fetch,
+    viaProxy: () => (async () => {
+      calls.push('proxy');
+      throw new TypeError('fetch failed', { cause: Object.assign(new Error('Request was cancelled.', { cause: refused }), { code: 0 }) });
+    }) as unknown as typeof fetch,
+  });
+  assert.equal(await (await net('https://api.addons.microsoftedge.microsoft.com/v1/products/p/submissions/draft/package', { method: 'POST', body: 'x' })).text(), 'direct');
+  assert.deepEqual(calls, ['proxy', 'direct']);
+});
+
+test('a reset proxy connection is not taken as unreached', async () => {
+  const unknown = routes({ proxy: 'ECONNRESET' });
+  const net = createNetFetch({ env: { https_proxy: 'http://127.0.0.1:7897' }, direct: unknown.direct, viaProxy: unknown.viaProxy });
+  await assert.rejects(net('https://addons.mozilla.org/api/v5/addons/addon/x/versions/', { method: 'POST', body: 'x' }), /fetch failed/);
+  assert.deepEqual(unknown.calls, ['proxy']);
+});
+
 test('connects directly without a proxy, and for NO_PROXY hosts', async () => {
   const none = routes();
   await createNetFetch({ env: {}, direct: none.direct, viaProxy: none.viaProxy })('https://addons.mozilla.org/');
