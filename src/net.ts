@@ -34,9 +34,25 @@ const viaUndiciProxy = (proxy: string): typeof fetch => {
   return ((input: string | URL | Request, init?: RequestInit) => undiciFetch(input as never, { ...init, dispatcher } as never)) as unknown as typeof fetch;
 };
 
+// Errors raised while connecting to the proxy itself, before any request byte is sent.
+// undici reports them as TypeError('fetch failed') with the code on `cause`.
+const PROXY_UNREACHED = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_CONNECT_TIMEOUT']);
+
+const requestMethod = (input: string | URL | Request, init?: RequestInit) =>
+  (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+
+// A read can always be repeated. A write (an upload, an AMO version, a listing edit)
+// may already have reached the store when the connection dropped, so it is sent again
+// directly only when the proxy was never reached.
+export function canRetryDirect(method: string, error: unknown): boolean {
+  if (method === 'GET' || method === 'HEAD') return true;
+  const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
+  return typeof code === 'string' && PROXY_UNREACHED.has(code);
+}
+
 // Store APIs: use a configured proxy, fall back to a direct connection when the proxy
-// cannot connect, and connect directly when no proxy is set. Only connection failures
-// are retried; any HTTP response is returned as is.
+// fails (for writes, only when it could not be reached), and connect directly when no
+// proxy is set. Any HTTP response is returned as is.
 export function createNetFetch(options: { env?: Env; direct?: typeof fetch; viaProxy?: (proxy: string) => typeof fetch } = {}): typeof fetch {
   const env = options.env ?? process.env;
   const direct = options.direct ?? fetch;
@@ -48,6 +64,7 @@ export function createNetFetch(options: { env?: Env; direct?: typeof fetch; viaP
     try {
       return await proxied(input, init);
     } catch (error) {
+      if (!canRetryDirect(requestMethod(input, init), error)) throw error;
       try {
         return await direct(input, init);
       } catch {
