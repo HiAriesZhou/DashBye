@@ -158,16 +158,20 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
   const change = !input.overwrite && await exists(configPath);
   if (change && !existing) throw new Error('the existing configuration cannot be read; reconfigure it with --overwrite');
   const detection = await detectStores(project);
+  // A new project starts from Chrome only; reconfiguring starts from the stores the
+  // project already manages, so pressing Enter never drops one.
+  const configured = existing ?? (input.overwrite && await exists(configPath) ? await loadProject(configPath, { resolveVersions: false }).catch(() => null) : null);
+  const defaultStores = configured?.stores ?? DEFAULT_STORES;
 
   // Chrome flags without --stores keep the original Chrome-only setup working.
   const legacyChrome = (input.artifact || input.itemId) && !input.edgeArtifact && !input.edgeProductId && !input.firefoxArtifact && !input.firefoxAddon;
   const requested = input.stores ?? (legacyChrome ? 'chrome' : undefined);
-  if (!requested) return storeQuestion(detection, DEFAULT_STORES);
+  if (!requested) return storeQuestion(detection, defaultStores);
   let stores: StoreId[];
   try {
     stores = parseStoreList(requested);
   } catch (error) {
-    return storeQuestion(detection, existing?.stores ?? DEFAULT_STORES, message(error));
+    return storeQuestion(detection, defaultStores, message(error));
   }
 
   let targets: Targets = {};
