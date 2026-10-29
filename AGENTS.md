@@ -29,13 +29,19 @@
 
 ## Releasing DashBye
 
+- `main` accepts changes only through a pull request with the `test` check passing
+  (ruleset "Protect main"); never push to it directly.
 - Bump `package.json`, `package-lock.json` (via `npm version <x.y.z> --no-git-tag-version`)
-  and `VERSION` in `src/cli.ts` in one `release: <x.y.z>` commit on `main`.
-- Tag that commit `v<x.y.z>` and push the tag. `.github/workflows/release.yml` checks
-  that the tag matches `package.json`, runs the tests, and publishes to npm through
-  trusted publishing (OIDC, with provenance); no npm token is stored anywhere.
+  and `VERSION` in `src/cli.ts` (`tests/cli-version.test.ts` checks they match) in one
+  `release: <x.y.z>` commit, the last commit of the release pull request.
+- After the pull request merges, tag the merged release commit `v<x.y.z>` and push the tag.
+  `.github/workflows/release.yml` checks that the tag matches `package.json`, runs the
+  tests, and publishes to npm through trusted publishing (OIDC, with provenance); no npm
+  token is stored anywhere. The registry can take several minutes to show the version.
 - If a tag-triggered run fails, fix the workflow and run it by hand for that tag.
 - Then create the GitHub Release for the tag. Never publish from a local machine
   unless the workflow is unavailable, and never move an existing tag.
+- Merging to `main` also deploys dashbye.lol when the site's inputs changed (see
+  CLAUDE.md); check that it shows the new version.
 - One-time setup: on npmjs.com, add this repository and `release.yml` as the
   package's trusted publisher.
