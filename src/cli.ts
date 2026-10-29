@@ -255,9 +255,10 @@ function confirm(plan: Pick<MultiPlan, 'stores' | 'pending'>, workspace: LoadedW
 
 type ChromeRun = { workspace: LoadedWorkspace; page: Awaited<ReturnType<typeof dashboardPage>>; desired: Awaited<ReturnType<typeof createDesiredState>>; approved: ReconciliationPlan };
 
-// Every check that can run without writing happens before the confirmation.
+// Every check that can run without writing happens before the confirmation. The
+// workspace is validated again because a saved plan may predate a newer check.
 async function prepareChrome(args: Args, configPath: string, approved: ReconciliationPlan): Promise<ChromeRun> {
-  const workspace = await loadWorkspace(configPath, workspaceValues(args));
+  const workspace = await chromeWorkspace(args, configPath);
   const desired = await createDesiredState(workspace);
   if (approved.itemIdHash !== sha256(workspace.config.target.itemId)
     || approved.artifactSha256 !== workspace.artifact.sha256
