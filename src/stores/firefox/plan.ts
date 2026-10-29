@@ -1,4 +1,5 @@
 import { objectHash, sha256 } from '../../hash.js';
+import { compareVersions } from '../../version.js';
 
 // AMO has no draft and a metadata edit is public at once. While AMO has not yet
 // approved the package version, the plan only validates the package ("validate").
@@ -57,16 +58,6 @@ export const WRITABLE_FIELDS = ['summary', 'description', 'homepageUrl', 'suppor
 
 export const writableDifferences = (differences: FirefoxDifference[]) =>
   differences.filter(difference => (WRITABLE_FIELDS as readonly string[]).includes(difference.field));
-
-export function compareVersions(left: string, right: string): number {
-  const a = left.split('.').map(part => Number.parseInt(part, 10) || 0);
-  const b = right.split('.').map(part => Number.parseInt(part, 10) || 0);
-  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
-    const difference = (a[index] ?? 0) - (b[index] ?? 0);
-    if (difference) return difference;
-  }
-  return 0;
-}
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 

@@ -6,7 +6,8 @@ import type { FirefoxTarget } from '../../project.js';
 import type { AmoClient } from './amo.js';
 import type { AmoWriter } from './amo-write.js';
 import { assertPackageForAddon } from './index.js';
-import { amoText, compareVersions } from './plan.js';
+import { compareVersions } from '../../version.js';
+import { amoText } from './plan.js';
 import { loadFirefoxRelease, readText } from './release.js';
 
 // AMO has no draft: creating a listed version submits it for review. `dashbye submit`

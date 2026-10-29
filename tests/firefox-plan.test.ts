@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compareVersions, createFirefoxPlan, writableDifferences, type FirefoxDesired, type FirefoxRemote } from '../src/stores/firefox/plan.js';
+import { createFirefoxPlan, writableDifferences, type FirefoxDesired, type FirefoxRemote } from '../src/stores/firefox/plan.js';
+import { compareVersions } from '../src/version.js';
 
 const desired: FirefoxDesired = {
   addon: 'x-toc', version: '1.2.0', packageKind: 'zip', artifactSha256: 'a', releaseHash: 'r',
@@ -12,7 +13,7 @@ const remote: FirefoxRemote = {
   supportUrl: null, supportEmail: null, categories: ['other'], screenshotHashes: ['s1'],
 };
 
-test('compares dotted Firefox versions numerically', () => {
+test('compares dotted extension versions numerically', () => {
   assert.equal(compareVersions('1.10.0', '1.9.9') > 0, true);
   assert.equal(compareVersions('1.2', '1.2.0'), 0);
   assert.equal(compareVersions('0.9', '1.0') < 0, true);
