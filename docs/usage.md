@@ -68,7 +68,7 @@ The agent may derive manifest facts and organize files, but it must ask when rep
 
 ## Manual CLI workflow
 
-Requires Node.js 22+, Git, official Chrome, and an existing Chrome Web Store item. Firefox Add-ons and Edge Add-ons are optional; each needs an existing item and an API key (see [Firefox Add-ons](store-schema.md#firefox-add-ons) and [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)).
+Requires Node.js 22+ and Git. The default Chrome Web Store needs official Chrome and an existing item. Firefox Add-ons and Edge Add-ons are optional; each needs an existing item and an API key (see [Firefox Add-ons](store-schema.md#firefox-add-ons) and [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)).
 
 Install and initialize from the extension repository:
 
@@ -120,7 +120,7 @@ The prepare script builds the CLI during `npm ci`. Run subsequent commands from 
 
 The Chrome Web Store is the default store; Firefox Add-ons and Microsoft Edge Add-ons are optional. `dashbye init` looks for packages (`*.zip`, `*.xpi`, `dist/<browser>/`, `web-ext-artifacts/`, WXT `.output/`), packaging scripts in `package.json`, and store links in the README, then asks which stores to manage. The default answer is `chrome`; Firefox and Edge are listed with whatever was found for them but are added only when you choose them, for example with `chrome,firefox`. Only the stores you choose are written to `targets` in `dashbye.config.yml`, and only those are validated, planned, and synchronized.
 
-To add or remove a store later, run `dashbye init --stores chrome,firefox` (or `dashbye init` and choose **change stores**), or edit `targets`; existing targets are kept and only new stores are asked about. `--store chrome` limits `validate`, `plan`, or `sync-draft` to some of the configured stores. `validate` mentions packages it finds for stores you have not configured.
+To add or remove a store later, run `dashbye init --stores chrome,firefox` (or `dashbye init` and choose **change stores**), or edit `targets`. `--stores` is the complete list: name every store to manage, including those already configured. Their targets are kept, a configured store you leave out is removed, and only new stores are asked about. Without a terminal, also pass the new store’s values, such as `--firefox-artifact` and `--firefox-addon`; the command names any that are missing. `--store chrome` limits `validate`, `plan`, or `sync-draft` to some of the configured stores. `validate` mentions packages it finds for stores you have not configured.
 
 Chrome Web Store drafts are saved and read back. Edge packages are uploaded to the product's draft submission through the Edge Add-ons API; the store listing and publishing stay in Partner Center (see [Microsoft Edge Add-ons](store-schema.md#microsoft-edge-add-ons)). Firefox Add-ons has no draft, so `sync-draft` only uploads the package for AMO validation until AMO has approved that version, and then updates the listing fields AMO's API accepts (see [Firefox Add-ons](store-schema.md#firefox-add-ons)).
 

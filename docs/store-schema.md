@@ -33,9 +33,10 @@ targets:
     language: English – en (default)
 ```
 
-`targets` lists only the stores this extension is managed in; `dashbye init` asks
-which ones and suggests stores whose packages, build scripts, or store links it finds
-in the repository. Other targets:
+`targets` lists only the stores this extension is managed in. `dashbye init` asks
+which ones: the Chrome Web Store is the default, and Firefox Add-ons and Edge
+Add-ons are added only when chosen. It shows the packages, build scripts, or store
+links it finds for each store, without preselecting any. Other targets:
 
 ```yaml
   edge:

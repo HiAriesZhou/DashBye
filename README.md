@@ -89,7 +89,7 @@ dashbye init --prompt --project /path/to/extension
 
 ## Use the CLI manually
 
-Requires **Node.js 22+**, Git, official Chrome, and an existing Chrome Web Store item. Firefox Add-ons and Edge Add-ons are optional; each needs an existing item and an API key (see the [resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)).
+Requires **Node.js 22+** and Git. The default Chrome Web Store needs official Chrome and an existing item. Firefox Add-ons and Edge Add-ons are optional; each needs an existing item and an API key (see the [resource schema](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)).
 
 Install and initialize from the extension repository:
 
@@ -99,7 +99,7 @@ cd /path/to/extension
 dashbye init
 ```
 
-`init` asks which stores to manage; press Enter for the Chrome Web Store only, or add `firefox` and `edge`. To add a store later, run `dashbye init --stores chrome,firefox` (existing targets are kept).
+`init` asks which stores to manage; press Enter for the Chrome Web Store only, or add `firefox` and `edge`. To change stores later, run `dashbye init --stores chrome,firefox` and list every store to manage, including those already configured: their settings are kept, a store you leave out is removed, and only new stores are asked about.
 
 Fill the generated `store/` templates with real copy, images, and privacy declarations. Then run the release:
 

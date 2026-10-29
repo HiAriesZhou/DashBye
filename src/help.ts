@@ -26,7 +26,8 @@ First run
   chosen stores' packages and IDs, the release resources path (default ./store),
   and the loopback Chrome endpoint, and previews the result.
   Later runs discover the nearest dashbye.config.yml. To add or remove a store,
-  run "dashbye init --stores chrome,firefox", or edit its targets.
+  run "dashbye init --stores chrome,firefox" listing every store to manage
+  (configured ones are kept, omitted ones removed), or edit its targets.
   --store chrome limits validate, plan, or sync-draft to some configured stores.
 
 Each release
