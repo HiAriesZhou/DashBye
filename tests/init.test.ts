@@ -51,7 +51,9 @@ test('agent init returns one structured question without writing files', async (
   assert.equal(result.question.flag, '--project');
 });
 
-test('agent init asks which stores to manage, defaulting to detected ones', async () => {
+// Chrome Web Store is the default; Firefox and Edge are added only when the owner
+// chooses them, even when the repository already builds for them.
+test('agent init asks which stores to manage, defaulting to Chrome only', async () => {
   const root = await project({
     'release.zip': zipSync({ 'manifest.json': strToU8(manifest()) }),
     'web-ext-artifacts/example.xpi': zipSync({ 'manifest.json': strToU8(manifest({ browser_specific_settings: { gecko: { id: 'x@example.com' } } })) }),
@@ -62,8 +64,22 @@ test('agent init asks which stores to manage, defaulting to detected ones', asyn
   assert.equal(result.question.field, 'stores');
   assert.equal(result.question.kind, 'multi-choice');
   assert.equal(result.question.flag, '--stores');
-  assert.equal(result.question.default, 'chrome,firefox');
+  assert.equal(result.question.default, 'chrome');
   assert.deepEqual(result.question.choices?.map(choice => choice.value), ['chrome', 'edge', 'firefox']);
+  const label = (store: string) => result.question.choices?.find(choice => choice.value === store)?.label ?? '';
+  assert.match(label('chrome'), /\(default/);
+  assert.match(label('firefox'), /\(optional; found: web-ext-artifacts\/example\.xpi/);
+  assert.match(label('edge'), /\(optional/);
+});
+
+test('an invalid store list is asked again with Chrome as the default', async () => {
+  const root = await project({ 'web-ext-artifacts/example.xpi': zipSync({ 'manifest.json': strToU8(manifest({ browser_specific_settings: { gecko: { id: 'x@example.com' } } })) }) });
+  const result = await guideInitialization({ project: root, stores: 'safari', overwrite: false });
+  assert.equal(result.status, 'needs_input');
+  if (result.status !== 'needs_input') return;
+  assert.equal(result.question.field, 'stores');
+  assert.equal(result.question.default, 'chrome');
+  assert.ok(result.question.error);
 });
 
 test('agent init asks only for the selected store, then previews a one-target config', async () => {

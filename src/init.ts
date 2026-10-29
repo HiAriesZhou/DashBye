@@ -128,12 +128,17 @@ async function resolveTarget(store: StoreId, input: InitInput, project: string, 
   return { firefox: { artifact, addon } };
 }
 
+// Chrome Web Store is the default store. Firefox and Edge are optional: detected
+// packages, scripts, and links are shown as evidence but never preselect them.
+export const DEFAULT_STORES: StoreId[] = ['chrome'];
+
 function storeQuestion(detection: Detection, fallback: StoreId[], error?: string): Resolution {
   const storeChoices = STORE_IDS.map(store => {
     const evidence = detection.stores[store].evidence;
-    return { label: `${STORE_LABELS[store]}${evidence.length ? ` (found: ${evidence.slice(0, 2).join('; ')})` : ''}`, value: store };
+    const notes = [DEFAULT_STORES.includes(store) ? 'default' : 'optional', ...(evidence.length ? [`found: ${evidence.slice(0, 2).join('; ')}`] : [])];
+    return { label: `${STORE_LABELS[store]} (${notes.join('; ')})`, value: store };
   });
-  return ask('stores', 'Which stores should DashBye manage for this extension?', {
+  return ask('stores', 'Which stores should DashBye manage for this extension? Chrome Web Store is the default; add Firefox Add-ons or Edge Add-ons only if you publish there.', {
     kind: 'multi-choice', default: fallback.join(','), choices: storeChoices,
     validation: `A comma-separated list of ${STORE_IDS.join(', ')}.`, ...(error ? { error } : {}),
   });
@@ -157,12 +162,12 @@ async function resolveInit(input: InitInput): Promise<Resolution> {
   // Chrome flags without --stores keep the original Chrome-only setup working.
   const legacyChrome = (input.artifact || input.itemId) && !input.edgeArtifact && !input.edgeProductId && !input.firefoxArtifact && !input.firefoxAddon;
   const requested = input.stores ?? (legacyChrome ? 'chrome' : undefined);
-  if (!requested) return storeQuestion(detection, detection.suggested);
+  if (!requested) return storeQuestion(detection, DEFAULT_STORES);
   let stores: StoreId[];
   try {
     stores = parseStoreList(requested);
   } catch (error) {
-    return storeQuestion(detection, existing?.stores ?? detection.suggested, message(error));
+    return storeQuestion(detection, existing?.stores ?? DEFAULT_STORES, message(error));
   }
 
   let targets: Targets = {};

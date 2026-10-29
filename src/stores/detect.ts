@@ -5,7 +5,7 @@ import { STORE_IDS, type StoreId } from './types.js';
 
 export type StoreDetection = { artifacts: string[]; evidence: string[]; idHint?: string };
 
-export type Detection = { stores: Record<StoreId, StoreDetection>; suggested: StoreId[] };
+export type Detection = { stores: Record<StoreId, StoreDetection> };
 
 // Directories where extension build tools put packages: plain builds, web-ext,
 // WXT (.output), and per-browser build folders.
@@ -97,7 +97,8 @@ async function linkEvidence(root: string, stores: Record<StoreId, StoreDetection
   }
 }
 
-// Read-only. Suggests stores from evidence; the owner decides which to configure.
+// Read-only. Collects evidence per store; the owner decides which to configure, and
+// init offers Chrome Web Store as the default either way.
 export async function detectStores(root: string): Promise<Detection> {
   const stores = empty();
   const generic = await classifyPackages(root, stores);
@@ -110,6 +111,5 @@ export async function detectStores(root: string): Promise<Detection> {
   }
   if (!stores.edge.artifacts.length) stores.edge.artifacts.push(...stores.chrome.artifacts);
   for (const store of STORE_IDS) stores[store].evidence = [...new Set(stores[store].evidence)];
-  const suggested = STORE_IDS.filter(store => stores[store].evidence.length);
-  return { stores, suggested: suggested.length ? suggested : ['chrome'] };
+  return { stores };
 }

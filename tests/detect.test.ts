@@ -4,7 +4,8 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
-import { detectStores } from '../src/stores/detect.js';
+import { detectStores, type Detection } from '../src/stores/detect.js';
+import { STORE_IDS } from '../src/stores/types.js';
 
 const manifest = (extra: Record<string, unknown> = {}) => JSON.stringify({ manifest_version: 3, name: 'Fixture', version: '1.0.0', description: 'Fixture', ...extra });
 const gecko = { browser_specific_settings: { gecko: { id: 'fixture@example.com' } } };
@@ -19,24 +20,25 @@ async function repo(files: Record<string, string | Uint8Array>): Promise<string>
 }
 
 const zip = (manifestJson: string) => zipSync({ 'manifest.json': strToU8(manifestJson) });
+const withEvidence = (result: Detection) => STORE_IDS.filter(store => result.stores[store].evidence.length);
 
-test('a plain zip suggests Chrome and offers it to Edge, without assuming Firefox', async () => {
+test('a plain zip is Chrome evidence and is offered to Edge, without assuming Firefox', async () => {
   const root = await repo({ 'dist/release.zip': zip(manifest()) });
   const result = await detectStores(root);
-  assert.deepEqual(result.suggested, ['chrome']);
+  assert.deepEqual(withEvidence(result), ['chrome']);
   assert.deepEqual(result.stores.chrome.artifacts, ['dist/release.zip']);
   assert.deepEqual(result.stores.edge.artifacts, ['dist/release.zip']);
   assert.deepEqual(result.stores.firefox.artifacts, []);
 });
 
-test('web-ext and WXT layouts suggest the stores they build for', async () => {
+test('web-ext and WXT layouts are evidence for the stores they build for', async () => {
   const root = await repo({
     'web-ext-artifacts/fixture-1.0.0.xpi': zip(manifest(gecko)),
     '.output/chrome-mv3.zip': zip(manifest()),
     '.output/edge-mv3.zip': zip(manifest()),
   });
   const result = await detectStores(root);
-  assert.deepEqual(result.suggested, ['chrome', 'edge', 'firefox']);
+  assert.deepEqual(withEvidence(result), ['chrome', 'edge', 'firefox']);
   assert.deepEqual(result.stores.firefox.artifacts, ['web-ext-artifacts/fixture-1.0.0.xpi']);
   assert.deepEqual(result.stores.edge.artifacts, ['.output/edge-mv3.zip']);
   assert.ok(result.stores.firefox.evidence.some(line => /gecko/.test(line)));
@@ -55,17 +57,16 @@ test('package scripts and store links are evidence and ID hints', async () => {
     'README.md': 'Install from https://chromewebstore.google.com/detail/x-toc/abcdefghijklmnopabcdefghijklmnop or https://addons.mozilla.org/en-US/firefox/addon/x-toc/',
   });
   const result = await detectStores(root);
-  assert.deepEqual(result.suggested, ['chrome', 'edge', 'firefox']);
+  assert.deepEqual(withEvidence(result), ['chrome', 'edge', 'firefox']);
   assert.equal(result.stores.chrome.idHint, 'abcdefghijklmnopabcdefghijklmnop');
   assert.equal(result.stores.firefox.idHint, 'x-toc');
   assert.ok(result.stores.edge.evidence.some(line => /zip:edge/.test(line)));
 });
 
-test('an empty repository falls back to Chrome only', async () => {
+test('an empty repository has no store evidence', async () => {
   const root = await repo({ 'src/index.ts': '' });
   const result = await detectStores(root);
-  assert.deepEqual(result.suggested, ['chrome']);
-  assert.deepEqual(result.stores.chrome.evidence, []);
+  assert.deepEqual(withEvidence(result), []);
 });
 
 test('unreadable packages are ignored rather than failing detection', async () => {
