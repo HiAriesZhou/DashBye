@@ -30,6 +30,13 @@ test('renders a product-neutral repository handoff prompt', () => {
   assert.match(prompt, /Never submit for review or publish/);
 });
 
+test('makes Chrome Web Store the default and Firefox and Edge opt-in', () => {
+  const prompt = renderAgentPrompt();
+  assert.match(prompt, /Chrome Web Store is the default store/);
+  assert.match(prompt, /Firefox Add-ons and Edge Add-ons are optional/);
+  assert.match(prompt, /only when the owner chooses them/);
+});
+
 test('covers Firefox and Edge without granting submission or handling keys', () => {
   const prompt = renderAgentPrompt();
   assert.match(prompt, /stores\.firefox/);
