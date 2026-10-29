@@ -118,6 +118,18 @@ test('agent init offers use, change stores, or reconfigure for an existing confi
   assert.deepEqual(result.actions.reconfigureWith, ['--overwrite']);
 });
 
+// Pressing Enter while reconfiguring must not silently drop a store that is already
+// configured; only a new project starts from the Chrome-only default.
+test('reconfiguring defaults to the stores already configured', async () => {
+  const root = await project({ 'release.zip': zipSync({ 'manifest.json': strToU8(manifest()) }) });
+  await initialize({ ...options(root), stores: 'chrome,edge', edgeArtifact: 'release.zip', edgeProductId: productId, edgeLanguage: 'English' });
+  const result = await guideInitialization({ project: root, overwrite: true });
+  assert.equal(result.status, 'needs_input');
+  if (result.status !== 'needs_input') return;
+  assert.equal(result.question.field, 'stores');
+  assert.equal(result.question.default, 'chrome,edge');
+});
+
 test('changing stores keeps existing targets and asks only for the new store', async () => {
   const root = await project({
     'release.zip': zipSync({ 'manifest.json': strToU8(manifest()) }),
