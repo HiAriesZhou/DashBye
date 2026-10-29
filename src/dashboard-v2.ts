@@ -3,8 +3,6 @@ import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
 import type { Browser, Locator, Page } from 'playwright-core';
-import { chromium } from 'playwright-core';
-import { connectChrome } from './chrome.js';
 import { assertDraftEditable, assertPlanWritable, fieldsLocked, UNLOCKED, type EditLock } from './edit-lock.js';
 import type { DashboardState, DesiredState, ReconciliationPlan } from './reconcile.js';
 import { dashboardVersionPattern } from './version.js';
@@ -206,12 +204,6 @@ export async function selectDashboardPage(browser: Browser, itemId: string): Pro
   await navigate(target);
   await waitForItemEditor(page, itemId);
   return page;
-}
-
-export async function connectDashboard(endpoint: string, itemId: string): Promise<{ browser: Browser; page: Page }> {
-  const browser = await connectChrome(endpoint, value => chromium.connectOverCDP(value, { timeout: 30_000 }));
-  const page = await selectDashboardPage(browser, itemId);
-  return { browser, page };
 }
 
 async function openPage(page: Page, itemId: string, name: DashboardSection): Promise<void> {

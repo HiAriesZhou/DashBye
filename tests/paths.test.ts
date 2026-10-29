@@ -3,9 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appStateDir, chromeProfileDir, itemStateDir, writePrivateFile } from '../src/paths.js';
-
-const itemId = 'a'.repeat(32);
+import { appStateDir, chromeProfileDir, writePrivateFile } from '../src/paths.js';
 
 test('uses the platform state directory', () => {
   assert.equal(appStateDir({ platform: 'darwin', home: '/Users/u', env: {} }), '/Users/u/Library/Application Support/DashBye');
@@ -18,12 +16,9 @@ test('ignores a relative XDG_STATE_HOME', () => {
   assert.equal(appStateDir({ platform: 'linux', home: '/home/u', env: { XDG_STATE_HOME: 'state' } }), '/home/u/.local/state/dashbye');
 });
 
-test('keeps the Chrome profile and item state under the state directory without the raw item ID', () => {
+test('keeps the Chrome profile under the state directory', () => {
   const base = { platform: 'darwin' as const, home: '/Users/u', env: {} };
   assert.equal(chromeProfileDir(base), '/Users/u/Library/Application Support/DashBye/chrome-profile');
-  const itemDir = itemStateDir(itemId, base);
-  assert.match(itemDir, /^\/Users\/u\/Library\/Application Support\/DashBye\/items\/[0-9a-f]{16}$/);
-  assert.equal(itemDir.includes(itemId), false);
 });
 
 test('writes private files and creates private directories', async () => {

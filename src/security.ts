@@ -1,5 +1,3 @@
-import type { Page } from 'playwright-core';
-
 const ITEM_ID = /^[a-p]{32}$/;
 
 export function assertItemId(value: string): string {
@@ -22,17 +20,6 @@ export function normalizeLoopbackEndpoint(value: string): string {
   endpoint.search = '';
   endpoint.hash = '';
   return endpoint.toString().replace(/\/$/, '');
-}
-
-export function isExactItemEditPage(page: Page, itemId: string): boolean {
-  const url = new URL(page.url());
-  return ['chrome.google.com', 'chromewebstore.google.com'].includes(url.hostname)
-    && url.pathname.includes(`/${itemId}/edit`);
-}
-
-export function sanitizedPageLabel(page: Page): string {
-  const url = new URL(page.url());
-  return `${url.hostname}/…/${url.pathname.endsWith('/edit') ? 'edit' : 'item'}`;
 }
 
 const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
