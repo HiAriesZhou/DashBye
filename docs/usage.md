@@ -153,7 +153,10 @@ loopback, so DashBye always reaches it directly, even when `HTTP_PROXY` or
 `HTTPS_PROXY` is set. Chrome itself uses your system proxy settings to reach the
 store dashboards. Store API requests (AMO, Edge) use `HTTPS_PROXY`/`HTTP_PROXY`
 when set, fall back to a direct connection if the proxy cannot connect, and connect
-directly when no proxy is set or the host is listed in `NO_PROXY`. SOCKS-only
+directly when no proxy is set or the host is listed in `NO_PROXY`. A write (an
+upload, a submission, a listing edit) is sent again directly only when it never
+reached the store; if the connection drops after it was sent, DashBye reports the
+failure instead of sending it twice. Run `dashbye plan` again before retrying. SOCKS-only
 proxies are not used.
 
 - If Chrome does not open the debugging endpoint, a window using the DashBye profile may already be open without it; quit that Chrome and retry.
