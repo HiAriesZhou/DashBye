@@ -7,7 +7,7 @@
 <p><strong>少填表，多发版。</strong></p>
 
 <p>让编码 Agent 替你打理浏览器扩展的商店发布。<br>
-扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与 Chrome Web Store、Firefox 附加组件商店和 Microsoft Edge 加载项商店逐项比对，你批准具体计划之前不写入任何内容。</p>
+扩展包、商店文案、截图、推广图和隐私声明都放进扩展仓库，跟代码一起做版本管理；DashBye 把它们与 Chrome Web Store 的草稿逐项比对（如果你添加了 Firefox 附加组件商店或 Microsoft Edge 加载项商店，也一并比对），你批准具体计划之前不写入任何内容。</p>
 
 [![npm](https://img.shields.io/npm/v/dashbye?color=429C7E)](https://www.npmjs.com/package/dashbye) [![CI](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml/badge.svg)](https://github.com/HiAriesZhou/DashBye/actions/workflows/ci.yml) [![Node.js 22+](https://img.shields.io/badge/node-%3E%3D22-1D3043)](https://nodejs.org/) [![License: MIT](https://img.shields.io/badge/license-MIT-1D3043)](LICENSE)
 
@@ -31,15 +31,17 @@
 4. **你批准**这份具体的计划。
 5. **DashBye 写入**批准的改动，并回读核对。
 
-DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome Web Store，通过官方 API 访问 Firefox 和 Edge 的商店，所需密钥放在仓库之外。不用注册账号，没有服务器，也不收集任何遥测数据。
+DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome Web Store；可选的 Firefox 和 Edge 商店通过官方 API 访问，所需密钥放在仓库之外。不用注册账号，没有服务器，也不收集任何遥测数据。
 
 ## 支持的商店
 
+默认只管理 Chrome Web Store。Firefox 附加组件商店和 Microsoft Edge 加载项商店是可选的：`dashbye init` 会列出它们，你选择添加后 DashBye 才会管理。
+
 | 商店 | DashBye 负责 | 仍由你完成 |
 | --- | --- | --- |
-| **Chrome Web Store** | 把扩展包、商店文案、图片和隐私声明保存到 Dashboard 草稿，并回读核对 | 登录 Google；提交审核与发布 |
-| **Firefox 附加组件商店** | 校验扩展包；`dashbye submit` 按批准的计划创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类 | 在 AMO 开发者中心维护支持网址和截图 |
-| **Microsoft Edge 加载项商店** | 把扩展包上传到产品的草稿提交 | 在 Partner Center 编辑商店页、提交审核与发布 |
+| **Chrome Web Store**（默认） | 把扩展包、商店文案、图片和隐私声明保存到 Dashboard 草稿，并回读核对 | 登录 Google；提交审核与发布 |
+| **Firefox 附加组件商店**（可选） | 校验扩展包；`dashbye submit` 按批准的计划创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类 | 在 AMO 开发者中心维护支持网址和截图 |
+| **Microsoft Edge 加载项商店**（可选） | 把扩展包上传到产品的草稿提交 | 在 Partner Center 编辑商店页、提交审核与发布 |
 
 > **重要**：Firefox 附加组件商店没有草稿。`dashbye submit` 创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。
 
@@ -48,8 +50,8 @@ DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome We
 打开扩展仓库，在能读写本地文件、能执行终端命令的编码 Agent 里粘贴：
 
 ```text
-为这个扩展仓库配置 DashBye，并准备好商店发布（Chrome Web Store、Firefox
-附加组件商店、Edge 加载项商店，只限我选择的商店）。
+为这个扩展仓库配置 DashBye，并准备好商店发布（默认只管 Chrome Web Store；
+只有我要求时才添加 Firefox 附加组件商店或 Edge 加载项商店）。
 源码：https://github.com/HiAriesZhou/DashBye
 
 安装 DashBye（不要用 sudo），先读 dashbye -h，再用 dashbye init --agent --json
@@ -84,7 +86,7 @@ dashbye init --prompt --project /path/to/extension
 
 ## 手动使用命令行
 
-需要 **Node.js 22+**、Git，以及你要管理的每个商店里已经存在的条目。Chrome Web Store 还需要官方版 Chrome；Firefox 和 Edge 需要 API 密钥（见[素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)）。
+需要 **Node.js 22+**、Git、官方版 Chrome，以及 Chrome Web Store 里已经存在的条目。Firefox 附加组件商店和 Edge 加载项商店是可选的，各自需要已存在的条目和 API 密钥（见[素材结构说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/store-schema.md)）。
 
 全局安装，然后在扩展仓库里初始化：
 
@@ -93,6 +95,8 @@ npm install --global dashbye
 cd /path/to/extension
 dashbye init
 ```
+
+`init` 会问要管理哪些商店：直接回车只管理 Chrome Web Store，也可以加上 `firefox` 和 `edge`。之后要添加商店，运行 `dashbye init --stores chrome,firefox`，已有的配置会保留。
 
 用真实的文案、图片和隐私声明填好生成的 `store/` 模板，然后运行发布：
 
@@ -103,7 +107,7 @@ dashbye release
 `release` 会校验构建产物和素材，需要时自动打开 DashBye 专用的 Chrome 窗口，并为每个已配置的商店生成计划。第一次使用时在窗口里登录各商店后台（也可以提前运行 `dashbye doctor --login` 打开窗口），DashBye 会等你登录完再读取草稿。
 
 - **保存**：列出每一项改动、预览文字变化，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。
-- **提交 Firefox**：如果有新的 Firefox 版本，因为 AMO 没有草稿，会再单独询问 `Submit Firefox … to AMO for review? [y/N]`。
+- **提交 Firefox**（已配置 Firefox 时）：如果有新的 Firefox 版本，因为 AMO 没有草稿，会再单独询问 `Submit Firefox … to AMO for review? [y/N]`。
 - **完成**：各草稿已保存、回读后**剩余差异为零**，写入版本锁文件，并列出还需要你在商店后台完成的步骤。
 
 `validate`、`plan`、`sync-draft` 和 `submit` 可以把同样的步骤拆开逐个执行。
@@ -145,8 +149,8 @@ DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读
 
 - 仓库里没有的产品事实、隐私声明和认证
 - 手动登录各商店后台
-- 每一次写入前的计划审批，以及每次 Firefox 提交前的单独确认
-- 在 Chrome Web Store 后台提交审核、在 Partner Center 发布
+- 每一次写入前的计划审批，以及每次 Firefox 提交前的单独确认（使用 Firefox 时）
+- 在 Chrome Web Store 后台提交审核，以及在 Partner Center 发布（使用 Edge 时）
 
 > **注意**：期望状态里的空列表或 `null` 可能意味着删除，Agent 必须把这类操作单独列出来。DashBye 会拒绝已过期的计划，并用你批准时的期望状态核对保存结果。
 
