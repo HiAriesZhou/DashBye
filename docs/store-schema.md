@@ -156,7 +156,7 @@ Images must be PNG or JPEG. PNG screenshots may not contain alpha. Detailed
 descriptions are plain text with 1–16,000 characters. Empty arrays and `null` are
 intentional desired state: a plan may remove remote values or assets to match them.
 
-After a verified sync, `store/releases/<version>.lock.json` records normalized
+After a verified Chrome sync, `store/releases/<version>.lock.json` records normalized
 manifest facts and SHA-256 fingerprints. It contains no credentials or cookies.
 
 ## Firefox Add-ons
@@ -182,7 +182,7 @@ immediately. `plan` compares this block with the add-on on AMO:
 
 - **Before AMO approves the package version**, `sync-draft` only uploads the package
   for validation and shows the listing changes that wait for approval. Submit the
-  version with `dashbye submit` ([usage](usage.md#submitting-a-firefox-version)).
+  version with `dashbye submit` ([usage](https://github.com/HiAriesZhou/DashBye/blob/main/docs/usage.md#submitting-a-firefox-version)).
 - **Once AMO's current version equals the package version**, `sync-draft` updates
   `summary`, `description`, `homepageUrl`, `supportEmail`, and `categories`, then
   re-reads the add-on. Support URL and screenshots stay manual in AMO Developer Hub.

@@ -40,10 +40,10 @@ Chrome Web Store is the default. Firefox Add-ons and Microsoft Edge Add-ons are 
 | Store | DashBye does | You still do |
 | --- | --- | --- |
 | **Chrome Web Store** (default) | Saves the package, listing, images, and privacy declarations to the Dashboard draft, then reads them back | Sign in to Google; submit for review and publish |
-| **Firefox Add-ons** (optional) | Validates the package; `dashbye submit` creates a listed version from an approved plan; after AMO approves it, updates the summary, description, homepage, support email, and categories | Support URL and screenshots in AMO Developer Hub |
+| **Firefox Add-ons** (optional) | Validates the package; `submit` or the separately approved Firefox step in `release` creates a listed version; after AMO approves it, updates the summary, description, homepage, support email, and categories | Support URL and screenshots in AMO Developer Hub |
 | **Microsoft Edge Add-ons** (optional) | Uploads the package to the product’s draft submission | Store listing, review, and publishing in Partner Center |
 
-> **Important:** Firefox Add-ons has no draft. A version created by `dashbye submit` enters AMO review and cannot be taken back, and listing updates go live immediately. DashBye does both only for the plan you approve.
+> **Important:** Firefox Add-ons has no draft. A version created by `submit` or the Firefox step in `release` enters AMO review and cannot be taken back, and listing updates go live immediately. DashBye does both only for the plan you approve.
 
 ## Quick start with your agent
 
@@ -68,8 +68,9 @@ API keys: ask me to set them up, and never read, print, copy, or commit them.
 Show me the exact target and every proposed change, note that Firefox listing
 changes go live once saved, and wait for my explicit approval before sync-draft.
 
-After an approved sync, require a successful read-back with zero remaining
-differences. Never submit for review or publish, and never run "dashbye submit":
+After an approved sync, require zero remaining Chrome differences, verification
+of AMO writable fields, and a successful Edge upload operation, as applicable.
+Report manual work separately. Never submit for review or publish, and never run "dashbye submit":
 a Firefox version cannot be taken back once it enters AMO review. Report files
 changed, checks performed, and anything still unresolved.
 ```
@@ -111,7 +112,7 @@ dashbye release
 
 - **Save:** it lists every change, previews text changes, and asks `Save these changes to the Dashboard draft? [Y/n]`.
 - **Submit to Firefox** (when configured): for a new Firefox version it asks separately, `Submit Firefox … to AMO for review? [y/N]`, because AMO has no draft.
-- **Done:** each draft was saved and read back with **zero remaining differences**, followed by a version lock and a list of what is left to do in the store dashboards.
+- **Done:** Chrome was saved and read back with **zero remaining differences**, followed by a version lock. Firefox verifies its supported listing fields; Edge confirms its upload operation because its API cannot read the draft. DashBye lists remaining manual work.
 
 `validate`, `plan`, `sync-draft`, and `submit` run the same steps one at a time.
 
@@ -144,7 +145,7 @@ The plan targets the extension’s **English listing** and contains **one change
 
 DashBye saves the draft and immediately reads it back. In this example, the first read-back still showed a difference, so the agent didn't report success. It re-ran plan, found nothing left to do, and ran a zero-operation sync. That returned `saved_and_reread` and wrote the release lock, and a fresh plan showed `operations: []`: **zero remaining differences**. The draft is saved, never submitted for review or published.
 
-[Case notes](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+[Validation record](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md#chrome-artwork-example)
 
 </details>
 

@@ -40,10 +40,10 @@ DashBye 只在你的电脑上运行：通过专用 Chrome 会话访问 Chrome We
 | 商店 | DashBye 负责 | 仍由你完成 |
 | --- | --- | --- |
 | **Chrome Web Store**（默认） | 把扩展包、商店文案、图片和隐私声明保存到 Dashboard 草稿，并回读核对 | 登录 Google；提交审核与发布 |
-| **Firefox 附加组件商店**（可选） | 校验扩展包；`dashbye submit` 按批准的计划创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类 | 在 AMO 开发者中心维护支持网址和截图 |
+| **Firefox 附加组件商店**（可选） | 校验扩展包；`submit` 或 `release` 中单独批准的 Firefox 步骤创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类 | 在 AMO 开发者中心维护支持网址和截图 |
 | **Microsoft Edge 加载项商店**（可选） | 把扩展包上传到产品的草稿提交 | 在 Partner Center 编辑商店页、提交审核与发布 |
 
-> **重要**：Firefox 附加组件商店没有草稿。`dashbye submit` 创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。
+> **重要**：Firefox 附加组件商店没有草稿。`submit` 或 `release` 的 Firefox 步骤创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。
 
 ## 交给 Agent 快速上手
 
@@ -66,7 +66,8 @@ Firefox 和 Edge 用 API 密钥：请我来配置，你不要读取、打印、�
 把目标条目和每一项改动都列给我看，并提醒 Firefox 商店页的修改保存后立即生效，
 等我明确同意后再执行 sync-draft。
 
-同步后必须回读，确认剩余差异为零。不要提交审核，也不要发布；不要运行
+同步后确认 Chrome 剩余差异为零、AMO 可写字段核对一致、Edge 上传操作成功，
+并单独列出仍需手动完成的事项。不要提交审核，也不要发布；不要运行
 "dashbye submit"：Firefox 版本一旦进入 AMO 审核就无法撤回。最后告诉我改了哪些
 文件、做了哪些检查、还有哪些问题没解决。
 ```
@@ -108,7 +109,7 @@ dashbye release
 
 - **保存**：列出每一项改动、预览文字变化，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。
 - **提交 Firefox**（已配置 Firefox 时）：如果有新的 Firefox 版本，因为 AMO 没有草稿，会再单独询问 `Submit Firefox … to AMO for review? [y/N]`。
-- **完成**：各草稿已保存、回读后**剩余差异为零**，写入版本锁文件，并列出还需要你在商店后台完成的步骤。
+- **完成**：Chrome 草稿保存并回读，**剩余差异为零**后写入版本锁；Firefox 核对支持修改的商店字段；Edge 确认上传操作成功，其 API 无法读取草稿。DashBye 会列出仍需手动完成的事项。
 
 `validate`、`plan`、`sync-draft` 和 `submit` 可以把同样的步骤拆开逐个执行。
 
@@ -141,7 +142,7 @@ Agent 列出变更计划：目标是扩展的**英文商店页**，只有**一�
 
 DashBye 保存草稿后会立即回读核对。这个例子里，第一次回读仍有差异，Agent 没有直接报告完成，而是重新运行 plan，确认已没有待执行的操作，再执行一次零操作同步：结果为 `saved_and_reread`，写入版本锁，新计划为 `operations: []`，即**剩余差异为零**。草稿只做保存，不会提交审核，也不会发布。
 
-[案例说明](https://github.com/HiAriesZhou/DashBye/blob/main/docs/assets/demo/README.md)
+[验证记录](https://github.com/HiAriesZhou/DashBye/blob/main/docs/validation.md#chrome-artwork-example)
 
 </details>
 

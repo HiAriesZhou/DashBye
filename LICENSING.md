@@ -18,9 +18,10 @@ Third-party dependencies retain their own licenses and copyright notices.
 ## Independent brand assets
 
 The separate artwork and design files under `brand/`, including the PNG logo, mascot,
-icon, launch graphics, and reproduction prompts, are excluded from the MIT grant. See
-[brand/LICENSE](brand/LICENSE) for their terms and [TRADEMARK.md](TRADEMARK.md) for use
-of the DashBye identity. The CLI does not require those assets to operate.
+icon and launch graphics, are excluded from the MIT grant. See
+[brand/LICENSE](https://github.com/HiAriesZhou/DashBye/blob/main/brand/LICENSE) for
+their terms and [TRADEMARK.md](TRADEMARK.md) for use of the DashBye identity. The CLI
+does not require those assets to operate.
 
 This scope reserves rights in specific visual materials to the extent protected by
 applicable law. It does not claim exclusive rights to general ideas, workflows,

@@ -1,13 +1,13 @@
 # DashBye brand assets
 
 These independent visual assets are reserved under [asset terms](LICENSE), not
-the code's GPL license. See the [brand policy](../TRADEMARK.md) before reuse.
+the code's MIT license. See the [brand policy](../TRADEMARK.md) before reuse.
 
 First release artwork derived from the owner-provided waving gecko/dashboard concept.
 
 ## Assets
 
-- `dashbye-readme.png` (1254 × 1254): transparent README mascot, shown at 112px;
+- `dashbye-readme.png` (1254 × 1254): transparent README mascot, shown at 128px;
   no lettering, with a pale edge for dark backgrounds. Original masters below are retained.
 
 - `dashbye-logo.png` (1536 × 1024): primary logo on a light background.
@@ -29,6 +29,5 @@ or account avatar change is performed by adding these files.
 - Keep the waving gecko, crescent eye, curled tail, and dashboard motif recognizable.
 - Leave generous clear space and avoid stretching artwork.
 
-Generated using the built-in image generation tool. Reproduction prompts are in
-`prompts.md`. The supplied concept's alternate slogans were intentionally omitted
-in favor of the existing DashBye tagline.
+The raster artwork was generated from the owner-provided gecko/dashboard concept.
+Brand usage and redistribution follow the asset terms above.

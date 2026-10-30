@@ -40,9 +40,10 @@ Source: https://github.com/HiAriesZhou/DashBye
    and all proposed changes, note that Firefox listing changes go live once
    saved, and wait for my explicit approval before
    sync-draft --approve-plan <approvalHash>.
-6. Require a successful read-back with no remaining operations. Never submit for
-   review or publish, and never run dashbye submit: a Firefox version cannot be
-   taken back once it enters AMO review. Report changes, validation and
+6. Require zero remaining Chrome operations, verification of AMO writable fields,
+   and a successful Edge upload operation, as applicable. Report manual work
+   separately. Never submit for review or publish, and never run dashbye submit:
+   a Firefox version cannot be taken back once it enters AMO review. Report changes, validation and
    unresolved issues.
 ```
 
@@ -97,7 +98,7 @@ Execute the reviewed plan:
 dashbye sync-draft
 ```
 
-`sync-draft` rereads the draft, shows the plan again, and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save or `n` to cancel. DashBye rejects the plan if the target, artifact, resources, or remote draft changed. A successful run saves the draft, reads it back with zero remaining operations, and writes the release lock.
+`sync-draft` rereads the draft, shows the plan again, and asks `Save these changes to the Dashboard draft? [Y/n]`. Press Enter to save or `n` to cancel. DashBye rejects the plan if the target, artifact, resources, or remote draft changed. For Chrome, success means saving the draft, reading it back with zero remaining operations, and writing the release lock. Firefox verifies writable listing fields and reports manual work; Edge confirms upload-operation success without reading draft contents.
 
 While the item is in review, the Dashboard makes every draft field read-only. `plan` still reads the draft and lists the differences, adds `Blocked: item is in review; drafts cannot be edited until review completes`, and records the reason under `blocking` in the JSON plan. `sync-draft` refuses such a plan before opening Chrome, and refuses any plan if the item enters review before writing. Run `plan` again once the review completes.
 
@@ -126,7 +127,7 @@ Chrome Web Store drafts are saved and read back. Edge packages are uploaded to t
 
 ## Submitting a Firefox version
 
-AMO has no draft: creating a listed version puts it in the review queue, and it cannot be taken back. `dashbye submit` is the only command that does this.
+AMO has no draft: creating a listed version puts it in the review queue, and it cannot be taken back. Both `dashbye submit` and the separately approved Firefox step in `dashbye release` use this submission path.
 
 ```bash
 dashbye submit                               # show the plan; nothing is submitted
@@ -190,7 +191,7 @@ The Chrome profile is in `chrome-profile/`; each project's latest `plan.json` an
 
 Initialization is normally once per extension. Later commands discover the nearest `dashbye.config.yml`; explicit CLI options override its values. YAML paths resolve relative to their config or resource directory, while CLI paths resolve from the current working directory.
 
-Keep screenshots of real listings and other diagnostics outside repositories; DashBye's own plans, saved draft state, and Chrome profile already are. Release locks belong in the configured resource directory.
+Keep screenshots of real listings and other diagnostics outside repositories; DashBye's own plans, saved draft state, and Chrome profile already are. Chrome release locks belong in the configured resource directory.
 
 For each release: rebuild the extension, update the resource files, then run `dashbye release`. It validates, plans every store, asks once to save the drafts and once more (default no) to submit a new Firefox version, then reads back and lists what is left to do in the store dashboards. `validate`, `plan`, `sync-draft`, and `submit` run the same steps one at a time. Without a terminal, `release` prints the plan and the `--approve-plan` / `--approve-submit` hashes and writes nothing. Name artifacts with `{version}` in `dashbye.config.yml` to avoid editing paths for every release.
 
