@@ -1,4 +1,5 @@
 import { readOriginalImage } from './dashboard-image.js';
+import { prepareApprovedUploads, type ApprovedUploads } from './approved-uploads.js';
 import { sha256 } from './hash.js';
 import { detailHash, visualHash } from './image-fingerprint.js';
 import { COLLECTED_DATA_LABELS } from './privacy-categories.js';
@@ -499,7 +500,7 @@ async function removeImages(page: Page, pattern: RegExp): Promise<void> {
   }
 }
 
-async function uploadToSection(page: Page, heading: string, files: string[]): Promise<void> {
+async function uploadToSection(page: Page, heading: string, files: ApprovedUploads['listing']['screenshots']): Promise<void> {
   const target = await section(page, heading);
   for (const file of files) {
     const previews = target.locator('img').filter({ visible: true });
@@ -518,7 +519,7 @@ async function uploadToSection(page: Page, heading: string, files: string[]): Pr
   }
 }
 
-async function applyListing(page: Page, itemId: string, desired: DesiredState, plan: ReconciliationPlan): Promise<void> {
+async function applyListing(page: Page, itemId: string, desired: DesiredState, plan: ReconciliationPlan, uploads: ApprovedUploads['listing']): Promise<void> {
   const operations = plan.operations.filter(operation => operation.area === 'listing');
   if (!operations.length) return;
   await openPage(page, itemId, 'Store listing');
@@ -538,16 +539,16 @@ async function applyListing(page: Page, itemId: string, desired: DesiredState, p
   }
   if (has('icon')) {
     await removeImages(page, /Remove image Store icon/);
-    await uploadToSection(page, 'Store icon', [desired.listingFiles.icon]);
+    await uploadToSection(page, 'Store icon', [uploads.icon]);
   }
   if (has('screenshots')) {
     await removeImages(page, /Remove image Screenshot/);
     const screenshotHeading = await page.getByText('Localized screenshots', { exact: true }).count() ? 'Localized screenshots' : 'Screenshots';
-    await uploadToSection(page, screenshotHeading, desired.listingFiles.screenshots);
+    await uploadToSection(page, screenshotHeading, uploads.screenshots);
   }
   for (const [field, heading, alt, file] of [
-    ['smallPromo', 'Small promo tile', 'Small promo tile', desired.listingFiles.smallPromo],
-    ['marqueePromo', 'Marquee promo tile', 'Marquee promo tile', desired.listingFiles.marqueePromo],
+    ['smallPromo', 'Small promo tile', 'Small promo tile', uploads.smallPromo],
+    ['marqueePromo', 'Marquee promo tile', 'Marquee promo tile', uploads.marqueePromo],
   ] as const) {
     if (!has(field)) continue;
     await removeImages(page, new RegExp(`Remove image ${alt}`));
@@ -598,9 +599,9 @@ async function applyPrivacy(page: Page, itemId: string, desired: DesiredState, p
   await saveDraft(page);
 }
 
-async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: ReconciliationPlan): Promise<void> {
+async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: ReconciliationPlan, upload: ApprovedUploads['package']): Promise<void> {
   if (!plan.operations.some(operation => operation.area === 'package')) return;
-  if (workspace.artifact.kind !== 'zip') throw new Error('package upload requires a ZIP artifact');
+  if (!upload) throw new Error('package upload requires a ZIP artifact');
   await openPage(page, workspace.config.target.itemId, 'Package');
   const dialog = page.locator('[role="dialog"]').filter({ has: page.locator('input[type="file"][accept*=".zip"]') }).last();
   if (!await dialog.isVisible()) {
@@ -611,7 +612,7 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
   // File inputs in the Dashboard dialog are hidden by design. Playwright can
   // upload to an attached input without requiring it to be visible.
   await input.waitFor({ state: 'attached', timeout: 30_000 });
-  await input.setInputFiles(workspace.artifact.path);
+  await input.setInputFiles(upload);
   for (let attempt = 0; attempt < 240 && await dialog.isVisible(); attempt += 1) {
     const dialogs = await page.locator('[role="dialog"]:visible').allInnerTexts();
     const message = dialogs.join(' ').replace(/\s+/g, ' ').trim();
@@ -632,9 +633,10 @@ async function applyPackage(page: Page, workspace: LoadedWorkspace, plan: Reconc
 
 export async function applyReconciliationPlan(page: Page, workspace: LoadedWorkspace, desired: DesiredState, plan: ReconciliationPlan): Promise<DashboardState> {
   assertPlanWritable(plan);
+  const uploads = await prepareApprovedUploads(workspace, desired, plan);
   if (plan.operations.length) await assertPageEditable(page, null);
-  await applyPackage(page, workspace, plan);
-  await applyListing(page, workspace.config.target.itemId, desired, plan);
+  await applyPackage(page, workspace, plan, uploads.package);
+  await applyListing(page, workspace.config.target.itemId, desired, plan, uploads.listing);
   await applyPrivacy(page, workspace.config.target.itemId, desired, plan);
   return readDashboardState(page, workspace);
 }
