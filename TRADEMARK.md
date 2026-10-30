@@ -7,7 +7,7 @@ trademark registration.
 
 You may use the name to truthfully identify the project, describe compatibility,
 attribute its source or discuss it. Unmodified screenshots or logos may accompany
-reviews, tutorials and links to the official project under [brand/LICENSE](brand/LICENSE).
+reviews, tutorials and links to the official project under [brand/LICENSE](https://github.com/HiAriesZhou/DashBye/blob/main/brand/LICENSE).
 Do not suggest sponsorship or affiliation that does not exist.
 
 If you distribute a modified fork as a separately branded product, choose your

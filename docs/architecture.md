@@ -13,8 +13,9 @@ DashBye separates local intent, remote observation, and approved writes.
    declarations against the actual extension manifest.
 3. `artifact.ts` reads a ZIP, build directory, or manifest and normalizes version,
    permissions, optional permissions, host scopes, and content-script matches.
-4. `release-lock.ts` records verified artifact and resource fingerprints after a
-   successful save and read-back. The previous lock makes permission drift visible.
+4. `release-lock.ts` records Chrome artifact and resource fingerprints after a
+   successful save and zero-operation read-back. The previous lock makes permission
+   drift visible. AMO and Edge use their own verification outcomes, not this lock.
 5. `dashboard-v2.ts` connects only to a loopback CDP endpoint and selects a work tab
    for the exact item. A non-secret `window.name` marker lets separate CLI commands
    reuse it; user editors remain untouched. Pending Dashboard login redirects are
@@ -32,10 +33,11 @@ DashBye separates local intent, remote observation, and approved writes.
    add-on from AMO: until AMO has approved the package version, the plan only
    validates the package; once it has, `sync-draft` updates the listing fields AMO's
    API accepts and re-reads them. `submit.ts` builds a separate plan for a new listed
-   version (package, source archive, release and reviewer notes, AMO state). Every
-   AMO write lives in `amo-write.ts`, the only file the release-boundary check
-   exempts. Edge (`stores/edge/`) uploads the package to the draft submission and
-   records what it uploaded, because the API cannot read the draft. API keys come
+   version (package, source archive, release and reviewer notes, and AMO state).
+   AMO version creation and listing edits live in `amo-write.ts`, the
+   only file the release-boundary check exempts; validation uploads live in `amo.ts`.
+   Edge (`stores/edge/`) uploads the package to the draft submission and records
+   successful uploads by package fingerprint because the API cannot read the draft. API keys come
    from `credentials.ts`; `net.ts` sends store API requests through
    `HTTP(S)_PROXY` when set and keeps loopback CDP off the proxy.
    `multi-plan.ts` combines the store plans under one approval hash.
@@ -63,3 +65,19 @@ instead of guessing another field or item.
 The Dashboard is not a stable public automation API. Unit tests cover local parsing,
 validation, and planning; real selector behavior still requires a reviewed,
 reversible draft verification after Dashboard UI changes.
+
+## Design constraints
+
+- Extension repositories own their resources. DashBye has no product-specific paths
+  or repository names; CLI overrides, discovered configuration, and defaults resolve
+  input without a server or account system.
+- Chrome captures approved package and asset bytes before the first mutation and
+  uploads that checked snapshot. Rebuilding a file after capture cannot change the
+  bytes sent under the approved plan.
+- Each store has a distinct success contract: Chrome requires zero remaining
+  operations, AMO verifies its writable fields and reports manual changes, and Edge
+  confirms the upload operation because its API cannot inspect a draft.
+- The website stays a separate static package so CLI installation and npm delivery
+  do not acquire website dependencies. Version, prompts, and usage guides come from
+  repository inputs; fonts and assets are self-hosted and builds do not fetch live
+  counters or visitor data.

@@ -35,7 +35,8 @@ DashBye 以编码 Agent 为主要使用方式。Agent 负责检查仓库和重�
    用 API 密钥：请我来配置，不得读取、打印、复制或提交密钥。把目标条目和全部
    改动列给我看，提醒 Firefox 商店页的修改保存后立即生效，经我明确同意后，
    才能执行 sync-draft --approve-plan <approvalHash>。
-6. 保存后必须回读，确认剩余操作为零。不得提交审核或发布，也不得运行
+6. 保存后确认 Chrome 剩余操作为零、AMO 可写字段核对一致、Edge 上传操作成功，
+   并单独列出仍需手动完成的事项。不得提交审核或发布，也不得运行
    dashbye submit：Firefox 版本一旦进入 AMO 审核就无法撤回。
    汇报文件改动、验证结果和未解决问题。
 ```
@@ -91,7 +92,7 @@ dashbye plan
 dashbye sync-draft
 ```
 
-`sync-draft` 会重新读取草稿，再列一遍计划，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。目标、构建产物、资源或线上草稿有变化时，DashBye 会拒绝执行旧计划。执行成功会保存草稿、回读确认剩余操作为零，并写入版本锁文件。
+`sync-draft` 会重新读取草稿，再列一遍计划，然后询问 `Save these changes to the Dashboard draft? [Y/n]`。直接回车即保存，输入 `n` 取消。目标、构建产物、资源或线上草稿有变化时，DashBye 会拒绝执行旧计划。对 Chrome，成功表示草稿已保存、回读后剩余操作为零，并写入版本锁。Firefox 核对可写的商店字段，单独列出手动事项；Edge 只确认上传操作成功，无法读取草稿内容。
 
 商品处于审核中（Pending review）时，Dashboard 会把所有草稿字段设为只读。`plan` 仍会读取草稿并列出差异，同时提示 `Blocked: item is in review; drafts cannot be edited until review completes`，并在 JSON 计划的 `blocking` 中记录原因。`sync-draft` 会在打开 Chrome 之前拒绝这样的计划；如果写入前商品进入审核，也会拒绝写入。审核结束后重新运行 `plan` 即可。
 
@@ -160,7 +161,7 @@ Chrome Profile 在 `chrome-profile/` 下；每个项目最近一次的 `plan.jso
 
 通常每个扩展只初始化一次。后续命令自动查找最近的 `dashbye.config.yml`，显式 CLI 参数优先。YAML 路径相对于其配置文件或资源目录解析，CLI 路径相对于当前工作目录解析。
 
-真实条目的截图和其他诊断文件请放在仓库之外；DashBye 自己的计划、读取结果和 Chrome Profile 本来就不在仓库里。版本 lock 保存在配置的资源目录中。
+真实条目的截图和其他诊断文件请放在仓库之外；DashBye 自己的计划、读取结果和 Chrome Profile 本来就不在仓库里。Chrome 的版本 lock 保存在配置的资源目录中。
 
 每次更新：重新构建扩展、更新资源，然后运行 `dashbye release`。在 `dashbye.config.yml` 里把安装包写成带 `{version}` 的文件名，就不用每次改配置。
 

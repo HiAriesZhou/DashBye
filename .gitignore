@@ -14,3 +14,7 @@ coverage/
 reports/
 test-results/
 playwright-report/
+
+# Local agent permissions and checkouts
+.claude/settings.local.json
+.claude/worktrees/

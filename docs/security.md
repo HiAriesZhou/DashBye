@@ -10,8 +10,9 @@ uploaded to the item draft through that browser.
 
 DashBye has no servers, backend, account system, telemetry, analytics or
 resource-hosting service. Configuration, plans and release locks are local
-files. The CLI does not push them to Git or submit drafts for review or publication.
-Google controls storage and processing on the Dashboard side.
+files. The CLI does not push them to Git. Chrome and Edge review submission and
+publication stay manual; the separately approved AMO submission is described below.
+Store providers control storage and processing on their side.
 
 These statements describe DashBye's own behavior. Installation downloads software
 from GitHub and package registries. If a user supplies files or command output to
@@ -67,12 +68,14 @@ contain only normalized manifest facts and local fingerprints.
 `sync-draft` requires a saved plan and its exact approval hash. Plans that include
 privacy changes, package upload, or destructive asset replacement explicitly mark
 owner approval as required. If the local inputs or remote draft change, execution
-stops as stale. A successful run must save and reread with zero remaining
-operations before writing a release lock.
+stops as stale. Chrome must save and reread with zero remaining operations before writing a
+release lock. AMO verifies supported listing fields and reports manual work. Edge
+confirms its upload operation; its API cannot read draft contents.
 
 The codebase has no publication, archive, login, or account management action. The
-only review submission is `dashbye submit` for AMO, which has no draft: it requires
-the hash of a plan bound to the package, source archive, notes, and AMO state, or an
+only review-submission path is AMO, reached through `dashbye submit` or a separate
+Firefox approval in `dashbye release`. AMO has no draft: it requires the hash of a
+plan bound to the package, source archive, notes, and AMO state, or an
 explicit `y` at a default-no prompt, and it refuses a version AMO already has. AMO
 listing edits run only after AMO approved the package version. Both are confined to
 `src/stores/firefox/amo-write.ts` by `scripts/check-release-boundary.mjs`, which
@@ -80,3 +83,8 @@ fails the build for version creation, `PATCH`, previews, `PUT`, `DELETE`, or Edg
 publishing anywhere else. Edge uploads go only to the draft package endpoint. Asset
 removal exists only as an operation in a bound, owner-approved full desired-state
 plan.
+
+API writes are not resent after an ambiguous send. A proxy fallback may resend only
+when the request provably never reached the store. Chrome's existing recovery for an
+unconfirmed Save draft first reads saved state and permits one attempt with only
+remaining approved operations; this is not a retry policy for AMO submissions.
