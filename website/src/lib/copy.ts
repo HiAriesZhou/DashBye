@@ -55,10 +55,10 @@ const en = {
     head: ['Store', 'DashBye does', 'You still do'],
     rows: [
       ['Chrome Web Store (default)', 'Saves the package, listing, images, and privacy declarations to the Dashboard draft, then reads them back', 'Sign in to Google; submit for review and publish'],
-      ['Firefox Add-ons (optional)', 'Validates the package; dashbye submit creates a listed version from an approved plan; after AMO approves it, updates the summary, description, homepage, support email, and categories', 'Support URL and screenshots in AMO Developer Hub'],
+      ['Firefox Add-ons (optional)', 'Validates the package; submit or the separately approved Firefox step in release creates a listed version; after AMO approves it, updates the summary, description, homepage, support email, and categories', 'Support URL and screenshots in AMO Developer Hub'],
       ['Microsoft Edge Add-ons (optional)', 'Uploads the package to the product’s draft submission', 'Store listing, review, and publishing in Partner Center'],
     ],
-    firefox: 'Firefox Add-ons has no draft. A version created by dashbye submit enters AMO review and cannot be taken back, and listing updates go live immediately. DashBye does both only for the plan you approve.',
+    firefox: 'Firefox Add-ons has no draft. A version created by submit or the Firefox step in release enters AMO review and cannot be taken back, and listing updates go live immediately. DashBye does both only for the plan you approve.',
   },
   agent: {
     title: 'Hand it to your agent',
@@ -89,7 +89,7 @@ const en = {
     guide: 'Usage guide',
   },
   footer: { license: 'Code: MIT', brand: 'Brand and mascot terms' },
-  star: { question: 'Star DashBye on GitHub?', label: 'Star DashBye on GitHub', count: (n: number) => `${n} ${n === 1 ? 'star' : 'stars'}` },
+  star: { question: 'Star DashBye on GitHub?', label: 'Star DashBye on GitHub' },
   docs: { onPage: 'On this page', back: 'Back to top' },
   notFound: { title: 'This page waved goodbye.', text: 'Nothing lives at this address.', home: 'Go to the home page', guide: 'Open the usage guide' },
 };
@@ -145,10 +145,10 @@ const zh: Copy = {
     head: ['商店', 'DashBye 负责', '仍由你完成'],
     rows: [
       ['Chrome Web Store（默认）', '把扩展包、商店文案、图片和隐私声明保存到 Dashboard 草稿，并回读核对', '登录 Google；提交审核与发布'],
-      ['Firefox 附加组件商店（可选）', '校验扩展包；dashbye submit 按批准的计划创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类', '在 AMO 开发者中心维护支持网址和截图'],
+      ['Firefox 附加组件商店（可选）', '校验扩展包；submit 或 release 中单独批准的 Firefox 步骤创建上架版本；AMO 审核通过后，更新简介、描述、主页、支持邮箱和分类', '在 AMO 开发者中心维护支持网址和截图'],
       ['Microsoft Edge 加载项商店（可选）', '把扩展包上传到产品的草稿提交', '在 Partner Center 编辑商店页、提交审核与发布'],
     ],
-    firefox: 'Firefox 附加组件商店没有草稿。dashbye submit 创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。',
+    firefox: 'Firefox 附加组件商店没有草稿。submit 或 release 的 Firefox 步骤创建的版本会进入 AMO 审核，无法撤回；商店页的修改也会立即生效。这两类操作，DashBye 只按你批准的计划执行。',
   },
   agent: {
     title: '交给 Agent',
@@ -179,7 +179,7 @@ const zh: Copy = {
     guide: '使用指南',
   },
   footer: { license: '代码：MIT', brand: '品牌与吉祥物条款' },
-  star: { question: '给 DashBye 点个 Star？', label: '在 GitHub 上给 DashBye 点 Star', count: (n: number) => `已有 ${n} 个 Star` },
+  star: { question: '给 DashBye 点个 Star？', label: '在 GitHub 上给 DashBye 点 Star' },
   docs: { onPage: '本页内容', back: '回到顶部' },
   notFound: { title: '这个页面已经挥手告别。', text: '这个地址没有内容。', home: '回到首页', guide: '打开使用指南' },
 };
