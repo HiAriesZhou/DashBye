@@ -1,6 +1,6 @@
 {
   "name": "dashbye",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Local-first CLI for versioning and synchronizing browser extension store releases: Chrome Web Store, with optional Firefox Add-ons and Edge Add-ons.",
   "author": "AriesZhou <urchinzhou@gmail.com>",
   "repository": {
