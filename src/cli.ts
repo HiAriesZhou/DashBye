@@ -277,7 +277,11 @@ async function verifyChrome(run: ChromeRun): Promise<void> {
   }
 }
 
-async function syncChrome(run: ChromeRun) {
+async function syncChrome(args: Args, configPath: string, prepared: ChromeRun) {
+  // Confirmation and other-store reads may take time. Recheck configuration,
+  // local inputs and the remote snapshot after that wait, before any mutation.
+  const run = await prepareChrome(args, configPath, prepared.approved);
+  await verifyChrome(run);
   const plan = (state: Awaited<ReturnType<typeof readDashboardState>>) => createReconciliationPlan(run.workspace, run.desired, state);
   const applied = await applyWithRetry({
     approved: run.approved,
@@ -354,7 +358,7 @@ async function executePlan(args: Args, configPath: string, approved: MultiPlan, 
   let chromeResult: Awaited<ReturnType<typeof syncChrome>> | null = null;
   if (chrome) {
     try {
-      chromeResult = await syncChrome(chrome);
+      chromeResult = await syncChrome(args, configPath, chrome);
       results.chrome = { result: chromeResult.result, releaseLock: chromeResult.releaseLock };
     } catch (error) {
       results.chrome = { result: 'failed', error: publicErrorMessage(error) };
