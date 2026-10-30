@@ -1,8 +1,7 @@
 ---
 import CopyButton from './CopyButton.astro';
-import Icon from './Icon.astro';
 import { copy, type Lang } from '../lib/copy';
-import { links, stars } from '../lib/repo';
+import { links } from '../lib/repo';
 
 // One terminal card, two lines: the install command, then the single [Y/n] question
 // DashBye itself would ask, here asking for a star.
@@ -10,16 +9,14 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = copy[lang].star;
 const install = 'npm install --global dashbye';
-const label = stars === null ? t.label : `${t.label}, ${t.count(stars)}`;
 ---
 <div class="card">
   <div class="line cmd">
     <code><span class="dollar" aria-hidden="true">$ </span>{install}</code>
     <CopyButton lang={lang} text={install} />
   </div>
-  <a class="line ask" href={links.github} aria-label={label}>
+  <a class="line ask" href={links.github} aria-label={t.label}>
     <span class="q">{t.question} <span class="yn">[<b>Y</b>/n]</span><span class="caret"></span></span>
-    {stars !== null && <span class="count" aria-hidden="true"><Icon name="star" size={13} />{stars}</span>}
   </a>
 </div>
 
@@ -78,18 +75,6 @@ const label = stars === null ? t.label : `${t.label}, ${t.count(stars)}`;
     opacity: 0;
     color: var(--green-ink);
     font-weight: 700;
-  }
-  .count {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: var(--radius-s);
-    background: var(--green-wash);
-    color: var(--green-ink);
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
   }
   .ask:focus-visible { outline-offset: -2px; }
   .ask:focus-visible .caret, .ask:active .caret { animation: none; background: none; }
