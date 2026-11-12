@@ -8,6 +8,8 @@ import Footer from '../components/Footer.astro';
 import icon from '../../../brand/dashbye-icon.png';
 import launch from '../../../brand/dashbye-launch.png';
 import { copy, type Lang } from '../lib/copy';
+import { links } from '../lib/repo';
+import { serializeSoftwareApplication } from '../lib/seo.mjs';
 
 interface Props {
   lang: Lang;
@@ -17,9 +19,10 @@ interface Props {
   alternate: string;
   // Error pages are served at any URL: no canonical or alternates, and kept out of search.
   noindex?: boolean;
+  softwareApplication?: boolean;
 }
 
-const { lang, title, description, alternate, noindex = false } = Astro.props;
+const { lang, title, description, alternate, noindex = false, softwareApplication = false } = Astro.props;
 const t = copy[lang];
 const site = Astro.site!;
 // Absolute canonical on dashbye.lol, so the backup domain serves the same pages without competing in search.
@@ -54,6 +57,14 @@ const [favicon, social] = await Promise.all([
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL(social.src, site).href} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:creator" content="@AriesZhou" />
+    {!noindex && softwareApplication && <script type="application/ld+json" set:html={serializeSoftwareApplication({
+      description,
+      url: canonical,
+      image: new URL(social.src, site).href,
+      author: links.author,
+      repository: links.github,
+    })} />}
   </head>
   <body>
     <a class="skip" href="#main">{t.nav.skip}</a>
