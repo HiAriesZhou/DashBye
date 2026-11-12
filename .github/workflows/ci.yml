@@ -2,13 +2,53 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
+# Only a newer revision of the same PR can cancel work. Every main push has
+# its own group, so queued main runs cannot replace one another either.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  test:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      cli: ${{ steps.filter.outputs.cli }}
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        id: filter
+        with:
+          script: |
+            let cli = true;
+            let website = true;
+            if (context.eventName === 'pull_request') {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                ...context.repo, pull_number: context.issue.number, per_page: 100
+              });
+              // The API caps results at 3,000 files. Never skip on incomplete data.
+              if (files.length > 0 && files.length < 3000) {
+                const paths = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean));
+                const docs = path => /^[^/]+\.md$/.test(path) || path.startsWith('docs/') || path.startsWith('brand/');
+                cli = paths.some(path => !docs(path) && !path.startsWith('website/'));
+                website = paths.some(path => !docs(path) || /^README(?:\.zh-CN)?\.md$/.test(path) ||
+                  /^docs\/usage(?:\.zh-CN)?\.md$/.test(path) || path.startsWith('brand/'));
+              }
+            }
+            core.setOutput('cli', String(cli));
+            core.setOutput('website', String(website));
+
+  cli-tests:
+    needs: changes
+    if: needs.changes.outputs.cli == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,12 +56,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # npm ci already runs prepare -> build; npm test deliberately rebuilds.
+      # Skip install hooks here and retain the explicit full test/build command.
+      - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test
 
   # dashbye.lol, built from website/ plus the READMEs, docs/usage*.md, and brand/.
   website:
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,6 +84,8 @@ jobs:
   # Chrome install locations on Windows and Linux are not exercised on a real
   # Dashboard; check that DashBye finds and opens the runner's official Chrome.
   chrome-location:
+    needs: changes
+    if: needs.changes.outputs.cli == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -51,7 +97,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run build
       - name: Find and open Chrome (Linux, virtual display)
         if: runner.os == 'Linux'
@@ -59,3 +105,32 @@ jobs:
       - name: Find and open Chrome (Windows)
         if: runner.os == 'Windows'
         run: node scripts/check-chrome-location.mjs
+
+  # Keep the required check present even when a docs-only PR skips work.
+  test:
+    needs: [changes, cli-tests, website, chrome-location]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CLI_REQUIRED: ${{ needs.changes.outputs.cli }}
+          WEBSITE_REQUIRED: ${{ needs.changes.outputs.website }}
+          CLI: ${{ needs.cli-tests.result }}
+          WEBSITE: ${{ needs.website.result }}
+          CHROME: ${{ needs.chrome-location.result }}
+        run: |
+          test "$CHANGES" = success
+          if [ "$CLI_REQUIRED" = true ]; then
+            test "$CLI" = success
+            test "$CHROME" = success
+          else
+            test "$CLI" = skipped
+            test "$CHROME" = skipped
+          fi
+          if [ "$WEBSITE_REQUIRED" = true ]; then
+            test "$WEBSITE" = success
+          else
+            test "$WEBSITE" = skipped
+          fi
