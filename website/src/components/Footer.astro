@@ -20,7 +20,7 @@ const heart = '❤️';
   <p class="credit">
     {lang === 'zh' && <>由 </>}
     {lang === 'en' && <>Made with <span role="img" aria-label="love">{heart}</span> by </>}
-    <a class="me" href={links.author[lang]}>
+    <a class="me" href={links.author}>
       <Image src={avatar} alt="" width={24} height={24} densities={[1, 2]} loading="lazy" />AriesZhou</a>
     {lang === 'zh' && <> 用 <span role="img" aria-label="爱">{heart}</span> 制作</>}
   </p>
