@@ -170,7 +170,7 @@ browser:
 
 ## Current support
 
-This is an early technical release. Exercised on real store items:
+This is an early technical release for macOS, Windows, and Linux. Exercised on real store items:
 
 - **Chrome Web Store:** package upload, artwork replacement, selected privacy-copy changes, draft saving, and read-back.
 - **Firefox Add-ons:** one `dashbye submit` from validation upload to version read-back, and a listing update after AMO approved that version.

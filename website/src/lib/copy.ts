@@ -81,7 +81,7 @@ const en = {
   },
   status: {
     title: 'Early, and honest about it',
-    text: 'Exercised on real store items: Chrome package upload, artwork replacement, and selected privacy-copy changes; one Firefox submission and a listing update after approval; one Edge package upload. Still unverified: multiple locales, collected-data and certification changes, new permission confirmations, and sign-in on Windows and Linux.',
+    text: 'DashBye is a local CLI for macOS, Windows, and Linux. Exercised on real store items: Chrome package upload, artwork replacement, and selected privacy-copy changes; one Firefox submission and a listing update after approval; one Edge package upload. Still unverified: multiple locales, collected-data and certification changes, new permission confirmations, and sign-in and Dashboard use on Windows and Linux.',
     link: 'Validation record',
   },
   end: {
@@ -171,7 +171,7 @@ const zh: Copy = {
   },
   status: {
     title: '早期版本，如实说明',
-    text: '已在真实商店条目上跑通：Chrome 的扩展包上传、图片替换和部分隐私文案修改；一次 Firefox 版本提交，以及审核通过后的一次商店页更新；一次 Edge 扩展包上传。尚未验证：多语言、数据类别与认证的变更、新增权限的确认，以及在 Windows 和 Linux 上登录。',
+    text: 'DashBye 是面向 macOS、Windows 和 Linux 的本地命令行工具。已在真实商店条目上跑通：Chrome 的扩展包上传、图片替换和部分隐私文案修改；一次 Firefox 版本提交，以及审核通过后的一次商店页更新；一次 Edge 扩展包上传。尚未验证：多语言、数据类别与认证的变更、新增权限的确认，以及在 Windows 和 Linux 上登录和使用 Dashboard。',
     link: '验证记录',
   },
   end: {
