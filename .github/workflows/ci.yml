@@ -2,23 +2,63 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
+  pull-requests: read
+
+# Only a newer revision of the same PR can cancel work. Every main push has
+# its own group, so queued main runs cannot replace one another either.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Keep the original required check and run all jobs in parallel. Docs-only
+  # PRs still start runners, but skip checkout, installation, builds and tests.
   test:
     runs-on: ubuntu-latest
     steps:
+      - &detect-changes
+        name: Detect applicable checks
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        id: filter
+        with:
+          script: |
+            let cli = true;
+            let website = true;
+            if (context.eventName === 'pull_request') {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                ...context.repo, pull_number: context.issue.number, per_page: 100
+              });
+              // The API caps results at 3,000 files. Never skip on incomplete data.
+              if (files.length > 0 && files.length < 3000) {
+                const paths = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean));
+                const docs = path => /^[^/]+\.md$/.test(path) || path.startsWith('docs/') || path.startsWith('brand/');
+                cli = paths.some(path => !docs(path) && !path.startsWith('website/'));
+                website = paths.some(path => !docs(path) || /^README(?:\.zh-CN)?\.md$/.test(path) ||
+                  /^docs\/usage(?:\.zh-CN)?\.md$/.test(path) || path.startsWith('brand/'));
+              }
+            }
+            core.setOutput('cli', String(cli));
+            core.setOutput('website', String(website));
       - uses: actions/checkout@v4
+        if: steps.filter.outputs.cli == 'true'
       - uses: actions/setup-node@v4
+        if: steps.filter.outputs.cli == 'true'
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # npm ci already runs prepare -> build; npm test deliberately rebuilds.
+      # Skip install hooks here and retain the explicit full test/build command.
+      - run: npm ci --ignore-scripts
+        if: steps.filter.outputs.cli == 'true'
       - run: npm run check
+        if: steps.filter.outputs.cli == 'true'
       - run: npm test
+        if: steps.filter.outputs.cli == 'true'
 
   # dashbye.lol, built from website/ plus the READMEs, docs/usage*.md, and brand/.
   website:
@@ -27,15 +67,21 @@ jobs:
       run:
         working-directory: website
     steps:
+      - *detect-changes
       - uses: actions/checkout@v4
+        if: steps.filter.outputs.website == 'true'
       - uses: actions/setup-node@v4
+        if: steps.filter.outputs.website == 'true'
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: website/package-lock.json
       - run: npm ci
+        if: steps.filter.outputs.website == 'true'
       - run: npm test
+        if: steps.filter.outputs.website == 'true'
       - run: npm run build
+        if: steps.filter.outputs.website == 'true'
 
   # Chrome install locations on Windows and Linux are not exercised on a real
   # Dashboard; check that DashBye finds and opens the runner's official Chrome.
@@ -46,16 +92,21 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - *detect-changes
       - uses: actions/checkout@v4
+        if: steps.filter.outputs.cli == 'true'
       - uses: actions/setup-node@v4
+        if: steps.filter.outputs.cli == 'true'
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+        if: steps.filter.outputs.cli == 'true'
       - run: npm run build
+        if: steps.filter.outputs.cli == 'true'
       - name: Find and open Chrome (Linux, virtual display)
-        if: runner.os == 'Linux'
+        if: steps.filter.outputs.cli == 'true' && runner.os == 'Linux'
         run: xvfb-run --auto-servernum node scripts/check-chrome-location.mjs
       - name: Find and open Chrome (Windows)
-        if: runner.os == 'Windows'
+        if: steps.filter.outputs.cli == 'true' && runner.os == 'Windows'
         run: node scripts/check-chrome-location.mjs
